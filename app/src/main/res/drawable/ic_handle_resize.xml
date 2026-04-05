@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Two opposing diagonal triangular arrows (↖ ↘) — top-left to bottom-right = resize -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- diagonal connecting line (top-left → bottom-right) -->
+    <path
+        android:strokeColor="#FF000000"
+        android:strokeWidth="2"
+        android:pathData="M4,4 L20,20" />
+
+    <!-- top-left filled triangle (↖) -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M2,2 L10,2 L2,10 Z" />
+
+    <!-- bottom-right filled triangle (↘) -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M22,14 L22,22 L14,22 Z" />
+</vector>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:layoutDirection="rtl">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:padding="16dp">
+
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/prop_decoration_shape" android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:layout_marginBottom="6dp" />
+        <Spinner android:id="@+id/spinner_shape" android:layout_width="match_parent"
+            android:layout_height="48dp" android:layout_marginBottom="14dp" />
+
+        <LinearLayout
+            android:id="@+id/layout_custom_image"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp"
+            android:background="?attr/colorSurfaceVariant"
+            android:padding="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tv_custom_image_name"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:text="تم اختيار صورة مخصصة"
+                android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+            <ImageView
+                android:id="@+id/btn_remove_custom_image"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="4dp"
+                android:src="@drawable/ic_delete_24"
+                app:tint="?attr/colorError" />
+        </LinearLayout>
+
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/prop_decoration_density" android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:layout_marginBottom="6dp" />
+        <com.google.android.material.slider.Slider android:id="@+id/slider_density"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:valueFrom="0" android:valueTo="1" android:stepSize="0.05"
+            android:layout_marginBottom="14dp" />
+
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/prop_decoration_color" android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:layout_marginBottom="6dp" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical">
+            <dev.anonymous.cardsdesignerpro.common.widget.ColorPreviewView android:id="@+id/cpv_deco_color"
+                android:layout_width="40dp" android:layout_height="40dp" android:layout_marginEnd="12dp" />
+            <TextView android:id="@+id/tv_color_hex" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:fontFamily="monospace"
+                android:textAppearance="?attr/textAppearanceBodyMedium" android:text="#CCCCCC" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

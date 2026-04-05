@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- QR pixel (dark dot) shapes -->
+    <string-array name="qr_pixel_shapes">
+        <item>مربع (افتراضي)</item>
+        <item>حواف مستديرة</item>
+        <item>دائرة</item>
+    </string-array>
+
+    <!-- QR eye (corner ball + frame) shapes -->
+    <string-array name="qr_eye_shapes">
+        <item>مربع (افتراضي)</item>
+        <item>حواف مستديرة</item>
+        <item>دائرة</item>
+    </string-array>
+
+</resources>

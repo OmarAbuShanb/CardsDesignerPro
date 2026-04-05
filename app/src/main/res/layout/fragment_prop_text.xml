@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layoutDirection="rtl">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Text content — layoutDirection=locale fixes reversed typing for LTR text -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_text"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/prop_text_content"
+            android:layout_marginBottom="14dp"
+            android:layoutDirection="locale">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textMultiLine"
+                android:minLines="1"
+                android:maxLines="6"
+                android:gravity="start|top"
+                android:textDirection="anyRtl"
+                android:layoutDirection="locale" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Text color -->
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/prop_text_color" android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:layout_marginBottom="6dp" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="14dp">
+            <dev.anonymous.cardsdesignerpro.common.widget.ColorPreviewView
+                android:id="@+id/cpv_text_color"
+                android:layout_width="40dp" android:layout_height="40dp" android:layout_marginEnd="12dp" />
+            <TextView android:id="@+id/tv_text_color_hex" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:fontFamily="monospace"
+                android:textAppearance="?attr/textAppearanceBodyMedium" android:text="#000000" />
+        </LinearLayout>
+
+        <!-- Bg color -->
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/prop_text_bg_color" android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:layout_marginBottom="6dp" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="14dp">
+            <dev.anonymous.cardsdesignerpro.common.widget.ColorPreviewView
+                android:id="@+id/cpv_bg_color"
+                android:layout_width="40dp" android:layout_height="40dp" android:layout_marginEnd="12dp" />
+            <TextView android:id="@+id/tv_bg_color_hex" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:fontFamily="monospace"
+                android:textAppearance="?attr/textAppearanceBodyMedium" android:text="none" />
+        </LinearLayout>
+
+        <!-- Bold -->
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:id="@+id/cb_bold"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/prop_bold"
+            android:layout_marginBottom="14dp" />
+
+        <!-- Font -->
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/prop_font" android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:layout_marginBottom="6dp" />
+        <Spinner android:id="@+id/spinner_font" android:layout_width="match_parent"
+            android:layout_height="48dp" android:layout_marginBottom="14dp" />
+
+        <!-- Font size -->
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/prop_font_size" android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:layout_marginBottom="6dp" />
+        <dev.anonymous.cardsdesignerpro.common.widget.StepperView
+            android:id="@+id/stepper_font_size"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp" />
+
+    </LinearLayout>
+</ScrollView>

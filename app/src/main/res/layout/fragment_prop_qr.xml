@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:layoutDirection="rtl">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:padding="16dp">
+
+        <!-- Host URL -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_host"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:hint="@string/prop_host" android:layout_marginBottom="14dp">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_host"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:inputType="textUri" android:imeOptions="actionDone" android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- QR foreground color -->
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/prop_qr_color" android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:layout_marginBottom="6dp" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="14dp">
+            <dev.anonymous.cardsdesignerpro.common.widget.ColorPreviewView
+                android:id="@+id/cpv_qr_color"
+                android:layout_width="40dp" android:layout_height="40dp" android:layout_marginEnd="12dp" />
+            <TextView android:id="@+id/tv_qr_color_hex" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:fontFamily="monospace"
+                android:textAppearance="?attr/textAppearanceBodyMedium" android:text="#000000" />
+        </LinearLayout>
+
+        <!-- QR background color -->
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/prop_qr_bg_color" android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:layout_marginBottom="6dp" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="14dp">
+            <dev.anonymous.cardsdesignerpro.common.widget.ColorPreviewView
+                android:id="@+id/cpv_qr_bg_color"
+                android:layout_width="40dp" android:layout_height="40dp" android:layout_marginEnd="12dp" />
+            <TextView android:id="@+id/tv_qr_bg_color_hex" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:fontFamily="monospace"
+                android:textAppearance="?attr/textAppearanceBodyMedium" android:text="#FFFFFF" />
+        </LinearLayout>
+
+        <!-- Dark pixel shape -->
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/prop_qr_pixel_shape" android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:layout_marginBottom="6dp" />
+        <Spinner android:id="@+id/spinner_pixel_shape"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp" />
+
+        <!-- Eye (ball + frame) shape -->
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/prop_qr_eye_shape" android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:layout_marginBottom="6dp" />
+        <Spinner android:id="@+id/spinner_eye_shape"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp" />
+
+        <!-- Logo picker -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_pick_logo"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="@string/prop_logo"
+            android:layout_marginBottom="8dp" />
+
+        <LinearLayout
+            android:id="@+id/layout_selected_logo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?attr/colorSurfaceVariant"
+                android:padding="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:id="@+id/tv_logo_name"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:text="الشعار المختار"
+                    android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                <ImageView
+                    android:id="@+id/btn_remove_logo"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:padding="4dp"
+                    android:src="@drawable/ic_delete_24"
+                    app:tint="?attr/colorError" />
+            </LinearLayout>
+
+            <!-- Tint Logo Checkbox -->
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/cb_tint_logo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="تلوين الشعار بنفس لون الباركود"
+                android:layout_marginBottom="14dp" />
+        </LinearLayout>
+
+        <!-- Logo size -->
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/prop_logo_size" android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:layout_marginBottom="6dp" />
+        <com.google.android.material.slider.Slider android:id="@+id/slider_logo_size"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:valueFrom="0.05" android:valueTo="0.6" android:stepSize="0.01"
+            android:layout_marginBottom="14dp" />
+
+        <!-- Padding -->
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/prop_qr_padding" android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:layout_marginBottom="6dp" />
+        <com.google.android.material.slider.Slider android:id="@+id/slider_qr_padding"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:valueFrom="0.0" android:valueTo="0.25" android:stepSize="0.01"
+            android:layout_marginBottom="14dp" />
+
+    </LinearLayout>
+</ScrollView>
