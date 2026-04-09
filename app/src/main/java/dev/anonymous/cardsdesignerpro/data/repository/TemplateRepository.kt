@@ -7,7 +7,6 @@ import dev.anonymous.cardsdesignerpro.data.serializer.AppJson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.IOException
 
 /**
  * Persists templates as JSON files under `filesDir/templates/<id>/template.json`.
@@ -88,13 +87,22 @@ class TemplateRepository(private val context: Context) {
 
         fun rewrite(path: String?): String? = path?.let { pathMap[it] ?: it }
 
-        val newCard = original.card.copy(backgroundImagePath = rewrite(original.card.backgroundImagePath))
+        val newCard =
+            original.card.copy(backgroundImagePath = rewrite(original.card.backgroundImagePath))
 
         fun rewriteElements(elements: List<TemplateElement>) = elements.map { el ->
             when (el) {
-                is TemplateElement.ImageElement -> el.copy(imagePath = rewrite(el.imagePath) ?: el.imagePath)
+                is TemplateElement.ImageElement -> el.copy(
+                    imagePath = rewrite(el.imagePath) ?: el.imagePath
+                )
+
                 is TemplateElement.QrElement -> el.copy(logoPath = rewrite(el.logoPath))
-                is TemplateElement.BackgroundDecorationElement -> el.copy(customImagePath = rewrite(el.customImagePath))
+                is TemplateElement.BackgroundDecorationElement -> el.copy(
+                    customImagePath = rewrite(
+                        el.customImagePath
+                    )
+                )
+
                 else -> el
             }
         }
@@ -114,6 +122,61 @@ class TemplateRepository(private val context: Context) {
     suspend fun importTemplate(template: Template): Template = withContext(Dispatchers.IO) {
         save(template)
         template
+    }
+
+    /** Extracts the default template from assets and saves it as a new template with the given name. */
+    suspend fun extractDefaultTemplate(name: String): Template? = withContext(Dispatchers.IO) {
+        val jsonStr = runCatching {
+            context.assets.open("default_templates/template5/template.json").bufferedReader()
+                .use { it.readText() }
+        }.getOrNull() ?: return@withContext null
+
+        val newId = System.currentTimeMillis().toString()
+        val defaultTemplate =
+            runCatching { AppJson.decode(jsonStr) }.getOrNull() ?: return@withContext null
+            
+        // Copy SVGs/images from assets to local storage
+        val imageDir = getOrCreateImageDir(newId)
+        val assetsImageDir = "default_templates/template5/images"
+        runCatching {
+            context.assets.list(assetsImageDir)?.forEach { fileName ->
+                val outFile = File(imageDir, fileName)
+                context.assets.open("$assetsImageDir/$fileName").use { inStream ->
+                    outFile.outputStream().use { outStream ->
+                        inStream.copyTo(outStream)
+                    }
+                }
+            }
+        }
+        
+        fun rewrite(path: String?): String? {
+            if (path == null) return null
+            if (path.startsWith("images/")) {
+                return File(imageDir, path.removePrefix("images/")).absolutePath
+            }
+            return path
+        }
+        
+        fun rewriteElements(elements: List<TemplateElement>) = elements.map { el ->
+            when (el) {
+                is TemplateElement.ImageElement -> el.copy(imagePath = rewrite(el.imagePath) ?: el.imagePath)
+                is TemplateElement.QrElement -> el.copy(logoPath = rewrite(el.logoPath))
+                is TemplateElement.BackgroundDecorationElement -> el.copy(customImagePath = rewrite(el.customImagePath))
+                else -> el
+            }
+        }
+        
+        val extractedCard = defaultTemplate.card.copy(backgroundImagePath = rewrite(defaultTemplate.card.backgroundImagePath))
+
+        val extracted = defaultTemplate.copy(
+            id = newId,
+            name = name,
+            card = extractedCard,
+            elements = rewriteElements(defaultTemplate.elements),
+            backElements = defaultTemplate.backElements?.let { rewriteElements(it) }
+        )
+        save(extracted)
+        extracted
     }
 
     /**
@@ -143,9 +206,23 @@ class TemplateRepository(private val context: Context) {
         fun collectFromElements(elements: List<TemplateElement>) {
             elements.forEach { el ->
                 when (el) {
-                    is TemplateElement.ImageElement -> if (!el.imagePath.startsWith("pack:")) paths.add(el.imagePath)
-                    is TemplateElement.QrElement -> el.logoPath?.let { if (!it.startsWith("pack:")) paths.add(it) }
-                    is TemplateElement.BackgroundDecorationElement -> el.customImagePath?.let { if (!it.startsWith("pack:")) paths.add(it) }
+                    is TemplateElement.ImageElement -> if (!el.imagePath.startsWith("pack:")) paths.add(
+                        el.imagePath
+                    )
+
+                    is TemplateElement.QrElement -> el.logoPath?.let {
+                        if (!it.startsWith("pack:")) paths.add(
+                            it
+                        )
+                    }
+
+                    is TemplateElement.BackgroundDecorationElement -> el.customImagePath?.let {
+                        if (!it.startsWith(
+                                "pack:"
+                            )
+                        ) paths.add(it)
+                    }
+
                     else -> Unit
                 }
             }

@@ -92,13 +92,18 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
     private fun populate(el: TemplateElement.DateElement, formats: Array<DateFormat>,
                          fontNames: List<Pair<String,String>>) {
         updating = true
-        b.spinnerDateFormat.setSelection(formats.indexOf(el.format).coerceAtLeast(0))
-        b.cpvTextColor.colorHex = el.textColor
+        val fmtIdx = formats.indexOf(el.format).coerceAtLeast(0)
+        if (b.spinnerDateFormat.selectedItemPosition != fmtIdx) b.spinnerDateFormat.setSelection(fmtIdx)
+        if (b.cpvTextColor.colorHex != el.textColor) b.cpvTextColor.colorHex = el.textColor
         b.tvColorHex.text = el.textColor
-        b.cbBold.isChecked = el.isBold
-        b.stepperFontSize.minValue = 6; b.stepperFontSize.maxValue = 72
-        b.stepperFontSize.value = el.textSizeSp.toInt()
-        b.spinnerFont.setSelection(fontNames.indexOfFirst { it.second == el.fontName }.coerceAtLeast(0))
+        if (b.cbBold.isChecked != el.isBold) b.cbBold.isChecked = el.isBold
+        val targetSize = el.textSizeSp.toInt()
+        if (b.stepperFontSize.value != targetSize) {
+            b.stepperFontSize.minValue = 6; b.stepperFontSize.maxValue = 72
+            b.stepperFontSize.value = targetSize
+        } else { b.stepperFontSize.minValue = 6; b.stepperFontSize.maxValue = 72 }
+        val fontIdx = fontNames.indexOfFirst { it.second == el.fontName }.coerceAtLeast(0)
+        if (b.spinnerFont.selectedItemPosition != fontIdx) b.spinnerFont.setSelection(fontIdx)
         updating = false
     }
 
@@ -152,17 +157,30 @@ class FramePropertiesFragment : Fragment(), PropertyFragment {
 
     private fun populate(el: TemplateElement.FrameElement) {
         updating = true
-        b.cpvFrameColor.colorHex = el.color; b.tvColorHex.text = el.color
-        b.stepperThickness.minValue = 1; b.stepperThickness.maxValue = 20
-        b.stepperThickness.value = el.strokeWidthDp.toInt()
-        b.stepperCornerRadius.minValue = 0; b.stepperCornerRadius.maxValue = 80
-        b.stepperCornerRadius.value = el.cornerRadiusDp.toInt()
-        b.sliderPadding.value = el.paddingDp.coerceIn(0f, 60f)
-        b.cbDashed.isChecked = el.isDashed
-        b.layoutDashOptions.visibility = if (el.isDashed) View.VISIBLE else View.GONE
-        b.sliderDashLength.value = el.dashLengthDp.coerceIn(2f, 60f)
-        b.sliderDashGap.value = el.dashGapDp.coerceIn(0f, 40f)
-        b.cbDashRounded.isChecked = el.isDashRounded
+        if (b.cpvFrameColor.colorHex != el.color) b.cpvFrameColor.colorHex = el.color
+        b.tvColorHex.text = el.color
+        val thickness = el.strokeWidthDp.toInt()
+        if (b.stepperThickness.value != thickness) {
+            b.stepperThickness.minValue = 1; b.stepperThickness.maxValue = 20
+            b.stepperThickness.value = thickness
+        } else { b.stepperThickness.minValue = 1; b.stepperThickness.maxValue = 20 }
+        val corner = el.cornerRadiusDp.toInt()
+        if (b.stepperCornerRadius.value != corner) {
+            b.stepperCornerRadius.minValue = 0; b.stepperCornerRadius.maxValue = 80
+            b.stepperCornerRadius.value = corner
+        } else { b.stepperCornerRadius.minValue = 0; b.stepperCornerRadius.maxValue = 80 }
+        val padding = el.paddingDp.coerceIn(0f, 60f)
+        if (b.sliderPadding.value != padding) b.sliderPadding.value = padding
+        // Checkbox: guard to prevent requestLayout from firing when value same
+        if (b.cbDashed.isChecked != el.isDashed) {
+            b.cbDashed.isChecked = el.isDashed
+            b.layoutDashOptions.visibility = if (el.isDashed) View.VISIBLE else View.GONE
+        }
+        val dashLen = el.dashLengthDp.coerceIn(2f, 60f)
+        if (b.sliderDashLength.value != dashLen) b.sliderDashLength.value = dashLen
+        val dashGap = el.dashGapDp.coerceIn(0f, 40f)
+        if (b.sliderDashGap.value != dashGap) b.sliderDashGap.value = dashGap
+        if (b.cbDashRounded.isChecked != el.isDashRounded) b.cbDashRounded.isChecked = el.isDashRounded
         updating = false
     }
 
@@ -191,7 +209,14 @@ class BackgroundDecorationPropertiesFragment : Fragment(), PropertyFragment {
     private var updating = false
 
     private val pickBgImageLauncher = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? ->
-        uri?.let { copyImage(it) }
+        if (uri != null) {
+            copyImage(uri)
+        } else {
+            val e = viewModel.selectedElement as? TemplateElement.BackgroundDecorationElement ?: return@registerForActivityResult
+            if (e.shapeType == DecorationShape.CUSTOM_IMAGE && e.customImagePath == null) {
+                viewModel.updateElement(e.copy(shapeType = DecorationShape.STARS_FOUR_POINT))
+            }
+        }
     }
 
     override fun onCreateView(i: LayoutInflater, c: ViewGroup?, s: Bundle?): View {
@@ -227,6 +252,12 @@ class BackgroundDecorationPropertiesFragment : Fragment(), PropertyFragment {
             val e = viewModel.selectedElement as? TemplateElement.BackgroundDecorationElement ?: return@addOnChangeListener
             viewModel.updateElement(e.copy(density = value))
         }
+        b.cbCustomTint.setOnCheckedChangeListener { _, isChecked ->
+            if (updating) return@setOnCheckedChangeListener
+            val e = viewModel.selectedElement as? TemplateElement.BackgroundDecorationElement ?: return@setOnCheckedChangeListener
+            viewModel.updateElement(e.copy(customImageTintEnabled = isChecked))
+        }
+
         b.cpvDecoColor.onColorSelected = { hex ->
             b.tvColorHex.text = hex
             val e = viewModel.selectedElement as? TemplateElement.BackgroundDecorationElement
@@ -235,7 +266,7 @@ class BackgroundDecorationPropertiesFragment : Fragment(), PropertyFragment {
 
         b.btnRemoveCustomImage.setOnClickListener {
             val e = viewModel.selectedElement as? TemplateElement.BackgroundDecorationElement ?: return@setOnClickListener
-            viewModel.updateElement(e.copy(customImagePath = null))
+            viewModel.updateElement(e.copy(customImagePath = null, shapeType = DecorationShape.STARS_FOUR_POINT))
         }
     }
 
@@ -248,17 +279,27 @@ class BackgroundDecorationPropertiesFragment : Fragment(), PropertyFragment {
 
     private fun populate(el: TemplateElement.BackgroundDecorationElement, shapes: Array<DecorationShape>) {
         updating = true
-        b.spinnerShape.setSelection(shapes.indexOf(el.shapeType).coerceAtLeast(0))
-        b.sliderDensity.value = el.density.coerceIn(0f, 1f)
-        b.cpvDecoColor.colorHex = el.color; b.tvColorHex.text = el.color
-        
-        if (el.shapeType == DecorationShape.CUSTOM_IMAGE && el.customImagePath != null) {
-            b.layoutCustomImage.visibility = View.VISIBLE
-            b.tvCustomImageName.text = File(el.customImagePath).name
+        val shapeIdx = shapes.indexOf(el.shapeType).coerceAtLeast(0)
+        if (b.spinnerShape.selectedItemPosition != shapeIdx) b.spinnerShape.setSelection(shapeIdx)
+        val density = el.density.coerceIn(0f, 1f)
+        if (b.sliderDensity.value != density) b.sliderDensity.value = density
+        if (b.cpvDecoColor.colorHex != el.color) b.cpvDecoColor.colorHex = el.color
+        b.tvColorHex.text = el.color
+        if (el.shapeType == DecorationShape.CUSTOM_IMAGE) {
+            b.cbCustomTint.visibility = View.VISIBLE
+            if (b.cbCustomTint.isChecked != el.customImageTintEnabled) {
+                b.cbCustomTint.isChecked = el.customImageTintEnabled
+            }
+            b.layoutColor.visibility = if (el.customImageTintEnabled) View.VISIBLE else View.GONE
+            b.layoutCustomImage.visibility = if (el.customImagePath != null) View.VISIBLE else View.GONE
+            if (el.customImagePath != null) {
+                b.tvCustomImageName.text = File(el.customImagePath).name
+            }
         } else {
+            b.cbCustomTint.visibility = View.GONE
+            b.layoutColor.visibility = View.VISIBLE
             b.layoutCustomImage.visibility = View.GONE
         }
-        
         updating = false
     }
 

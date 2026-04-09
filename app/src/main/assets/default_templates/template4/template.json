@@ -1,0 +1,99 @@
+{
+  "id": "default_card_template_4",
+  "name": "قالب Fly Net",
+  "card": {
+    "widthDp": 800.0,
+    "heightRatio": 0.4,
+    "backgroundColor": "#FFFFFF"
+  },
+  "elements": [
+    {
+      "type": "text",
+      "id": "app_name",
+      "x": -103.51293,
+      "y": 34.10586,
+      "width": 486.2851,
+      "height": 81.047516,
+      "isVisible": true,
+      "rotation": 0.0,
+      "text": "Fly Net",
+      "textColor": "#000000",
+      "isBold": true,
+      "fontName": "sans-serif",
+      "textSizeSp": 64.83804
+    },
+    {
+      "type": "date",
+      "id": "date_element",
+      "x": 472.21652,
+      "y": 53.836086,
+      "width": 345.5673,
+      "height": 55.290768,
+      "isVisible": true,
+      "rotation": 0.0,
+      "format": "YEAR_MONTH_DAY_DASH",
+      "textColor": "#000000",
+      "isBold": true,
+      "fontName": "monospace",
+      "textSizeSp": 38.70353
+    },
+    {
+      "type": "username",
+      "id": "username_text",
+      "x": 190.25789,
+      "y": 143.78748,
+      "width": 470.9657,
+      "height": 62.795425,
+      "isVisible": true,
+      "rotation": 0.0,
+      "digitCount": 12,
+      "textColor": "#000000",
+      "isBold": true,
+      "fontName": "monospace",
+      "textSizeSp": 57.0
+    },
+    {
+      "type": "password",
+      "id": "password_text",
+      "x": 88.59966,
+      "y": 205.14897,
+      "width": 668.35626,
+      "height": 95.47946,
+      "isVisible": true,
+      "rotation": 0.0,
+      "digitCount": 6,
+      "textColor": "#000000",
+      "isBold": true,
+      "fontName": "monospace",
+      "textSizeSp": 57.61124
+    },
+    {
+      "type": "frame",
+      "id": "frame_border",
+      "x": 0.0,
+      "y": 0.0,
+      "width": 800.0,
+      "height": 320.0,
+      "isVisible": true,
+      "rotation": -10.0,
+      "color": "#000000",
+      "strokeWidthDp": 2.0,
+      "cornerRadiusDp": 20.0,
+      "paddingDp": 20.0,
+      "isDashed": false,
+      "dashLengthDp": 0.0,
+      "dashGapDp": 0.0,
+      "isDashRounded": false
+    },
+    {
+      "type": "card_background",
+      "id": "card_background",
+      "x": 0.0,
+      "y": 0.0,
+      "width": 800.0,
+      "height": 320.0,
+      "isVisible": true,
+      "rotation": 0.0
+    }
+  ]
+}

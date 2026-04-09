@@ -26,7 +26,7 @@ import java.util.zip.ZipOutputStream
 object TemplateZipManager {
 
     private const val JSON_ENTRY = "template.json"
-    private const val ASSETS_DIR = "assets/"
+    private const val IMAGES_DIR = "images/"
 
     /**
      * Exports [template] to a ZIP file written to [outputUri] via SAF.
@@ -53,7 +53,7 @@ object TemplateZipManager {
                     for (path in localPaths) {
                         val file = File(path)
                         if (file.exists()) {
-                            zip.putNextEntry(ZipEntry("$ASSETS_DIR${file.name}"))
+                            zip.putNextEntry(ZipEntry("$IMAGES_DIR${file.name}"))
                             FileInputStream(file).use { it.copyTo(zip) }
                             zip.closeEntry()
                         }
@@ -86,8 +86,8 @@ object TemplateZipManager {
                     while (entry != null) {
                         when {
                             entry.name == JSON_ENTRY -> rawJson = zip.readBytes().toString(Charsets.UTF_8)
-                            entry.name.startsWith(ASSETS_DIR) && !entry.isDirectory -> {
-                                val name = entry.name.removePrefix(ASSETS_DIR)
+                            entry.name.startsWith(IMAGES_DIR) && !entry.isDirectory -> {
+                                val name = entry.name.removePrefix(IMAGES_DIR)
                                 if (name.isNotEmpty()) imageBytes[name] = zip.readBytes()
                             }
                         }

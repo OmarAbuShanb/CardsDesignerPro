@@ -21,7 +21,7 @@ class SelectedFileAdapter(
             // Card count badge: visible only when supported + parsed successfully
             val count = item.parseResult?.count
             if (item.isSupported && !item.isParsing && count != null && count > 0) {
-                b.tvCardCount.text = count.toString()
+                b.tvCardCount.text = b.root.context.getString(dev.anonymous.cardsdesignerpro.R.string.label_cards_count, count)
                 b.tvCardCount.visibility = View.VISIBLE
             } else {
                 b.tvCardCount.visibility = View.GONE

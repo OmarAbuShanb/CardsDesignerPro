@@ -61,12 +61,6 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
     // ── Setup ─────────────────────────────────────────────────────────────────
 
     private fun setupToolbar() {
-        val typedValue = android.util.TypedValue()
-        theme.resolveAttribute(com.google.android.material.R.attr.colorSurface, typedValue, true)
-        window.statusBarColor = typedValue.data
-        androidx.core.view.WindowCompat.getInsetsController(window, binding.root)
-            .isAppearanceLightStatusBars =
-            androidx.core.graphics.ColorUtils.calculateLuminance(typedValue.data) > 0.5
 
         binding.btnEditTitle.setOnClickListener { showRenameDialog() }
         binding.toolbar.setNavigationOnClickListener { handleBack() }
@@ -93,7 +87,7 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
         }
 
         // Tapping the active-side label toggles between front and back
-        binding.tvActiveSideLabel.setOnClickListener {
+        binding.llActiveSideToggle.setOnClickListener {
             val newSide = if (viewModel.activeSide == CardSide.FRONT) CardSide.BACK else CardSide.FRONT
             viewModel.setActiveSide(newSide)
         }
@@ -121,7 +115,8 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
                 android.view.MotionEvent.ACTION_MOVE -> {
                     val tabLayout = findViewById<View>(R.id.tab_layout)
                     val tabHeight = tabLayout?.height ?: (48 * resources.displayMetrics.density).toInt()
-                    val minHeight = binding.dragHandelView.height + tabHeight
+                    val handleHeight = binding.dragHandelView.height.coerceAtLeast((24 * resources.displayMetrics.density).toInt())
+                    val minHeight = handleHeight + tabHeight
                     val maxHeight = binding.root.height - binding.appBar.height
 
                     val deltaY = initialDragY - event.rawY
@@ -144,7 +139,8 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
         binding.root.post {
             val tabLayout = findViewById<View>(R.id.tab_layout)
             val tabHeight = tabLayout?.height ?: (48 * resources.displayMetrics.density).toInt()
-            val minHeight = binding.dragHandelView.height + tabHeight
+            val handleHeight = binding.dragHandelView.height.coerceAtLeast((24 * resources.displayMetrics.density).toInt())
+            val minHeight = handleHeight + tabHeight
             val maxHeight = binding.root.height - binding.appBar.height
             val ratio = if (bottomSheetHeightRatio > 0f) bottomSheetHeightRatio else 0.35f
             val target = (binding.root.height * ratio).toInt().coerceIn(minHeight, maxHeight)
@@ -191,24 +187,24 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
         // Canvas: pass active side so it renders the correct elements
         binding.cardCanvas.bind(template, state.selectedElementId, template.activeSide)
 
+        binding.llActiveSideToggle.visibility =
+            if (template.isBackSideEnabled) View.VISIBLE else View.GONE
+
+        if (template.isBackSideEnabled) {
+            val isFront = template.activeSide == CardSide.FRONT
+            binding.tvSideTitle.text = if (isFront) "الوجه الأمامي" else "الوجه الخلفي"
+            binding.tvSideSubtitle.text = if (isFront) "إضغط لرؤية الوجه الخلفي" else "إضغط لرؤية الوجه الأمامي"
+        }
+
         binding.tvOutOfBounds.visibility =
             if (state.hasOutOfBoundsElements) View.VISIBLE else View.GONE
 
         // Back-side switch — avoid triggering listener feedback
         binding.switchBackSide.setOnCheckedChangeListener(null)
         binding.switchBackSide.isChecked = template.isBackSideEnabled
+        binding.switchBackSide.jumpDrawablesToCurrentState() // Fixes unwanted animation bug
         binding.switchBackSide.setOnCheckedChangeListener { _, isChecked ->
             if (viewModel.isBackSideEnabled != isChecked) viewModel.toggleBackSide()
-        }
-
-        // Active-side label
-        if (template.isBackSideEnabled) {
-            val labelRes = if (template.activeSide == CardSide.BACK)
-                R.string.label_back_side else R.string.label_front_side
-            binding.tvActiveSideLabel.setText(labelRes)
-            binding.tvActiveSideLabel.visibility = View.VISIBLE
-        } else {
-            binding.tvActiveSideLabel.visibility = View.GONE
         }
 
         // Notify bottom sheet
@@ -245,7 +241,14 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
 
     override fun onCardHeightDrag(deltaRatio: Float) {
         val current = viewModel.currentTemplate.card.heightRatio
-        viewModel.updateCardHeightRatio(current + deltaRatio)
+        val target  = current + deltaRatio
+        // Haptic bump when hitting the 1.5× height ceiling
+        if (target >= 1.5f && current < 1.5f) {
+            binding.cardCanvas.performHapticFeedback(
+                android.view.HapticFeedbackConstants.CLOCK_TICK
+            )
+        }
+        viewModel.updateCardHeightRatio(target)
     }
 
     // ── Dialogs ───────────────────────────────────────────────────────────────

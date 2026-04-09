@@ -41,7 +41,10 @@ class ExportCardsActivity : AppCompatActivity() {
         if (uris.isEmpty()) return@registerForActivityResult
         uris.forEach { uri ->
             runCatching {
-                contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
             }
         }
         val names = uris.map { queryFileName(it) ?: it.lastPathSegment ?: "file" }
@@ -53,6 +56,12 @@ class ExportCardsActivity : AppCompatActivity() {
         ActivityResultContracts.CreateDocument("application/pdf")
     ) { uri: Uri? ->
         if (uri == null) return@registerForActivityResult
+        runCatching {
+            contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+        }
         val state = viewModel.uiState.value
         if (state.hasBackSide && !state.settings.exportFrontOnly)
             viewModel.exportDual(uri)
@@ -66,6 +75,12 @@ class ExportCardsActivity : AppCompatActivity() {
         ActivityResultContracts.CreateDocument("application/pdf")
     ) { uri: Uri? ->
         if (uri == null) return@registerForActivityResult
+        runCatching {
+            contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+        }
         pendingFrontUri = uri
         val name = viewModel.selectedTemplate?.name ?: "cards"
         backPdfSaver.launch("${name}_${getString(R.string.back_side_filename)}_${timestamp()}.pdf")
@@ -78,6 +93,12 @@ class ExportCardsActivity : AppCompatActivity() {
         val frontUri = pendingFrontUri ?: return@registerForActivityResult
         pendingFrontUri = null
         if (uri == null) return@registerForActivityResult
+        runCatching {
+            contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+        }
         viewModel.exportSeparate(frontUri, uri)
     }
 
@@ -98,6 +119,25 @@ class ExportCardsActivity : AppCompatActivity() {
         setupFrontOnlyCheckbox()
         setupExportButtons()
         observeViewModel()
+        
+        checkIntentForDualPreview(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        checkIntentForDualPreview(intent)
+    }
+
+    private fun checkIntentForDualPreview(intent: Intent) {
+        if (intent.getBooleanExtra("show_dual_preview", false)) {
+            intent.removeExtra("show_dual_preview") // Prevent dialog from showing again on rotation
+            val frontStr = intent.getStringExtra("front_uri")
+            val backStr = intent.getStringExtra("back_uri")
+            if (frontStr != null && backStr != null) {
+                showSeparateSuccessDialog(Uri.parse(frontStr), Uri.parse(backStr))
+            }
+        }
     }
 
     // ── Setup ─────────────────────────────────────────────────────────────────
@@ -105,18 +145,25 @@ class ExportCardsActivity : AppCompatActivity() {
     private fun setupToolbar() = binding.toolbar.setNavigationOnClickListener { finish() }
 
     private fun setupBottomSheetDrag() {
-        var initialDragY = 0f; var initialHeight = 0
+        var initialDragY = 0f;
+        var initialHeight = 0
         binding.dragHandleArea.setOnTouchListener { _, event ->
             when (event.action) {
-                android.view.MotionEvent.ACTION_DOWN -> { initialDragY = event.rawY; initialHeight = binding.bottomSheetHost.height; true }
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    initialDragY = event.rawY; initialHeight = binding.bottomSheetHost.height; true
+                }
+
                 android.view.MotionEvent.ACTION_MOVE -> {
-                    val minH = binding.dragHandleArea.height + (48 * resources.displayMetrics.density).toInt()
+                    val minH =
+                        binding.dragHandleArea.height + (48 * resources.displayMetrics.density).toInt()
                     val maxH = binding.root.height
-                    val newH = (initialHeight + (initialDragY - event.rawY)).toInt().coerceIn(minH, maxH)
+                    val newH =
+                        (initialHeight + (initialDragY - event.rawY)).toInt().coerceIn(minH, maxH)
                     binding.bottomSheetHost.layoutParams.height = newH
                     binding.bottomSheetHost.requestLayout()
                     true
                 }
+
                 else -> false
             }
         }
@@ -133,12 +180,14 @@ class ExportCardsActivity : AppCompatActivity() {
 
     private fun setupFilePicker() {
         binding.btnChooseFile.setOnClickListener {
-            multiFilePicker.launch(arrayOf(
-                "text/csv", "text/comma-separated-values",
-                "application/vnd.ms-excel",
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                "*/*"
-            ))
+            multiFilePicker.launch(
+                arrayOf(
+                    "text/csv", "text/comma-separated-values",
+                    "application/vnd.ms-excel",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "*/*"
+                )
+            )
         }
     }
 
@@ -156,20 +205,25 @@ class ExportCardsActivity : AppCompatActivity() {
 
     private fun setupPageSizeSpinner() {
         val sizes = PageSize.entries.toTypedArray()
-        binding.spinnerPageSize.adapter = ArrayAdapter(this,
+        binding.spinnerPageSize.adapter = ArrayAdapter(
+            this,
             android.R.layout.simple_spinner_item, sizes.map { it.displayName }).also {
             it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         }
-        binding.spinnerPageSize.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) = viewModel.updatePageSize(sizes[pos])
-            override fun onNothingSelected(p: AdapterView<*>?) {}
-        }
+        binding.spinnerPageSize.onItemSelectedListener =
+            object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) =
+                    viewModel.updatePageSize(sizes[pos])
+
+                override fun onNothingSelected(p: AdapterView<*>?) {}
+            }
     }
 
     private fun setupFlipEdgeToggle() {
         binding.toggleFlipEdge.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (!isChecked) return@addOnButtonCheckedListener
-            val edge = if (checkedId == R.id.btn_flip_long) FlipEdge.LONG_EDGE else FlipEdge.SHORT_EDGE
+            val edge =
+                if (checkedId == R.id.btn_flip_long) FlipEdge.LONG_EDGE else FlipEdge.SHORT_EDGE
             viewModel.updateFlipEdge(edge)
             updateFlipHint(edge)
         }
@@ -192,11 +246,12 @@ class ExportCardsActivity : AppCompatActivity() {
         binding.btnExport.setOnClickListener {
             val parse = viewModel.uiState.value.combinedParseResult
             if (parse == null || parse.count == 0) {
-                Snackbar.make(binding.root, R.string.error_no_valid_file, Snackbar.LENGTH_SHORT).show()
+                Snackbar.make(binding.root, R.string.error_no_valid_file, Snackbar.LENGTH_SHORT)
+                    .show()
                 return@setOnClickListener
             }
             val state = viewModel.uiState.value
-            val name  = viewModel.selectedTemplate?.name ?: "cards"
+            val name = viewModel.selectedTemplate?.name ?: "cards"
             val fname = if (state.hasBackSide && !state.settings.exportFrontOnly)
                 "${name}_${getString(R.string.dual_filename)}_${timestamp()}.pdf"
             else
@@ -207,7 +262,8 @@ class ExportCardsActivity : AppCompatActivity() {
         binding.btnExportSeparate.setOnClickListener {
             val parse = viewModel.uiState.value.combinedParseResult
             if (parse == null || parse.count == 0) {
-                Snackbar.make(binding.root, R.string.error_no_valid_file, Snackbar.LENGTH_SHORT).show()
+                Snackbar.make(binding.root, R.string.error_no_valid_file, Snackbar.LENGTH_SHORT)
+                    .show()
                 return@setOnClickListener
             }
             val name = viewModel.selectedTemplate?.name ?: "cards"
@@ -232,15 +288,20 @@ class ExportCardsActivity : AppCompatActivity() {
         // Template spinner
         val templates = state.templates
         if (binding.spinnerTemplate.adapter == null ||
-            (binding.spinnerTemplate.adapter as? ArrayAdapter<*>)?.count != templates.size) {
-            binding.spinnerTemplate.adapter = ArrayAdapter(this,
+            (binding.spinnerTemplate.adapter as? ArrayAdapter<*>)?.count != templates.size
+        ) {
+            binding.spinnerTemplate.adapter = ArrayAdapter(
+                this,
                 android.R.layout.simple_spinner_item, templates.map { it.name }).also {
                 it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             }
-            binding.spinnerTemplate.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) = viewModel.selectTemplate(pos)
-                override fun onNothingSelected(p: AdapterView<*>?) {}
-            }
+            binding.spinnerTemplate.onItemSelectedListener =
+                object : AdapterView.OnItemSelectedListener {
+                    override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) =
+                        viewModel.selectTemplate(pos)
+
+                    override fun onNothingSelected(p: AdapterView<*>?) {}
+                }
         }
         if (binding.spinnerTemplate.selectedItemPosition != state.selectedTemplateIndex)
             binding.spinnerTemplate.setSelection(state.selectedTemplateIndex)
@@ -259,36 +320,39 @@ class ExportCardsActivity : AppCompatActivity() {
             binding.spinnerPageSize.setSelection(psIdx)
 
         val showDual = state.hasBackSide && !state.settings.exportFrontOnly
-        val parse    = state.combinedParseResult
+        val parse = state.combinedParseResult
 
         // Stats
+        // Stats
         val layout = state.layout
-        if (layout != null && parse != null && parse.count > 0) {
-            val frontPages = layout.pageCount(parse.count)
-            binding.tvCardsPerPageLabel.text = getString(
-                if (showDual) R.string.label_cards_per_page_front else R.string.label_cards_per_page
-            )
-            binding.tvCardsPerPage.text  = layout.cardsPerPage.toString()
-            binding.tvTotalCards.text    = parse.count.toString()
-            binding.tvTotalPagesLabel.text = getString(
-                if (showDual) R.string.label_total_pages_front else R.string.label_total_pages
-            )
-            binding.tvTotalPages.text     = frontPages.toString()
-            binding.tvTotalDualPages.text = (frontPages * 2).toString()
+
+        binding.tvCardsPerPageLabel.text = getString(
+            if (showDual) R.string.label_cards_per_page_front else R.string.label_cards_per_page
+        )
+        binding.tvTotalPagesLabel.text = getString(
+            if (showDual) R.string.label_total_pages_front else R.string.label_total_pages
+        )
+
+        if (layout != null) {
+            binding.tvCardsPerPage.text = layout.cardsPerPage.toString()
+            if (parse != null && parse.count > 0) {
+                val frontPages = layout.pageCount(parse.count)
+                binding.tvTotalCards.text = parse.count.toString()
+                binding.tvTotalPages.text = frontPages.toString()
+                binding.tvTotalDualPages.text = (frontPages * 2).toString()
+            } else {
+                binding.tvTotalCards.text = "—"
+                binding.tvTotalPages.text = "—"
+                binding.tvTotalDualPages.text = "—"
+            }
         } else {
-            binding.tvCardsPerPageLabel.text = getString(
-                if (showDual) R.string.label_cards_per_page_front else R.string.label_cards_per_page
-            )
             binding.tvCardsPerPage.text = "—"
-            binding.tvTotalCards.text   = "—"
-            binding.tvTotalPagesLabel.text = getString(
-                if (showDual) R.string.label_total_pages_front else R.string.label_total_pages
-            )
+            binding.tvTotalCards.text = "—"
             binding.tvTotalPages.text = "—"
             binding.tvTotalDualPages.text = "—"
         }
         binding.layoutTotalDualPages.visibility = if (showDual) View.VISIBLE else View.GONE
-        binding.tvFrontSideTitle.visibility     = if (showDual) View.VISIBLE else View.GONE
+        binding.tvFrontSideTitle.visibility = if (showDual) View.VISIBLE else View.GONE
 
         // Front preview (not mirrored)
         binding.pagePreview.bind(state.templates.getOrNull(state.selectedTemplateIndex), layout)
@@ -299,23 +363,28 @@ class ExportCardsActivity : AppCompatActivity() {
             val backT = state.templates.getOrNull(state.selectedTemplateIndex)
                 ?.let { t -> t.backElements?.let { t.copy(elements = it) } }
             binding.pagePreviewBack.bind(
-                template   = backT,
-                layout     = state.backLayout,
+                template = backT,
+                layout = state.backLayout,
                 isMirrored = true,
-                flipEdge   = state.settings.flipEdge
+                flipEdge = state.settings.flipEdge
             )
         }
         updateFlipHint(state.settings.flipEdge)
 
         // Dual controls in bottom sheet
-        binding.checkboxFrontOnly.visibility  = if (state.hasBackSide) View.VISIBLE else View.GONE
+        binding.checkboxFrontOnly.visibility = if (state.hasBackSide) View.VISIBLE else View.GONE
         binding.checkboxFrontOnly.setOnCheckedChangeListener(null)
         binding.checkboxFrontOnly.isChecked = state.settings.exportFrontOnly
-        binding.checkboxFrontOnly.setOnCheckedChangeListener { _, c -> viewModel.updateExportFrontOnly(c) }
+        binding.checkboxFrontOnly.setOnCheckedChangeListener { _, c ->
+            viewModel.updateExportFrontOnly(
+                c
+            )
+        }
 
-        binding.tvFlipEdgeLabel.visibility  = if (showDual) View.VISIBLE else View.GONE
-        binding.toggleFlipEdge.visibility   = if (showDual) View.VISIBLE else View.GONE
-        val flipId = if (state.settings.flipEdge == FlipEdge.LONG_EDGE) R.id.btn_flip_long else R.id.btn_flip_short
+        binding.tvFlipEdgeLabel.visibility = if (showDual) View.VISIBLE else View.GONE
+        binding.toggleFlipEdge.visibility = if (showDual) View.VISIBLE else View.GONE
+        val flipId =
+            if (state.settings.flipEdge == FlipEdge.LONG_EDGE) R.id.btn_flip_long else R.id.btn_flip_short
         if (binding.toggleFlipEdge.checkedButtonId != flipId) binding.toggleFlipEdge.check(flipId)
 
         // Export buttons
@@ -323,18 +392,27 @@ class ExportCardsActivity : AppCompatActivity() {
         binding.btnExport.setText(if (showDual) R.string.btn_export_dual else R.string.btn_export)
 
         val exporting = state.isExporting
-        binding.progressExport.visibility    = if (exporting) View.VISIBLE else View.GONE
-        binding.progressExport.progress      = (state.exportProgress * 100).toInt()
-        binding.btnExport.isEnabled          = !exporting
-        binding.btnExportSeparate.isEnabled  = !exporting
+        binding.progressExport.visibility = if (exporting) View.VISIBLE else View.GONE
+        binding.progressExport.progress = (state.exportProgress * 100).toInt()
+        binding.btnExport.isEnabled = !exporting
+        binding.btnExportSeparate.isEnabled = !exporting
 
         // Events
         state.event?.let { ev ->
             when (ev) {
-                is ExportEvent.ExportSuccess     -> showSingleSuccessDialog(ev.outputUri)
-                is ExportEvent.ExportSuccessDual -> showSeparateSuccessDialog(ev.frontUri, ev.backUri)
-                is ExportEvent.ExportFailed      ->
-                    Snackbar.make(binding.root, R.string.export_failed_message, Snackbar.LENGTH_SHORT).show()
+                is ExportEvent.ExportSuccess -> showSingleSuccessDialog(ev.outputUri)
+                is ExportEvent.ExportSuccessDual -> showSeparateSuccessDialog(
+                    ev.frontUri,
+                    ev.backUri
+                )
+
+                is ExportEvent.ExportFailed ->
+                    Snackbar.make(
+                        binding.root,
+                        R.string.export_failed_message,
+                        Snackbar.LENGTH_SHORT
+                    ).show()
+                is ExportEvent.Idle -> {}
             }
             viewModel.consumeEvent()
         }
@@ -347,9 +425,9 @@ class ExportCardsActivity : AppCompatActivity() {
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.export_success_title)
             .setMessage(R.string.export_success_message)
-            .setNegativeButton(R.string.btn_cancel, null)
-            .setNeutralButton(R.string.btn_preview_pdf) { _, _ -> openInViewer(uri) }
-            .setPositiveButton(R.string.btn_open_pdf) { _, _ -> openExternally(uri) }
+            .setNegativeButton(R.string.btn_close, null)
+            .setNeutralButton(R.string.btn_preview_pdf) { _, _ -> openExternally(uri) }
+            .setPositiveButton(R.string.btn_open_pdf) { _, _ -> openInViewer(uri) }
             .show()
     }
 
@@ -358,8 +436,8 @@ class ExportCardsActivity : AppCompatActivity() {
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.export_success_title)
             .setMessage(R.string.export_separate_success_message)
-            .setNegativeButton(R.string.btn_cancel, null)
-            .setNeutralButton(R.string.btn_open_back_pdf)  { _, _ -> openInViewer(backUri) }
+            .setNegativeButton(R.string.btn_close, null)
+            .setNeutralButton(R.string.btn_open_back_pdf) { _, _ -> openInViewer(backUri) }
             .setPositiveButton(R.string.btn_open_front_pdf) { _, _ -> openInViewer(frontUri) }
             .show()
     }
@@ -389,5 +467,6 @@ class ExportCardsActivity : AppCompatActivity() {
             if (col < 0) null else c.getString(col)
         }
 
-    private fun timestamp() = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+    private fun timestamp() =
+        SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
 }

@@ -11,8 +11,9 @@
     <!-- Card count badge — shown when file is supported + parsed -->
     <TextView
         android:id="@+id/tv_card_count"
-        android:layout_width="48dp"
+        android:layout_width="wrap_content"
         android:layout_height="48dp"
+        android:paddingHorizontal="8dp"
         android:gravity="center"
         android:textAppearance="?attr/textAppearanceLabelMedium"
         android:textColor="?attr/colorOnPrimaryContainer"

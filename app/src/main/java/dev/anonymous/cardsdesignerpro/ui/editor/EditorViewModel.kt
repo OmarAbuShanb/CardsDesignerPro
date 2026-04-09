@@ -130,7 +130,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
      * Also resizes Frame and BackgroundDecoration to match the new card dimensions.
      */
     fun updateCardHeightRatio(ratio: Float) {
-        val clamped = ratio.coerceIn(0.2f, 2.0f)
+        val clamped = ratio.coerceIn(0.2f, 1.5f)   // max = widthDp × 1.5 as per UX requirement
         mutateTemplate { template ->
             val newCard = template.card.copy(heightRatio = clamped)
             fun resizeElements(elements: List<TemplateElement>) = elements.map { el ->
@@ -175,11 +175,17 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         )
     )
 
-    fun addQrElement() = addElement(
-        TemplateElement.QrElement(
-            id = newId(), x = centerX(100f), y = centerY(100f), width = 100f, height = 100f
+    fun addQrElement() {
+        val card = currentTemplate.card
+        // Initial size = 50% of the shorter card dimension so it fits any card aspect ratio
+        val initSize = minOf(card.widthDp, card.widthDp * card.heightRatio) * 0.5f
+        addElement(
+            TemplateElement.QrElement(
+                id = newId(), x = centerX(initSize), y = centerY(initSize),
+                width = initSize, height = initSize
+            )
         )
-    )
+    }
 
     fun addDateElement() {
         if (hasDateElement()) return
@@ -209,8 +215,23 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     fun addImageElement(imagePath: String, srcW: Int = 0, srcH: Int = 0) {
         val card = currentTemplate.card
         val cardW = card.widthDp
-        val elW = cardW * 0.5f
-        val elH = if (srcW > 0 && srcH > 0) elW * srcH.toFloat() / srcW else elW * 0.75f
+        val cardH = card.widthDp * card.heightRatio
+        
+        val maxW = cardW * 0.5f
+        val maxH = cardH * 0.5f
+        var elW = maxW
+        var elH = maxH
+        if (srcW > 0 && srcH > 0) {
+            val aspect = srcW.toFloat() / srcH.toFloat()
+            if (maxW / aspect <= maxH) {
+                elW = maxW
+                elH = maxW / aspect
+            } else {
+                elH = maxH
+                elW = maxH * aspect
+            }
+        }
+        
         addElement(
             TemplateElement.ImageElement(
                 id = newId(),
@@ -290,18 +311,26 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         val safeH = newHeight.coerceAtLeast(minSize)
         mutateElement(id) { el ->
             val scaleW = if (el.width > 0f) safeW / el.width else 1f
+            // For text elements: keep center fixed so text doesn't drift as font scales.
+            // cx/cy = old center; new x/y = new center - new half-size.
+            val oldCX = el.x + el.width / 2f
+            val oldCY = el.y + el.height / 2f
             when (el) {
                 is TemplateElement.TextElement ->
-                    el.copy(width = safeW, height = safeH,
+                    el.copy(x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
+                        width = safeW, height = safeH,
                         textSizeSp = (el.textSizeSp * scaleW).coerceIn(6f, 72f))
                 is TemplateElement.UsernameElement ->
-                    el.copy(width = safeW, height = safeH,
+                    el.copy(x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
+                        width = safeW, height = safeH,
                         textSizeSp = (el.textSizeSp * scaleW).coerceIn(6f, 72f))
                 is TemplateElement.PasswordElement ->
-                    el.copy(width = safeW, height = safeH,
+                    el.copy(x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
+                        width = safeW, height = safeH,
                         textSizeSp = (el.textSizeSp * scaleW).coerceIn(6f, 72f))
                 is TemplateElement.DateElement ->
-                    el.copy(width = safeW, height = safeH,
+                    el.copy(x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
+                        width = safeW, height = safeH,
                         textSizeSp = (el.textSizeSp * scaleW).coerceIn(6f, 72f))
                 is TemplateElement.ImageElement -> el.copy(width = safeW, height = safeH)
                 is TemplateElement.QrElement -> el.copy(width = safeW, height = safeH)

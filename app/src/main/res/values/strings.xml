@@ -47,14 +47,14 @@
     <string name="label_vertical_spacing">المسافة العمودية</string>
     <string name="label_page_size">حجم الصفحة</string>
     <string name="label_data_file">ملف البيانات (CSV / Excel)</string>
-    <string name="label_cards_per_page">عدد البطاقات في الصفحة</string>
+    <string name="label_cards_per_page">عدد البطاقات التي تتسعها الصفحة</string>
     <string name="label_total_pages">عدد الصفحات</string>
     <string name="label_no_file_yet">لم يتم اختيار ملف بعد</string>
     <string name="btn_export">تصدير</string>
     <string name="export_success_title">تم التصدير بنجاح</string>
-    <string name="export_success_message">تم إنشاء ملف PDF بنجاح. هل تريد فتحه؟</string>
-    <string name="btn_open_pdf">فتح الملف</string>
-    <string name="btn_preview_pdf">معاينة</string>
+    <string name="export_success_message">تم إنشاء ملف PDF بنجاح.</string>
+    <string name="btn_open_pdf">معاينة</string>
+    <string name="btn_preview_pdf">فتح باستخدام</string>
     <string name="export_failed_message">فشل تصدير الملف. يرجى المحاولة مجدداً.</string>
     <string name="exporting_progress">جار التصدير…</string>
     <string name="file_parse_error">خطأ في قراءة الملف: %s</string>
@@ -109,7 +109,7 @@
     <string name="prop_decoration_shape">شكل النمط</string>
     <string name="prop_decoration_density">الكثافة</string>
     <string name="prop_decoration_color">لون النمط</string>
-    <string name="prop_decoration_custom_image">صورة مخصصة</string>
+    <string name="prop_decoration_custom_image">تخصيص (شعار مُفرّغ من المعرض)</string>
     <string name="prop_tint">لون التوحيد (Tint)</string>
     <string name="prop_card_background">الخلفية</string>
     <string name="prop_qr_bg_color">لون خلفية QR</string>
@@ -150,8 +150,8 @@
 
     <!-- Dual-sided card feature — Export settings -->
     <string name="label_export_front_only">تصدير الوجه الأمامي فقط (تجاهل الوجه الخلفي)</string>
-    <string name="flip_edge_long">قلب على الحافة الطويلة\n(طباعة أفقية)</string>
-    <string name="flip_edge_short">قلب على الحافة القصيرة\n(طباعة عمودية)</string>
+    <string name="flip_edge_long">الحافة الطويلة (افتراضي)</string>
+    <string name="flip_edge_short">الحافة القصيرة</string>
     <string name="label_flip_edge_hint">اتجاه قلب الورقة عند طباعة الوجهين — اختر الوضع المناسب لطابعتك</string>
     <string name="flip_hint_long_edge">(قلب على الحافة الطويلة)</string>
     <string name="flip_hint_short_edge">(قلب على الحافة القصيرة)</string>
@@ -170,7 +170,7 @@
     <string name="label_total_pages_front">صفحات الوجه الأمامي</string>
     <string name="label_total_pages_both">إجمالي الصفحات (الوجهين)</string>
     <string name="label_per_page_front_suffix">/ صفحة</string>
-    <string name="label_cards_per_page_front">بطاقات / صفحة (الوجه الأمامي)</string>
+    <string name="label_cards_per_page_front">عدد البطاقات التي تتسعها الصفحة</string>
     <string name="label_total_cards">إجمالي البطاقات</string>
 
     <!-- Dual-sided card feature — Export buttons -->
@@ -179,9 +179,11 @@
 
     <!-- Dual-sided card feature — Success dialogs -->
     <string name="export_dual_success_message">تم إنشاء ملف PDF مزدوج بنجاح — يحتوي على الوجه الأمامي والخلفي بترتيب متناوب جاهز للطباعة على الوجهين.</string>
-    <string name="export_separate_success_message">تم تصدير الوجهين بنجاح في ملفين PDF منفصلين. يمكنك فتح أي منهما للمعاينة.</string>
-    <string name="btn_open_front_pdf">فتح الوجه الأمامي</string>
-    <string name="btn_open_back_pdf">فتح الوجه الخلفي</string>
+    <string name="export_separate_success_message">تم تصدير الوجهين بنجاح في ملفين PDF منفصلين.</string>
+    <string name="btn_open_front_pdf">معاينة ملف الوجه الأمامي</string>
+    <string name="btn_open_back_pdf">معاينة ملف الوجه الخلفي</string>
+    <string name="label_cards_count">%1$d بطاقة</string>
+    <string name="prop_tint_none">لم يتم تعيين أي لون</string>
 
     <!-- Export settings bottom sheet title -->
     <string name="title_export_settings">إعدادات التصدير</string>

@@ -52,22 +52,38 @@ data class ExportUiState(
 }
 
 
-sealed class ExportEvent {
-    data class ExportSuccess(val outputUri: Uri) : ExportEvent()
-    data class ExportSuccessDual(val frontUri: Uri, val backUri: Uri) : ExportEvent()
-    object ExportFailed : ExportEvent()
-}
-
 class ExportCardsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repo = TemplateRepository(application)
     private val _uiState = MutableStateFlow(ExportUiState())
     val uiState: StateFlow<ExportUiState> = _uiState.asStateFlow()
 
-    private var exportJob: Job? = null
     private val prefs = application.getSharedPreferences("export_prefs", Context.MODE_PRIVATE)
 
-    init { loadTemplates() }
+    init { 
+        loadTemplates()
+        observeExportManager()
+    }
+
+    private fun observeExportManager() {
+        viewModelScope.launch {
+            ExportManager.isExporting.collect { isExp ->
+                _uiState.value = _uiState.value.copy(isExporting = isExp)
+            }
+        }
+        viewModelScope.launch {
+            ExportManager.exportProgress.collect { prog ->
+                _uiState.value = _uiState.value.copy(exportProgress = prog)
+            }
+        }
+        viewModelScope.launch {
+            ExportManager.exportEvent.collect { ev ->
+                if (ev !is ExportEvent.Idle) {
+                    _uiState.value = _uiState.value.copy(event = ev)
+                }
+            }
+        }
+    }
 
     private fun loadTemplates() {
         viewModelScope.launch {
@@ -172,87 +188,84 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     fun export(outputUri: Uri) {
-        val state   = _uiState.value
+        if (ExportManager.isExporting.value) return
+        val state = _uiState.value
         val template = state.templates.getOrNull(state.selectedTemplateIndex) ?: return
-        val parse   = state.parseResult ?: return
-        exportJob?.cancel()
-        exportJob = viewModelScope.launch {
-            _uiState.value = state.copy(isExporting = true, exportProgress = 0f)
-            val ctx = getApplication<Application>()
-            val success = runCatching {
-                ctx.contentResolver.openOutputStream(outputUri)?.use { stream ->
-                    PdfExporter.export(ctx, template, parse, state.settings, stream) { done, total ->
-                        _uiState.value = _uiState.value.copy(exportProgress = done.toFloat() / total)
-                    }
-                }; true
-            }.getOrElse { e -> e.printStackTrace(); false }
-            finishSingleExport(success, outputUri, template)
-        }
+        val parse = state.parseResult ?: return
+        
+        ExportManager.currentRequest = ExportManager.ExportRequest(
+            template = template,
+            parseResult = parse,
+            settings = state.settings,
+            outputUri = outputUri,
+            frontUri = null,
+            backUri = null,
+            mode = ExportManager.ExportRequest.Mode.SINGLE
+        )
+        
+        startExportService(template)
     }
 
     fun exportDual(outputUri: Uri) {
-        val state   = _uiState.value
+        if (ExportManager.isExporting.value) return
+        val state = _uiState.value
         val template = state.templates.getOrNull(state.selectedTemplateIndex) ?: return
-        val parse   = state.parseResult ?: return
-        exportJob?.cancel()
-        exportJob = viewModelScope.launch {
-            _uiState.value = state.copy(isExporting = true, exportProgress = 0f)
-            val ctx = getApplication<Application>()
-            val success = runCatching {
-                ctx.contentResolver.openOutputStream(outputUri)?.use { stream ->
-                    PdfExporter.exportDual(ctx, template, parse, state.settings, stream) { done, total ->
-                        _uiState.value = _uiState.value.copy(exportProgress = done.toFloat() / total)
-                    }
-                }; true
-            }.getOrElse { e -> e.printStackTrace(); false }
-            finishSingleExport(success, outputUri, template)
-        }
+        val parse = state.parseResult ?: return
+        
+        ExportManager.currentRequest = ExportManager.ExportRequest(
+            template = template,
+            parseResult = parse,
+            settings = state.settings,
+            outputUri = outputUri,
+            frontUri = null,
+            backUri = null,
+            mode = ExportManager.ExportRequest.Mode.DUAL
+        )
+        
+        startExportService(template)
     }
 
     fun exportSeparate(frontUri: Uri, backUri: Uri) {
-        val state   = _uiState.value
+        if (ExportManager.isExporting.value) return
+        val state = _uiState.value
         val template = state.templates.getOrNull(state.selectedTemplateIndex) ?: return
-        val parse   = state.parseResult ?: return
-        exportJob?.cancel()
-        exportJob = viewModelScope.launch {
-            _uiState.value = state.copy(isExporting = true, exportProgress = 0f)
-            val ctx = getApplication<Application>()
-            val success = runCatching {
-                val fs = ctx.contentResolver.openOutputStream(frontUri)
-                val bs = ctx.contentResolver.openOutputStream(backUri)
-                if (fs != null && bs != null) {
-                    fs.use { f -> bs.use { b ->
-                        PdfExporter.exportSeparate(ctx, template, parse, state.settings, f, b) { done, total ->
-                            _uiState.value = _uiState.value.copy(exportProgress = done.toFloat() / total)
-                        }
-                    }}
-                }; true
-            }.getOrElse { e -> e.printStackTrace(); false }
-            repo.save(template.copy(exportSettings = state.settings))
+        val parse = state.parseResult ?: return
+        
+        ExportManager.currentRequest = ExportManager.ExportRequest(
+            template = template,
+            parseResult = parse,
+            settings = state.settings,
+            outputUri = null,
+            frontUri = frontUri,
+            backUri = backUri,
+            mode = ExportManager.ExportRequest.Mode.SEPARATE
+        )
+        
+        startExportService(template)
+    }
+    
+    private fun startExportService(template: Template) {
+        val ctx = getApplication<Application>()
+        val intent = android.content.Intent(ctx, PdfExportService::class.java)
+        androidx.core.content.ContextCompat.startForegroundService(ctx, intent)
+        
+        viewModelScope.launch {
+            repo.save(template.copy(exportSettings = _uiState.value.settings))
             prefs.edit().putString("last_template_id", template.id).apply()
-            _uiState.value = _uiState.value.copy(
-                isExporting = false,
-                event = if (success == true) ExportEvent.ExportSuccessDual(frontUri, backUri)
-                        else ExportEvent.ExportFailed
-            )
         }
     }
 
-    fun consumeEvent() { _uiState.value = _uiState.value.copy(event = null) }
-    fun cancelExport() { exportJob?.cancel() }
+    fun consumeEvent() {
+        _uiState.value = _uiState.value.copy(event = null)
+        ExportManager.clearEvent()
+    }
+    
+    fun cancelExport() { 
+        // We do not allow cancelling foreground export actively from UI to avoid corruption.
+    }
 
     val selectedTemplate: Template?
         get() = uiState.value.let { it.templates.getOrNull(it.selectedTemplateIndex) }
-
-    private suspend fun finishSingleExport(success: Boolean?, outputUri: Uri, template: Template) {
-        if (success == true) {
-            repo.save(template.copy(exportSettings = _uiState.value.settings))
-            prefs.edit().putString("last_template_id", template.id).apply()
-            _uiState.value = _uiState.value.copy(isExporting = false, event = ExportEvent.ExportSuccess(outputUri))
-        } else {
-            _uiState.value = _uiState.value.copy(isExporting = false, event = ExportEvent.ExportFailed)
-        }
-    }
 
     private fun mutateSettings(transform: (ExportSettings) -> ExportSettings) {
         _uiState.value = _uiState.value.copy(settings = transform(_uiState.value.settings))

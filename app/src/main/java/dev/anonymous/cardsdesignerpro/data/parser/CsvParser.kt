@@ -29,7 +29,9 @@ object CsvParser {
                 val headers = allRows.first().map { it.trim() }
                 val records = allRows.drop(1).mapNotNull { row ->
                     if (row.all { it.isBlank() }) null
-                    else headers.zip(row.toList()).toMap()
+                    else headers.zip(row.map { 
+                        it.trim().replace(Regex("^[\"'‘“]+|[\"'’”]+$"), "")
+                    }).toMap()
                 }
 
                 val usernameCol = headers.firstOrNull { it.lowercase() in USERNAME_KEYS }

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100" width="200" height="100">
+    <!-- W in Orange -->
+    <path fill="#EC9D44" d="M10,20 l20,60 l15,-40 l15,40 l20,-60 h15 l-30,80 l-20,-50 l-20,50 l-30,-80 z" />
+    <!-- WIFI waves in Orange -->
+    <path fill="#EC9D44" d="M120,40 a40,40 0 0,1 60,0 h10 a50,50 0 0,0 -80,0 z" />
+    <path fill="#EC9D44" d="M135,55 a25,25 0 0,1 30,0 h10 a35,35 0 0,0 -50,0 z" />
+    <circle cx="150" cy="75" r="10" fill="#EC9D44" />
+</svg>

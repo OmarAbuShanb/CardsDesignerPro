@@ -25,8 +25,7 @@ class PdfViewerActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         binding.toolbar.setNavigationOnClickListener { finish() }
 
-        val uriString = intent.getStringExtra(EXTRA_PDF_URI) ?: run { finish(); return }
-        val uri = Uri.parse(uriString)
+        val uri = intent.data ?: intent.getStringExtra(EXTRA_PDF_URI)?.let { Uri.parse(it) } ?: run { finish(); return }
 
         // Fix: PDFView.fromStream() is ASYNC — the stream is closed by use{} before
         // the decoder reads it → "Stream Closed" IOException.
@@ -38,7 +37,17 @@ class PdfViewerActivity : AppCompatActivity() {
                     contentResolver.openInputStream(uri)?.use { it.readBytes() }
                 }.getOrNull()
             }
-            if (bytes == null) { finish(); return@launch }
+            if (bytes == null) {
+                withContext(Dispatchers.Main) {
+                    com.google.android.material.dialog.MaterialAlertDialogBuilder(this@PdfViewerActivity)
+                        .setTitle("تنبيه أمان الأندرويد")
+                        .setMessage("اكتمل حفظ الملف بنجاح وتم وضعه في المجلد الذي اخترته.\n\nبسبب قيود نظام أندرويد الأمنية للملفات الخارجية، لا يمكننا فتحه لك من هنا بعد إغلاق التطبيق. يرجى التوجه لمدير الملفات (أو مجلد التنزيلات) وفتحه من هناك.")
+                        .setPositiveButton("موافق") { _, _ -> finish() }
+                        .setOnDismissListener { finish() }
+                        .show()
+                }
+                return@launch
+            }
 
             binding.pdfView
                 .fromBytes(bytes)
@@ -46,8 +55,11 @@ class PdfViewerActivity : AppCompatActivity() {
                 .swipeHorizontal(false)
                 .enableDoubletap(true)
                 .defaultPage(0)
-                .spacing(8)
+                .spacing(12)
                 .load()
+                
+            binding.pdfView.maxZoom = 6.0f
+            binding.pdfView.midZoom = 3.0f
         }
     }
 }

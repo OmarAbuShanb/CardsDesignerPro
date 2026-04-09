@@ -63,18 +63,31 @@ abstract class CredentialPropertiesFragment : Fragment(), PropertyFragment {
         updating = true
         binding.stepperDigitCount.minValue = 2
         binding.stepperDigitCount.maxValue = 15
-        binding.stepperDigitCount.value = digitCount(el)
-        binding.cpvTextColor.colorHex = textColor(el)
-        binding.tvTextColorHex.text = textColor(el)
+        val dc = digitCount(el)
+        if (binding.stepperDigitCount.value != dc) binding.stepperDigitCount.value = dc
+        val tc = textColor(el)
+        if (binding.cpvTextColor.colorHex != tc) binding.cpvTextColor.colorHex = tc
+        binding.tvTextColorHex.text = tc
         // Background color
         val bg = bgColor(el)
-        binding.cpvBgColor.colorHex = bg ?: "#00000000"
-        binding.tvBgColorHex.text = bg ?: "—"
-        binding.cbBold.isChecked = isBold(el)
-        binding.stepperFontSize.minValue = 6; binding.stepperFontSize.maxValue = 72
-        binding.stepperFontSize.value = textSize(el).toInt()
+        if (bg != null) {
+            if (binding.cpvBgColor.colorHex != bg) binding.cpvBgColor.colorHex = bg
+            binding.tvBgColorHex.text = bg
+            binding.btnClearBgColor.visibility = android.view.View.VISIBLE
+        } else {
+            binding.cpvBgColor.colorHex = "#FFFFFFFF"
+            binding.tvBgColorHex.text = "لا يوجد خلفية للنص بشكل افتراضي"
+            binding.btnClearBgColor.visibility = android.view.View.GONE
+        }
+        val bold = isBold(el)
+        if (binding.cbBold.isChecked != bold) binding.cbBold.isChecked = bold
+        val targetSize = textSize(el).toInt()
+        if (binding.stepperFontSize.value != targetSize) {
+            binding.stepperFontSize.minValue = 6; binding.stepperFontSize.maxValue = 72
+            binding.stepperFontSize.value = targetSize
+        } else { binding.stepperFontSize.minValue = 6; binding.stepperFontSize.maxValue = 72 }
         val fontIdx = FONTS_CRED.indexOfFirst { it.second == fontName(el) }.coerceAtLeast(0)
-        binding.spinnerFont.setSelection(fontIdx)
+        if (binding.spinnerFont.selectedItemPosition != fontIdx) binding.spinnerFont.setSelection(fontIdx)
         updating = false
     }
 

@@ -99,6 +99,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun extractDefaultTemplate(name: String, onExtracted: (String?) -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            val extracted = repo.extractDefaultTemplate(name)
+            if (extracted != null) {
+                loadTemplates()
+                onExtracted(extracted.id)
+            } else {
+                onExtracted(null)
+            }
+            _isLoading.value = false
+        }
+    }
+
     fun consumeEvent() { _event.value = null }
 }
 

@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.util.AttributeSet
 import android.view.View
+import android.graphics.drawable.GradientDrawable
 import com.skydoves.colorpickerview.ColorPickerDialog
 import com.skydoves.colorpickerview.listeners.ColorEnvelopeListener
 
@@ -27,8 +28,17 @@ class ColorPreviewView @JvmOverloads constructor(
     var colorHex: String = "#FFFFFF"
         set(value) {
             field = value
-            try { background = ColorDrawable(Color.parseColor(value)) }
-            catch (_: Exception) {}
+            try {
+                val drawable = GradientDrawable()
+                drawable.shape = GradientDrawable.RECTANGLE
+                drawable.setColor(Color.parseColor(value))
+                drawable.setStroke(
+                    (1 * resources.displayMetrics.density).toInt().coerceAtLeast(1),
+                    Color.parseColor("#44888888")
+                )
+                drawable.cornerRadius = 4 * resources.displayMetrics.density
+                background = drawable
+            } catch (_: Exception) {}
         }
 
     var onColorSelected: ((String) -> Unit)? = null
@@ -40,10 +50,11 @@ class ColorPreviewView @JvmOverloads constructor(
         val size = (32 * resources.displayMetrics.density).toInt()
         minimumWidth = size
         minimumHeight = size
-        colorHex = "#FFFFFF"
         isClickable = true
         isFocusable = true
-        background = ColorDrawable(Color.WHITE)
+        elevation = 3 * resources.displayMetrics.density
+        // Initialize the visual appearance
+        colorHex = "#FFFFFF"
         setOnClickListener { showPicker() }
     }
 
@@ -51,8 +62,6 @@ class ColorPreviewView @JvmOverloads constructor(
         if (isPickerShowing) return
         isPickerShowing = true
 
-        // trackedHex: always starts at the current color.
-        // If the user presses OK without touching anything, the original color is re-applied (no-op).
         var trackedHex: String = colorHex
 
         val builder = ColorPickerDialog.Builder(context)
@@ -69,26 +78,20 @@ class ColorPreviewView @JvmOverloads constructor(
             .attachAlphaSlideBar(enableAlpha)
             .attachBrightnessSlideBar(true)
 
-        // ── Initial color for the picker selectors ────────────────────────────
-        // Root cause: in HSV, when Value (brightness) == 0 the entire color is black
-        // regardless of Hue or Saturation.  Moving the hue wheel while V=0 still fires
-        // onColorSelected(BLACK, fromUser=true), so trackedHex never actually changes.
-        // Fix: if the stored color is very dark (V < 0.25), lift V to 0.30 for the
-        // picker so the wheel is immediately usable.  trackedHex still holds the
-        // original hex, so pressing OK with no wheel movement keeps the original color.
+        // ── Initial picker color ──────────────────────────────────────────────
+        // If the initial color is very dark (V ≈ 0 → black), moving the hue wheel
+        // while V=0 always outputs black regardless of hue.  Boost V to FULL (1.0)
+        // so the wheel is immediately usable for any color change.
+        // trackedHex still holds the original, so OK without changes = no effect.
         try {
             val parsed = Color.parseColor(colorHex)
             val alpha  = Color.alpha(parsed)
             val hsv    = FloatArray(3)
             Color.colorToHSV(parsed, hsv)
-            if (hsv[2] < 0.25f) hsv[2] = 0.30f          // lift dark → hue wheel usable
-            val pickerInitColor = Color.HSVToColor(alpha, hsv)
-            builder.colorPickerView.setInitialColor(pickerInitColor)
+            if (hsv[2] < 0.25f) hsv[2] = 1.0f   // lift dark → full brightness so wheel is vivid
+            builder.colorPickerView.setInitialColor(Color.HSVToColor(alpha, hsv))
         } catch (_: Exception) {}
 
-        // Track every user-initiated color change (wheel, brightness slider, alpha slider).
-        // fromUser=false fires on programmatic updates (setInitialColor, layout) — skip those
-        // to avoid overwriting a hue/saturation change the user just made on the wheel.
         builder.colorPickerView.setColorListener(
             ColorEnvelopeListener { envelope, fromUser ->
                 if (fromUser) {
@@ -98,7 +101,8 @@ class ColorPreviewView @JvmOverloads constructor(
             }
         )
 
-        builder.show()
+        val dialog = builder.show()
+        // Reset lock when user taps outside the dialog (dismiss without OK/Cancel)
+        dialog.setOnDismissListener { isPickerShowing = false }
     }
 }
-

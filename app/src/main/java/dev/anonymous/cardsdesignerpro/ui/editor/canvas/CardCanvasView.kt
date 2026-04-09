@@ -167,6 +167,7 @@ class CardCanvasView @JvmOverloads constructor(
     private var lastAngle = 0f
     private var resizeStartW = 0f; private var resizeStartH = 0f
     private var resizeStartX = 0f; private var resizeStartY = 0f
+    private var resizeStartVisualW = 0f
     private var resizeStartAspect = 0f   // height/width ratio at drag start (0 = free resize)
 
     // ── Public API ────────────────────────────────────────────────────────────
@@ -367,6 +368,7 @@ class CardCanvasView @JvmOverloads constructor(
             mode = Mode.RESIZE
             resizeStartW = el.width; resizeStartH = el.height
             resizeStartX = x; resizeStartY = y
+            resizeStartVisualW = hw * 2f / scaleX
             // Proportional resize for Image, QR, and all text elements
             resizeStartAspect = when {
                 el is TemplateElement.ImageElement || el is TemplateElement.QrElement ||
@@ -390,7 +392,16 @@ class CardCanvasView @JvmOverloads constructor(
                 listener?.onElementMoved(id, (x - lastX) / scaleX, (y - lastY) / scaleY)
             }
             Mode.RESIZE -> {
-                if (resizeStartAspect > 0f) {
+                val el = activeElements.firstOrNull { it.id == id } ?: return
+                if (isTextEl(el)) {
+                    // For text, visual width and logical width don't match.
+                    // Calculate visual scale from drag delta, then apply that scale to logical width.
+                    val distDelta = (x - resizeStartX) / scaleX
+                    val visualScale = ((resizeStartVisualW + distDelta) / resizeStartVisualW).coerceAtLeast(0.1f)
+                    val newW = (resizeStartW * visualScale).coerceAtLeast(10f)
+                    val newH = (resizeStartH * visualScale).coerceAtLeast(10f)
+                    listener?.onElementResized(id, newW, newH)
+                } else if (resizeStartAspect > 0f) {
                     val newW = (resizeStartW + (x - resizeStartX) / scaleX).coerceAtLeast(20f)
                     listener?.onElementResized(id, newW, newW * resizeStartAspect)
                 } else {

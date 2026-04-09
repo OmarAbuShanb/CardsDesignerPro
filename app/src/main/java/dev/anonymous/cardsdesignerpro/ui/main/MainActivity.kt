@@ -52,12 +52,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
 
-        // Unify StatusBar color with AppBar/Surface color
-        val typedValue = android.util.TypedValue()
-        theme.resolveAttribute(com.google.android.material.R.attr.colorSurface, typedValue, true)
-        window.statusBarColor = typedValue.data
-        androidx.core.view.WindowCompat.getInsetsController(window, binding.root).isAppearanceLightStatusBars = 
-            androidx.core.graphics.ColorUtils.calculateLuminance(typedValue.data) > 0.5
+
 
         setupRecyclerView()
         setupButtons()
@@ -87,8 +82,7 @@ class MainActivity : AppCompatActivity() {
             showNewTemplateDialog()
         }
         binding.btnEditDefault.setOnClickListener {
-            // Placeholder for default template editing (assets-based, future feature)
-            Snackbar.make(binding.root, "هذه الميزة ستكون متاحة قريباً", Snackbar.LENGTH_SHORT).show()
+            showNewDefaultTemplateDialog()
         }
         binding.btnImportTemplate.setOnClickListener {
             importLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
@@ -169,6 +163,26 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton(R.string.btn_save) { _, _ ->
                 val name = dialogBinding.etName.text?.toString()?.trim()
                 if (!name.isNullOrEmpty()) viewModel.renameTemplate(template.id, name)
+            }
+            .show()
+    }
+
+    private fun showNewDefaultTemplateDialog() {
+        val dialogBinding = DialogTemplateNameBinding.inflate(layoutInflater)
+        dialogBinding.etName.setText("قالب شبكة افتراضي")
+        dialogBinding.etName.selectAll()
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.btn_edit_default_template)
+            .setView(dialogBinding.root)
+            .setNegativeButton(R.string.btn_cancel, null)
+            .setPositiveButton(R.string.btn_save) { _, _ ->
+                val name = dialogBinding.etName.text?.toString()?.trim()
+                if (!name.isNullOrEmpty()) {
+                    viewModel.extractDefaultTemplate(name) { newId ->
+                        if (newId != null) openEditor(newId)
+                        else snack("فشل استخراج القالب الافتراضي")
+                    }
+                }
             }
             .show()
     }

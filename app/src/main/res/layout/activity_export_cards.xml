@@ -14,13 +14,13 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="?attr/colorSurface"
-            android:stateListAnimator="@null"
-            app:elevation="0dp">
+            app:liftOnScrollColor="@android:color/transparent">
             <com.google.android.material.appbar.MaterialToolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
                 app:title="@string/export_cards_title"
+                app:layout_scrollFlags="scroll|enterAlways|snap"
                 app:navigationIcon="@drawable/ic_close_24"
                 app:navigationIconTint="?attr/colorOnSurface"
                 app:titleTextColor="?attr/colorOnSurface" />

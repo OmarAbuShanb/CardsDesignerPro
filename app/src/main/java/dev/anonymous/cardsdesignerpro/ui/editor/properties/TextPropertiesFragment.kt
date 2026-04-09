@@ -49,19 +49,47 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
 
     private fun populateFrom(el: TemplateElement.TextElement) {
         updating = true
-        if (binding.etText.text.toString() != el.text) {
-            binding.etText.setText(el.text)
-            binding.etText.setSelection(el.text.length.coerceAtMost(binding.etText.text?.length ?: 0))
+        // Text: only update if changed (setText triggers re-measure → scroll reset)
+        val showText = if (el.text == "نص افتراضي") "" else el.text
+        if (binding.etText.text.toString() != showText) {
+            binding.etText.setText(showText)
+            binding.etText.setSelection(showText.length)
         }
-        binding.cpvTextColor.colorHex = el.textColor
+        // Text color
+        if (binding.cpvTextColor.colorHex != el.textColor) binding.cpvTextColor.colorHex = el.textColor
         binding.tvTextColorHex.text = el.textColor
-        binding.cpvBgColor.colorHex = el.bgColor ?: "#FFFFFF"
-        binding.tvBgColorHex.text = el.bgColor ?: "none"
-        binding.cbBold.isChecked = el.isBold
-        binding.stepperFontSize.minValue = 6; binding.stepperFontSize.maxValue = 72
-        binding.stepperFontSize.value = el.textSizeSp.toInt()
+
+        // Background color — null means "no background"
+        if (el.bgColor != null) {
+            if (binding.cpvBgColor.colorHex != el.bgColor) binding.cpvBgColor.colorHex = el.bgColor!!
+            binding.tvBgColorHex.text = el.bgColor
+            binding.btnClearBgColor.visibility = View.VISIBLE
+        } else {
+            // Show opaque white in the picker (so alpha starts at 255 when user opens it)
+            // but visually communicate "no color" via text.
+            binding.cpvBgColor.colorHex = "#FFFFFFFF"
+            binding.tvBgColorHex.text = "لا يوجد خلفية للنص بشكل افتراضي"
+            binding.btnClearBgColor.visibility = View.GONE
+        }
+
+        // Bold: guard to avoid spurious setOnCheckedChangeListener → requestLayout
+        if (binding.cbBold.isChecked != el.isBold) binding.cbBold.isChecked = el.isBold
+
+        // Stepper: guard setValue (also fires listener which could loop)
+        val targetSize = el.textSizeSp.toInt()
+        if (binding.stepperFontSize.value != targetSize) {
+            binding.stepperFontSize.minValue = 6; binding.stepperFontSize.maxValue = 72
+            binding.stepperFontSize.value = targetSize
+        } else {
+            // Ensure min/max set at least once on first populate
+            binding.stepperFontSize.minValue = 6; binding.stepperFontSize.maxValue = 72
+        }
+
+        // Spinner: Spinner.setSelection() ALWAYS calls requestLayout() even for same pos.
+        // Guard it so we only call setSelection when position truly changes → no scroll reset.
         val fontIdx = FONTS.indexOfFirst { it.second == el.fontName }.coerceAtLeast(0)
-        binding.spinnerFont.setSelection(fontIdx)
+        if (binding.spinnerFont.selectedItemPosition != fontIdx) binding.spinnerFont.setSelection(fontIdx)
+
         updating = false
     }
 
@@ -69,7 +97,7 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
         binding.etText.doAfterTextChanged { text ->
             if (updating) return@doAfterTextChanged
             val el = viewModel.selectedElement as? TemplateElement.TextElement ?: return@doAfterTextChanged
-            val newText = text.toString()
+            val newText = text.toString().ifEmpty { "نص افتراضي" }
             if (el.text == newText) return@doAfterTextChanged   // no real change
             viewModel.updateElement(el.copy(text = newText))
         }
@@ -82,6 +110,10 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
             binding.tvBgColorHex.text = hex
             val el = viewModel.selectedElement as? TemplateElement.TextElement
             if (el != null && el.bgColor != hex) viewModel.updateElement(el.copy(bgColor = hex))
+        }
+        binding.btnClearBgColor.setOnClickListener {
+            val el = viewModel.selectedElement as? TemplateElement.TextElement ?: return@setOnClickListener
+            viewModel.updateElement(el.copy(bgColor = null))
         }
         binding.cbBold.setOnCheckedChangeListener { _, isChecked ->
             if (updating) return@setOnCheckedChangeListener

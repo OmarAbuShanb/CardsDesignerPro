@@ -35,17 +35,20 @@ class ImagePropertiesFragment : Fragment(), PropertyFragment {
         super.onViewCreated(view, savedInstanceState)
         val el = viewModel.selectedElement as? TemplateElement.ImageElement ?: return
         binding.cpvTint.colorHex = el.tintColor ?: "#FFFFFF"
-        binding.tvTintHex.text = el.tintColor ?: "none"
+        binding.tvTintHex.text = el.tintColor ?: getString(R.string.prop_tint_none)
+        binding.btnClearTint.visibility = if (el.tintColor != null) View.VISIBLE else View.GONE
 
         binding.cpvTint.onColorSelected = { hex ->
             binding.tvTintHex.text = hex
+            binding.btnClearTint.visibility = View.VISIBLE
             val e = viewModel.selectedElement as? TemplateElement.ImageElement
             if (e != null) viewModel.updateElement(e.copy(tintColor = hex))
         }
         binding.btnClearTint.setOnClickListener {
             val e = viewModel.selectedElement as? TemplateElement.ImageElement ?: return@setOnClickListener
             viewModel.updateElement(e.copy(tintColor = null))
-            binding.tvTintHex.text = "none"
+            binding.tvTintHex.text = getString(R.string.prop_tint_none)
+            binding.btnClearTint.visibility = View.GONE
         }
     }
 
@@ -54,7 +57,8 @@ class ImagePropertiesFragment : Fragment(), PropertyFragment {
         val el = state.template.elements.firstOrNull { it.id == state.selectedElementId }
             as? TemplateElement.ImageElement ?: return
         binding.cpvTint.colorHex = el.tintColor ?: "#FFFFFF"
-        binding.tvTintHex.text = el.tintColor ?: "none"
+        binding.tvTintHex.text = el.tintColor ?: getString(R.string.prop_tint_none)
+        binding.btnClearTint.visibility = if (el.tintColor != null) View.VISIBLE else View.GONE
     }
 
     override fun onDestroyView() { super.onDestroyView(); _binding = null }
@@ -152,18 +156,26 @@ class QrPropertiesFragment : Fragment(), PropertyFragment {
             }
         }
         
+        binding.sliderLogoSize.setLabelFormatter { value ->
+            String.format("%.2f", value / 100f)
+        }
+        
         binding.sliderLogoSize.addOnChangeListener { _, value, fromUser ->
             if (fromUser && !updating) {
                 val e = viewModel.selectedElement as? TemplateElement.QrElement ?: return@addOnChangeListener
-                viewModel.updateElement(e.copy(logoSizeFraction = value))
+                viewModel.updateElement(e.copy(logoSizeFraction = value / 100f))
             }
         }
 
         // Padding
+        binding.sliderQrPadding.setLabelFormatter { value ->
+            String.format("%.2f", value / 100f)
+        }
+        
         binding.sliderQrPadding.addOnChangeListener { _, value, fromUser ->
             if (fromUser && !updating) {
                 val e = viewModel.selectedElement as? TemplateElement.QrElement ?: return@addOnChangeListener
-                viewModel.updateElement(e.copy(qrPadding = value))
+                viewModel.updateElement(e.copy(qrPadding = value / 100f))
             }
         }
     }
@@ -177,14 +189,18 @@ class QrPropertiesFragment : Fragment(), PropertyFragment {
         binding.tvQrBgColorHex.text = el.backgroundColor
         binding.spinnerPixelShape.setSelection(pixelShapeValues.indexOf(el.pixelShape).coerceAtLeast(0))
         binding.spinnerEyeShape.setSelection(eyeShapeValues.indexOf(el.eyeShape).coerceAtLeast(0))
-        binding.sliderLogoSize.value = el.logoSizeFraction.coerceIn(0.05f, 0.6f)
-        binding.sliderQrPadding.value = el.qrPadding.coerceIn(0f, 0.25f)
+        binding.sliderLogoSize.value = (el.logoSizeFraction * 100f).coerceIn(5f, 33f)
+        binding.sliderQrPadding.value = (el.qrPadding * 100f).coerceIn(0f, 25f)
         
         if (el.logoPath != null) {
             binding.layoutSelectedLogo.visibility = View.VISIBLE
             binding.tvLogoName.text = java.io.File(el.logoPath).name
+            binding.tvLogoSizeLabel.visibility = View.VISIBLE
+            binding.sliderLogoSize.visibility = View.VISIBLE
         } else {
             binding.layoutSelectedLogo.visibility = View.GONE
+            binding.tvLogoSizeLabel.visibility = View.GONE
+            binding.sliderLogoSize.visibility = View.GONE
         }
         
         binding.cbTintLogo.isChecked = el.tintLogo

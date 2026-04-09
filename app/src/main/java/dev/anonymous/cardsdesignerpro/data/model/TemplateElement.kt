@@ -44,7 +44,7 @@ sealed class TemplateElement {
         override val height: Float,
         override val isVisible: Boolean = true,
         override val rotation: Float = 0f,
-        val text: String = "Text View",
+        val text: String = "نص افتراضي",
         val textColor: String = "#000000",
         val bgColor: String? = null,
         val isBold: Boolean = false,
@@ -198,6 +198,7 @@ sealed class TemplateElement {
         val color: String = "#CCCCCC",
         /** Optional custom image path (overrides shapeType if set). */
         val customImagePath: String? = null,
+        val customImageTintEnabled: Boolean = false,
     ) : TemplateElement()
 }
 
@@ -211,8 +212,8 @@ enum class DateFormat(val pattern: String, val displayName: String) {
 }
 
 enum class DecorationShape(val displayName: String) {
+    STARS_FOUR_POINT("نجوم"),
     DOTS_SMALL("نقاط صغيرة"),
     CIRCLES_HOLLOW("دوائر مفرغة"),
-    STARS_FOUR_POINT("نجوم"),
     CUSTOM_IMAGE("مخصصة");
 }

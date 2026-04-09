@@ -67,7 +67,7 @@
             android:id="@+id/btn_pick_logo"
             style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="@string/prop_logo"
+            android:text="اختيار شعار للQR"
             android:layout_marginBottom="8dp" />
 
         <LinearLayout
@@ -117,12 +117,13 @@
         </LinearLayout>
 
         <!-- Logo size -->
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+        <TextView android:id="@+id/tv_logo_size_label"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
             android:text="@string/prop_logo_size" android:textAppearance="?attr/textAppearanceLabelMedium"
             android:layout_marginBottom="6dp" />
         <com.google.android.material.slider.Slider android:id="@+id/slider_logo_size"
             android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:valueFrom="0.05" android:valueTo="0.6" android:stepSize="0.01"
+            android:valueFrom="5" android:valueTo="33" android:stepSize="1"
             android:layout_marginBottom="14dp" />
 
         <!-- Padding -->
@@ -131,7 +132,7 @@
             android:layout_marginBottom="6dp" />
         <com.google.android.material.slider.Slider android:id="@+id/slider_qr_padding"
             android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:valueFrom="0.0" android:valueTo="0.25" android:stepSize="0.01"
+            android:valueFrom="0" android:valueTo="25" android:stepSize="1"
             android:layout_marginBottom="14dp" />
 
     </LinearLayout>

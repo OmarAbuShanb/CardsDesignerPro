@@ -15,15 +15,13 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="?attr/colorSurface"
-            android:stateListAnimator="@null"
-            app:elevation="0dp"
-            app:liftOnScroll="false">
+            app:liftOnScrollColor="@android:color/transparent">
 
             <com.google.android.material.appbar.MaterialToolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                app:layout_scrollFlags="scroll|enterAlways"
+                app:layout_scrollFlags="scroll|enterAlways|snap"
                 app:navigationContentDescription="@string/btn_close"
                 app:navigationIcon="@drawable/ic_close_24"
                 app:navigationIconTint="?attr/colorOnSurface"
@@ -75,16 +73,52 @@
                 android:layout_height="wrap_content"
                 android:paddingBottom="48dp">
 
+                <!-- Active side toggle label -->
+                <LinearLayout
+                    android:id="@+id/ll_active_side_toggle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:visibility="gone"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintWidth_max="600dp">
+                    
+                    <TextView
+                        android:id="@+id/tv_side_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="الوجه الأمامي"
+                        android:textAppearance="?attr/textAppearanceTitleLarge"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorPrimary" />
+                        
+                    <TextView
+                        android:id="@+id/tv_side_subtitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="إضغط لرؤية الوجه الخلفي"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+                </LinearLayout>
+
                 <!-- Card Canvas -->
                 <dev.anonymous.cardsdesignerpro.ui.editor.canvas.CardCanvasView
                     android:id="@+id/card_canvas"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="32dp"
+                    android:layout_marginTop="16dp"
                     android:background="?attr/colorSurfaceVariant"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/ll_active_side_toggle"
                     app:layout_constraintWidth_max="600dp" />
 
                 <!-- Out-of-bounds warning -->
@@ -104,20 +138,7 @@
                     app:layout_constraintTop_toBottomOf="@id/card_canvas"
                     app:layout_constraintWidth_max="600dp" />
 
-                <!-- Active side label — shows "الوجه الخلفي" when back is active -->
-                <TextView
-                    android:id="@+id/tv_active_side_label"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:paddingVertical="6dp"
-                    android:textAppearance="?attr/textAppearanceTitleSmall"
-                    android:textColor="?attr/colorPrimary"
-                    android:visibility="gone"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/tv_out_of_bounds"
-                    app:layout_constraintWidth_max="600dp" />
+
 
                 <!-- Back-side toggle switch -->
                 <com.google.android.material.materialswitch.MaterialSwitch
@@ -129,7 +150,7 @@
                     android:textAppearance="?attr/textAppearanceBodyMedium"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/tv_active_side_label" />
+                    app:layout_constraintTop_toBottomOf="@id/tv_out_of_bounds" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
         </androidx.core.widget.NestedScrollView>
@@ -144,8 +165,7 @@
         android:layout_height="400dp"
         android:layout_alignParentBottom="true"
         app:cardBackgroundColor="?attr/colorSurface"
-        app:cardCornerRadius="20dp"
-        app:cardElevation="8dp"
+        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.TopRounded"
         app:strokeWidth="0dp"
         android:clickable="true"
         android:focusable="true">

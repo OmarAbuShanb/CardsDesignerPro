@@ -41,6 +41,7 @@ class TemplateRenderer(private val context: Context) {
     private val bitmapCache = mutableMapOf<String, Bitmap?>()
     /** Separate cache for expensive QR bitmaps: key = content+style hash. */
     private val qrCache = mutableMapOf<String, Bitmap?>()
+    private val svgCache = mutableMapOf<String, com.caverock.androidsvg.SVG?>()
 
     /** Padding around text background (dp in template coordinate space). Must match CardCanvasView.TEXT_PAD_DP. */
     private val TEXT_PAD_DP = 6f
@@ -66,21 +67,21 @@ class TemplateRenderer(private val context: Context) {
         template.elements.asReversed().filter { it.isVisible }.forEach { el ->
             when (el) {
                 is TemplateElement.CardBackground ->
-                    drawCardBackground(canvas, template, cardLeft, cardTop, cardWidthPx, cardHeightPx)
+                    drawCardBackground(canvas, template, cardLeft, cardTop, cardWidthPx, cardHeightPx, renderScale)
                 is TemplateElement.BackgroundDecorationElement ->
-                    drawDecoration(canvas, el, cardLeft, cardTop, cardWidthPx, cardHeightPx, template)
+                    drawDecoration(canvas, el, cardLeft, cardTop, cardWidthPx, cardHeightPx, template, renderScale)
                 is TemplateElement.FrameElement ->
                     drawFrame(canvas, el, cardLeft, cardTop, scaleX, scaleY)
                 is TemplateElement.TextElement ->
                     drawTextProps(canvas, textProps(el, el.text), cardLeft, cardTop, scaleX, scaleY)
                 is TemplateElement.UsernameElement ->
-                    drawTextProps(canvas, textProps(el, username ?: "1".repeat(el.digitCount)), cardLeft, cardTop, scaleX, scaleY)
+                    drawTextProps(canvas, textProps(el, username ?: dummyDigits(el.digitCount)), cardLeft, cardTop, scaleX, scaleY)
                 is TemplateElement.PasswordElement ->
-                    drawTextProps(canvas, textProps(el, password ?: "1".repeat(el.digitCount)), cardLeft, cardTop, scaleX, scaleY)
+                    drawTextProps(canvas, textProps(el, password ?: dummyDigits(el.digitCount)), cardLeft, cardTop, scaleX, scaleY)
                 is TemplateElement.DateElement ->
                     drawTextProps(canvas, textProps(el, date ?: formatDate(el)), cardLeft, cardTop, scaleX, scaleY)
                 is TemplateElement.ImageElement ->
-                    drawImage(canvas, el, cardLeft, cardTop, scaleX, scaleY)
+                    drawImage(canvas, el, cardLeft, cardTop, scaleX, scaleY, renderScale)
                 is TemplateElement.QrElement ->
                     drawQr(canvas, el, username, password, cardLeft, cardTop, scaleX, scaleY, renderScale)
             }
@@ -90,13 +91,26 @@ class TemplateRenderer(private val context: Context) {
 
     // ── Background ────────────────────────────────────────────────────────────
 
-    private fun drawCardBackground(canvas: Canvas, template: Template, left: Float, top: Float, w: Float, h: Float) {
+    private fun drawCardBackground(canvas: Canvas, template: Template, left: Float, top: Float, w: Float, h: Float, renderScale: Float) {
         paint.reset(); paint.color = parseColor(template.card.backgroundColor); paint.style = Paint.Style.FILL
         canvas.drawRect(left, top, left + w, top + h, paint)
         template.card.backgroundImagePath?.let { path ->
-            loadBitmap(path)?.let { bmp ->
-                // FIT_XY: stretch to fill the card completely
-                canvas.drawBitmap(bmp, null, RectF(left, top, left + w, top + h), null)
+            if (path.lowercase().endsWith(".svg")) {
+                loadSvg(path)?.let { svg ->
+                    canvas.save()
+                    canvas.translate(left, top)
+                    val aspectW = if (svg.documentWidth > 0f) svg.documentWidth else w
+                    val aspectH = if (svg.documentHeight > 0f) svg.documentHeight else h
+                    canvas.scale(w / aspectW, h / aspectH)
+                    svg.renderToCanvas(canvas)
+                    canvas.restore()
+                }
+            } else {
+                val reqDim = (maxOf(w, h) * renderScale * 2f).toInt().coerceIn(512, 4096)
+                loadBitmap(path, reqDim)?.let { bmp ->
+                    // FIT_XY: stretch to fill the card completely
+                    canvas.drawBitmap(bmp, null, RectF(left, top, left + w, top + h), null)
+                }
             }
         }
     }
@@ -104,7 +118,7 @@ class TemplateRenderer(private val context: Context) {
     // ── Decoration ────────────────────────────────────────────────────────────
 
     private fun drawDecoration(canvas: Canvas, el: TemplateElement.BackgroundDecorationElement,
-                               left: Float, top: Float, w: Float, h: Float, template: Template) {
+                               left: Float, top: Float, w: Float, h: Float, template: Template, renderScale: Float) {
         val frame = template.elements.filterIsInstance<TemplateElement.FrameElement>().firstOrNull()
         val aL = if (frame != null) left + frame.paddingDp else left
         val aT = if (frame != null) top  + frame.paddingDp else top
@@ -113,7 +127,8 @@ class TemplateRenderer(private val context: Context) {
         val aW = aR - aL; val aH = aB - aT
         val color = parseColor(el.color)
         if (el.shapeType == DecorationShape.CUSTOM_IMAGE && el.customImagePath != null) {
-            drawDecoGrid(canvas, el, aL, aT, aW, aH, el.customImagePath, color); return
+            val applyTint = el.customImageTintEnabled
+            drawDecoGrid(canvas, el, aL, aT, aW, aH, el.customImagePath, color, applyTint, renderScale); return
         }
         val cols = (4 + el.density * 8).toInt().coerceIn(2, 14)
         val rows = (cols * aH / aW).toInt().coerceAtLeast(2)
@@ -151,23 +166,42 @@ class TemplateRenderer(private val context: Context) {
     }
 
     private fun drawDecoGrid(canvas: Canvas, el: TemplateElement.BackgroundDecorationElement,
-                             aL: Float, aT: Float, aW: Float, aH: Float, path: String, tint: Int) {
-        val bmp = loadBitmap(path) ?: return
+                             aL: Float, aT: Float, aW: Float, aH: Float, path: String, tint: Int, applyTint: Boolean, renderScale: Float) {
         val cols = (4 + el.density * 8).toInt().coerceIn(2, 14)
         val rows = (cols * aH / aW).toInt().coerceAtLeast(2)
         val cellW = aW / cols; val cellH = aH / rows; val boundingSz = minOf(cellW, cellH) * 0.55f
         
-        val aspect = bmp.width.toFloat() / bmp.height.toFloat()
+        // Use 4x scale for sharpness
+        val reqDim = (boundingSz * renderScale * 4f).toInt().coerceIn(128, 1024)
+        val originalBmp = loadBitmap(path, reqDim) ?: return
+        
+        val aspect = originalBmp.width.toFloat() / originalBmp.height.toFloat()
         val w = if (aspect > 1f) boundingSz else boundingSz * aspect
         val h = if (aspect > 1f) boundingSz / aspect else boundingSz
 
+        // Offscreen pre-render for PDF efficiency (prevents Android from embedding the image 100 times)
+        val offScale = renderScale * 2f
+        val offW = (aW * offScale).toInt().coerceAtLeast(1)
+        val offH = (aH * offScale).toInt().coerceAtLeast(1)
+        val offBmp = Bitmap.createBitmap(offW, offH, Bitmap.Config.ARGB_8888)
+        val offCanvas = Canvas(offBmp)
+        offCanvas.translate(-aL * offScale, -aT * offScale)
+        offCanvas.scale(offScale, offScale)
+
         paint.reset(); paint.isAntiAlias = true
-        paint.colorFilter = PorterDuffColorFilter(tint, PorterDuff.Mode.SRC_IN)
+        if (applyTint) {
+            paint.colorFilter = PorterDuffColorFilter(tint, PorterDuff.Mode.SRC_IN)
+        } else {
+            paint.colorFilter = null
+        }
         for (row in 0 until rows) for (col in 0 until cols) {
             val cx = aL + cellW * (col + 0.5f); val cy = aT + cellH * (row + 0.5f)
-            canvas.drawBitmap(bmp, null, RectF(cx - w/2, cy - h/2, cx + w/2, cy + h/2), paint)
+            offCanvas.drawBitmap(originalBmp, null, RectF(cx - w/2, cy - h/2, cx + w/2, cy + h/2), paint)
         }
         paint.colorFilter = null
+
+        canvas.drawBitmap(offBmp, null, RectF(aL, aT, aL + aW, aT + aH), null)
+        offBmp.recycle()
     }
 
     // ── Frame ─────────────────────────────────────────────────────────────────
@@ -190,6 +224,10 @@ class TemplateRenderer(private val context: Context) {
     }
 
     // ── Text (StaticLayout — handles Arabic ligatures & BiDi correctly) ───────
+
+    private fun dummyDigits(count: Int): String {
+        return (1..count).joinToString("") { (it % 10).toString() }
+    }
 
     private fun drawTextProps(canvas: Canvas, p: TextProps, left: Float, top: Float, sX: Float, sY: Float) {
         val l = left + p.x * sX; val t = top + p.y * sY; val r = l + p.width * sX; val b = t + p.height * sY
@@ -242,13 +280,43 @@ class TemplateRenderer(private val context: Context) {
 
     // ── Image ─────────────────────────────────────────────────────────────────
 
-    private fun drawImage(canvas: Canvas, el: TemplateElement.ImageElement, left: Float, top: Float, sX: Float, sY: Float) {
-        val bmp = loadBitmap(el.imagePath) ?: return
-        val l = left + el.x * sX; val t = top + el.y * sY; val r = l + el.width * sX; val b = t + el.height * sY
+    private fun drawImage(canvas: Canvas, el: TemplateElement.ImageElement, left: Float, top: Float, sX: Float, sY: Float, renderScale: Float) {
+        val path = el.imagePath ?: return
+        val w = el.width * sX
+        val h = el.height * sY
+        val l = left + el.x * sX; val t = top + el.y * sY; val r = l + w; val b = t + h
+        
         paint.reset(); paint.isAntiAlias = true
         el.tintColor?.let { paint.colorFilter = PorterDuffColorFilter(parseColor(it), PorterDuff.Mode.SRC_IN) }
-        canvas.save(); canvas.rotate(el.rotation, (l+r)/2, (t+b)/2)
-        canvas.drawBitmap(bmp, null, RectF(l, t, r, b), paint)
+        
+        canvas.save()
+        canvas.rotate(el.rotation, (l+r)/2, (t+b)/2)
+
+        if (path.lowercase().endsWith(".svg")) {
+            val svg = loadSvg(path)
+            if (svg != null) {
+                val aspectW = if (svg.documentWidth > 0f) svg.documentWidth else w
+                val aspectH = if (svg.documentHeight > 0f) svg.documentHeight else h
+                canvas.save()
+                canvas.translate(l, t)
+                canvas.scale(w / aspectW, h / aspectH)
+                if (el.tintColor != null) {
+                    canvas.saveLayer(null, paint)
+                    svg.renderToCanvas(canvas)
+                    canvas.restore()
+                } else {
+                    svg.renderToCanvas(canvas)
+                }
+                canvas.restore()
+            }
+        } else {
+            val reqDim = (maxOf(w, h) * renderScale * 2f).toInt().coerceIn(256, 3000)
+            val bmp = loadBitmap(path, reqDim)
+            if (bmp != null) {
+                canvas.drawBitmap(bmp, null, RectF(l, t, r, b), paint)
+            }
+        }
+        
         canvas.restore(); paint.colorFilter = null
     }
 
@@ -264,8 +332,8 @@ class TemplateRenderer(private val context: Context) {
         val qrL = l + (r - l - side) / 2f
         val qrT = t + (b - t - side) / 2f
 
-        // Generate at higher resolution for PDF quality; logo inclusion handled inside
-        val bitmapSize = (side * renderScale).toInt().coerceIn(128, 2048)
+        // Scan clarity doesn't require massive bitmaps; restrict it to 1024 to prevent memory exhaustion
+        val bitmapSize = (side * renderScale * 2f).toInt().coerceIn(256, 1024)
         val qrBmp = generateQrBitmapForEl(content, bitmapSize, el) ?: return
 
         canvas.save()
@@ -302,22 +370,24 @@ class TemplateRenderer(private val context: Context) {
             }
 
             // Attach logo if provided (Android BitmapDrawable, not library class)
-            val logoBitmapRaw = el.logoPath?.let { loadBitmap(it) }
+            val reqLogoDim = (sizePx * 0.5f).toInt().coerceIn(256, 1024)
+            val logoBitmapRaw = el.logoPath?.let { loadBitmap(it, reqLogoDim) }
             val logoObj: QrVectorLogo? = if (logoBitmapRaw != null) {
                 // Pad to a square to prevent stretching or cropping from CenterCrop / FitXY
                 val size = maxOf(logoBitmapRaw.width, logoBitmapRaw.height)
                 val squareBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+                val paint = if (el.tintLogo) Paint().apply {
+                    colorFilter = PorterDuffColorFilter(fg, PorterDuff.Mode.SRC_IN)
+                } else null
+                
                 android.graphics.Canvas(squareBitmap).drawBitmap(
                     logoBitmapRaw, 
                     (size - logoBitmapRaw.width) / 2f, 
                     (size - logoBitmapRaw.height) / 2f, 
-                    null
+                    paint
                 )
 
                 val drawable = BitmapDrawable(context.resources, squareBitmap)
-                if (el.tintLogo) {
-                    drawable.colorFilter = PorterDuffColorFilter(fg, PorterDuff.Mode.SRC_IN)
-                }
                 QrVectorLogo(
                     drawable  = drawable,
                     size      = el.logoSizeFraction.coerceIn(0.05f, 1f / 3f),
@@ -371,15 +441,89 @@ class TemplateRenderer(private val context: Context) {
 
     fun formatDateNow(el: TemplateElement.DateElement) = formatDate(el)
 
-    private fun loadBitmap(path: String): Bitmap? {
-        if (bitmapCache.containsKey(path)) return bitmapCache[path]
-        val bmp = if (path.startsWith("pack:"))
-            runCatching { context.assets.open(path.removePrefix("pack:")).use { BitmapFactory.decodeStream(it) } }.getOrNull()
-        else runCatching { BitmapFactory.decodeFile(path) }.getOrNull()
-        bitmapCache[path] = bmp; return bmp
+    private fun loadBitmap(path: String, reqMaxDim: Int = 2048): Bitmap? {
+        val cacheKey = "$path|$reqMaxDim"
+        if (bitmapCache.containsKey(cacheKey)) return bitmapCache[cacheKey]
+
+        fun decodeSampled(options: BitmapFactory.Options, streamProvider: () -> java.io.InputStream?): Bitmap? {
+            options.inJustDecodeBounds = true
+            streamProvider()?.use { BitmapFactory.decodeStream(it, null, options) }
+            if (options.outWidth <= 0 || options.outHeight <= 0) return null
+            
+            var inSampleSize = 1
+            while ((options.outHeight / (inSampleSize * 2)) >= reqMaxDim || (options.outWidth / (inSampleSize * 2)) >= reqMaxDim) {
+                inSampleSize *= 2
+            }
+            options.inJustDecodeBounds = false
+            options.inSampleSize = inSampleSize
+            
+            val decoded = streamProvider()?.use { BitmapFactory.decodeStream(it, null, options) } ?: return null
+            return decoded
+        }
+
+        val isSvg = path.lowercase().endsWith(".svg")
+        val bmp = if (isSvg) {
+            runCatching {
+                val stream = if (path.startsWith("pack:")) {
+                    context.assets.open(path.removePrefix("pack:"))
+                } else {
+                    java.io.FileInputStream(path)
+                }
+                stream.use {
+                    val svg = com.caverock.androidsvg.SVG.getFromInputStream(it)
+                    val docW = if (svg.documentWidth > 0f) svg.documentWidth else reqMaxDim.toFloat()
+                    val docH = if (svg.documentHeight > 0f) svg.documentHeight else reqMaxDim.toFloat()
+                    val aspect = docW / docH
+                    // Force the SVG to render at the highest permitted raster quality
+                    val finalW = if (docW > docH) reqMaxDim.toFloat() else reqMaxDim * aspect
+                    val finalH = finalW / aspect
+                    
+                    val b = Bitmap.createBitmap(finalW.toInt().coerceAtLeast(1), finalH.toInt().coerceAtLeast(1), Bitmap.Config.ARGB_8888)
+                    val c = Canvas(b)
+                    svg.documentWidth = finalW
+                    svg.documentHeight = finalH
+                    svg.renderToCanvas(c)
+                    b
+                }
+            }.getOrNull()
+        } else if (path.startsWith("res:")) runCatching {
+            val resName = path.removePrefix("res:")
+            val resId = context.resources.getIdentifier(resName, "drawable", context.packageName)
+            if (resId == 0) return null else {
+                val d = androidx.core.content.ContextCompat.getDrawable(context, resId) ?: return null
+                val b = Bitmap.createBitmap(reqMaxDim.coerceAtMost(1024), reqMaxDim.coerceAtMost(1024), Bitmap.Config.ARGB_8888)
+                val c = Canvas(b)
+                d.setBounds(0, 0, b.width, b.height)
+                d.draw(c)
+                b
+            }
+        }.getOrNull() else if (path.startsWith("pack:")) runCatching {
+            decodeSampled(BitmapFactory.Options()) { context.assets.open(path.removePrefix("pack:")) }
+        }.getOrNull() else runCatching {
+            decodeSampled(BitmapFactory.Options()) { java.io.FileInputStream(path) }
+        }.getOrNull()
+
+        if (bmp != null) bitmapCache[cacheKey] = bmp
+        return bmp
     }
 
-    fun clearBitmapCache() = bitmapCache.clear()
+    private fun loadSvg(path: String): com.caverock.androidsvg.SVG? {
+        if (svgCache.containsKey(path)) return svgCache[path]
+        val svg = runCatching {
+            val stream = if (path.startsWith("pack:")) context.assets.open(path.removePrefix("pack:")) else java.io.FileInputStream(path)
+            stream.use { com.caverock.androidsvg.SVG.getFromInputStream(it) }
+        }.getOrNull()
+        svgCache[path] = svg
+        return svg
+    }
+
+    fun clearBitmapCache() {
+        bitmapCache.values.forEach { it?.recycle() }
+        bitmapCache.clear()
+        qrCache.values.forEach { it?.recycle() }
+        qrCache.clear()
+        svgCache.clear()
+    }
 
     private fun parseColor(hex: String) = runCatching { Color.parseColor(hex) }.getOrElse { Color.BLACK }
 

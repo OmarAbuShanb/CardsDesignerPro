@@ -10,7 +10,7 @@ android {
     defaultConfig {
         applicationId = "dev.anonymous.cardsdesignerpro"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -35,25 +35,11 @@ android {
     buildFeatures {
         viewBinding = true
     }
-    packaging {
-        resources {
-            // Apache POI ships with duplicate license files
-            excludes += setOf(
-                "META-INF/DEPENDENCIES",
-                "META-INF/LICENSE",
-                "META-INF/LICENSE.txt",
-                "META-INF/NOTICE",
-                "META-INF/NOTICE.txt",
-                "META-INF/ASL2.0",
-                "META-INF/*.kotlin_module"
-            )
-        }
-    }
 }
 
 dependencies {
     // Core desugaring (for java.time on API < 26)
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -87,11 +73,13 @@ dependencies {
     // PDF viewer
 //    implementation(libs.android.pdf.viewer)
 
-    implementation ("com.github.mhiew:android-pdf-viewer:3.2.0-beta.3")
-
+    implementation (libs.mhiew.android.pdf.viewer)
 
     // Image loading
     implementation(libs.coil)
+    
+    // SVG Parsing
+    implementation("com.caverock:androidsvg-aar:1.4")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

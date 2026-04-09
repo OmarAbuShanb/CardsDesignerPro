@@ -30,14 +30,16 @@ object ExcelParser {
 
                     val headerRow = rows.first()
                     val headers = (0 until headerRow.lastCellNum).map { i ->
-                        headerRow.getCell(i)?.stringCellValue?.trim() ?: ""
+                        headerRow.getCell(i)?.stringCellValue?.trim()
+                            ?.replace(Regex("^[\"'‘“]+|[\"'’”]+$"), "") ?: ""
                     }
 
                     val records = rows.drop(1).mapNotNull { row ->
                         val map = headers.mapIndexed { i, header ->
                             val cell = row.getCell(i)
                             val value = when (cell?.cellType) {
-                                CellType.STRING -> cell.stringCellValue
+                                CellType.STRING -> cell.stringCellValue.trim()
+                                    .replace(Regex("^[\"'‘“]+|[\"'’”]+$"), "")
                                 CellType.NUMERIC -> {
                                     val n = cell.numericCellValue
                                     if (n == kotlin.math.floor(n)) n.toLong().toString() else n.toString()
