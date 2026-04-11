@@ -122,7 +122,7 @@
       "height": 30.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "images/pass_icon.svg"
+      "imagePath": "pack:packs/icons/pass_icon.svg"
     },
     {
       "type": "image",
@@ -133,7 +133,7 @@
       "height": 30.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "images/user_icon.svg"
+      "imagePath": "pack:packs/icons/user_icon.svg"
     },
     {
       "type": "image",
@@ -144,7 +144,7 @@
       "height": 70.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "images/input_field_red.svg"
+      "imagePath": "pack:packs/fields/input_field_red.svg"
     },
     {
       "type": "image",
@@ -155,7 +155,7 @@
       "height": 70.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "images/input_field_red.svg"
+      "imagePath": "pack:packs/fields/input_field_red.svg"
     },
     {
       "type": "image",
@@ -166,7 +166,7 @@
       "height": 90.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "images/scan_me.svg"
+      "imagePath": "pack:packs/misc/scan_me.svg"
     },
     {
       "type": "qr",
@@ -195,7 +195,7 @@
       "height": 70.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "images/logo_we.svg"
+      "imagePath": "pack:packs/logos/logo_we.svg"
     },
     {
       "type": "image",
@@ -206,7 +206,7 @@
       "height": 484.4444,
       "isVisible": true,
       "rotation": -29.42277,
-      "imagePath": "images/bg_pattern.svg"
+      "imagePath": "pack:packs/misc/bg_pattern.svg"
     },
     {
       "type": "card_background",

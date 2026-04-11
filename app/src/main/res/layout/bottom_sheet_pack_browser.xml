@@ -4,31 +4,48 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="24dp"
     android:layoutDirection="rtl">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/btn_add_pack"
-        android:textAppearance="?attr/textAppearanceTitleMedium"
-        android:layout_marginBottom="16dp" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="قريباً — سيتم إضافة قوالب جاهزة هنا"
-        android:textAppearance="?attr/textAppearanceBodyMedium"
-        android:textColor="?attr/colorOnSurfaceVariant"
-        android:gravity="center"
-        android:paddingVertical="32dp" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_close"
-        style="@style/Widget.Material3.Button.TextButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+    <!-- Drag handle -->
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
         android:layout_gravity="center_horizontal"
-        android:text="@string/btn_close" />
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/bg_drag_handle" />
+
+    <!-- Title -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/pack_title"
+        android:textAppearance="?attr/textAppearanceTitleMedium"
+        android:paddingHorizontal="20dp"
+        android:layout_marginBottom="12dp" />
+
+    <!-- Custom Tab Bar (HorizontalScrollView with chip-like buttons) -->
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none"
+        android:paddingHorizontal="16dp"
+        android:clipToPadding="false"
+        android:layout_marginBottom="12dp">
+
+        <LinearLayout
+            android:id="@+id/tab_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" />
+    </HorizontalScrollView>
+
+    <!-- Grid of pack assets -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_pack_assets"
+        android:layout_width="match_parent"
+        android:layout_height="320dp"
+        android:paddingHorizontal="10dp"
+        android:clipToPadding="false" />
 
 </LinearLayout>

@@ -19,9 +19,38 @@
             app:title="@string/pdf_viewer_title" />
     </com.google.android.material.appbar.AppBarLayout>
 
-    <com.github.barteksc.pdfviewer.PDFView
-        android:id="@+id/pdf_view"
+    <TextView
+        android:id="@+id/tv_quality_warning"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="wrap_content"
+        android:background="#CC000000"
+        android:textColor="@android:color/white"
+        android:textSize="13sp"
+        android:padding="8dp"
+        android:textAlignment="center"
+        android:text="يتم عرض الملف بجودة مخففة لتجنب بطء جهازك القديم ولحماية الذاكرة."
+        android:visibility="gone" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- For Android < 12 (API 26-30) -->
+        <com.rajat.pdfviewer.PdfRendererView
+            android:id="@+id/pdf_view_legacy"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"
+            app:pdfView_showDivider="false" />
+
+        <!-- For Android 12+ (API 31+) -->
+        <androidx.fragment.app.FragmentContainerView
+            android:id="@+id/pdf_fragment_modern"
+            android:name="androidx.pdf.viewer.fragment.PdfViewerFragment"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
+    </FrameLayout>
 
 </LinearLayout>

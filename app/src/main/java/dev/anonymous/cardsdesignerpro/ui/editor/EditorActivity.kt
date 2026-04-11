@@ -66,11 +66,27 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
         binding.toolbar.setNavigationOnClickListener { handleBack() }
         binding.toolbar.inflateMenu(R.menu.menu_editor)
         binding.toolbar.setOnMenuItemClickListener { item ->
-            if (item.itemId == R.id.action_save) {
-                viewModel.save()
-                finish()
-                true
-            } else false
+            when (item.itemId) {
+                R.id.action_save -> {
+                    viewModel.save()
+                    finish()
+                    true
+                }
+                R.id.action_restore -> {
+                    if (viewModel.uiState.value.hasUnsavedChanges) {
+                        MaterialAlertDialogBuilder(this)
+                            .setTitle(R.string.editor_restore_title)
+                            .setMessage(R.string.editor_restore_message)
+                            .setNegativeButton(R.string.btn_cancel, null)
+                            .setPositiveButton(R.string.btn_restore) { _, _ ->
+                                viewModel.restoreOriginal()
+                            }
+                            .show()
+                    }
+                    true
+                }
+                else -> false
+            }
         }
     }
 
@@ -96,58 +112,16 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
     private fun setupBottomSheet(savedInstanceState: Bundle?) {
         bottomSheetHeightRatio = savedInstanceState?.getFloat("bottom_sheet_ratio", -1f) ?: -1f
 
-        val screenHeight = resources.displayMetrics.heightPixels
+        // Set initial height eagerly using screen height (before views are measured)
+        val screenH = resources.displayMetrics.heightPixels
         val initialRatio = if (bottomSheetHeightRatio > 0f) bottomSheetHeightRatio else 0.35f
-        val params = binding.bottomSheetHost.layoutParams
-        params.height = (screenHeight * initialRatio).toInt()
-        binding.bottomSheetHost.layoutParams = params
+        binding.bottomSheetHost.layoutParams.height = (screenH * initialRatio).toInt()
 
-        var initialDragY = 0f
-        var initialHeight = 0
+        // Setup drag handler immediately
+        setupBottomSheetDrag()
 
-        binding.dragHandelView.setOnTouchListener { _, event ->
-            when (event.action) {
-                android.view.MotionEvent.ACTION_DOWN -> {
-                    initialDragY = event.rawY
-                    initialHeight = binding.bottomSheetHost.height
-                    true
-                }
-                android.view.MotionEvent.ACTION_MOVE -> {
-                    val tabLayout = findViewById<View>(R.id.tab_layout)
-                    val tabHeight = tabLayout?.height ?: (48 * resources.displayMetrics.density).toInt()
-                    val handleHeight = binding.dragHandelView.height.coerceAtLeast((24 * resources.displayMetrics.density).toInt())
-                    val minHeight = handleHeight + tabHeight
-                    val maxHeight = binding.root.height - binding.appBar.height
-
-                    val deltaY = initialDragY - event.rawY
-                    val newHeight = (initialHeight + deltaY).toInt().coerceIn(minHeight, maxHeight)
-
-                    val p = binding.bottomSheetHost.layoutParams
-                    if (p.height != newHeight) {
-                        p.height = newHeight
-                        binding.bottomSheetHost.layoutParams = p
-                        if (binding.root.height > 0) {
-                            bottomSheetHeightRatio = newHeight.toFloat() / binding.root.height
-                        }
-                    }
-                    true
-                }
-                else -> false
-            }
-        }
-
-        binding.root.post {
-            val tabLayout = findViewById<View>(R.id.tab_layout)
-            val tabHeight = tabLayout?.height ?: (48 * resources.displayMetrics.density).toInt()
-            val handleHeight = binding.dragHandelView.height.coerceAtLeast((24 * resources.displayMetrics.density).toInt())
-            val minHeight = handleHeight + tabHeight
-            val maxHeight = binding.root.height - binding.appBar.height
-            val ratio = if (bottomSheetHeightRatio > 0f) bottomSheetHeightRatio else 0.35f
-            val target = (binding.root.height * ratio).toInt().coerceIn(minHeight, maxHeight)
-            val p = binding.bottomSheetHost.layoutParams
-            p.height = target
-            binding.bottomSheetHost.layoutParams = p
-        }
+        // Once layout is complete, refine with actual measurements
+        binding.bottomSheetHost.post { applyBottomSheetHeight() }
 
         if (savedInstanceState == null) {
             bottomSheetFragment = EditorBottomSheetFragment()
@@ -161,6 +135,60 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
                     supportFragmentManager.beginTransaction()
                         .replace(R.id.bottom_sheet_container, it).commit()
                 }
+        }
+    }
+
+    /** Computes the minimum sheet height (handle + tabs) and clamps the current height. */
+    private fun computeMinHeight(): Int {
+        val dp = resources.displayMetrics.density
+        val tabLayout = findViewById<View>(R.id.tab_layout)
+        val tabHeight = (tabLayout?.height ?: 0).coerceAtLeast((48 * dp).toInt())
+        val handleHeight = binding.dragHandelView.height.coerceAtLeast((24 * dp).toInt())
+        return handleHeight + tabHeight
+    }
+
+    /** Applies the stored ratio (or default 35%) as the sheet height, clamped to [min, max]. */
+    private fun applyBottomSheetHeight() {
+        val minH = computeMinHeight()
+        val maxH = binding.root.height - binding.appBar.height
+        val ratio = if (bottomSheetHeightRatio > 0f) bottomSheetHeightRatio else 0.35f
+        val target = (binding.root.height * ratio).toInt().coerceIn(minH, maxH)
+        val p = binding.bottomSheetHost.layoutParams
+        p.height = target
+        binding.bottomSheetHost.layoutParams = p
+    }
+
+    /** Wires up the drag-handle for resize, enforcing min/max at all times. */
+    private fun setupBottomSheetDrag() {
+        var initialDragY = 0f
+        var initialHeight = 0
+
+        binding.dragHandelView.setOnTouchListener { _, event ->
+            when (event.action) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    initialDragY = event.rawY
+                    initialHeight = binding.bottomSheetHost.height
+                    true
+                }
+                android.view.MotionEvent.ACTION_MOVE -> {
+                    val minH = computeMinHeight()
+                    val maxH = binding.root.height - binding.appBar.height
+
+                    val deltaY = initialDragY - event.rawY
+                    val newHeight = (initialHeight + deltaY).toInt().coerceIn(minH, maxH)
+
+                    val p = binding.bottomSheetHost.layoutParams
+                    if (p.height != newHeight) {
+                        p.height = newHeight
+                        binding.bottomSheetHost.layoutParams = p
+                        if (binding.root.height > 0) {
+                            bottomSheetHeightRatio = newHeight.toFloat() / binding.root.height
+                        }
+                    }
+                    true
+                }
+                else -> false
+            }
         }
     }
 
@@ -180,31 +208,39 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
         }
     }
 
+    private var lastRenderedBackEnabled: Boolean? = null
+    private var lastRenderedSide: CardSide? = null
+
     private fun renderState(state: EditorUiState) {
         val template = state.template
         binding.tvTemplateName.text = template.name
 
-        // Canvas: pass active side so it renders the correct elements
         binding.cardCanvas.bind(template, state.selectedElementId, template.activeSide)
 
+        // Side toggle visibility
+        val backEnabled = template.isBackSideEnabled
         binding.llActiveSideToggle.visibility =
-            if (template.isBackSideEnabled) View.VISIBLE else View.GONE
+            if (backEnabled) View.VISIBLE else View.GONE
 
-        if (template.isBackSideEnabled) {
+        if (backEnabled && template.activeSide != lastRenderedSide) {
             val isFront = template.activeSide == CardSide.FRONT
             binding.tvSideTitle.text = if (isFront) "الوجه الأمامي" else "الوجه الخلفي"
             binding.tvSideSubtitle.text = if (isFront) "إضغط لرؤية الوجه الخلفي" else "إضغط لرؤية الوجه الأمامي"
+            lastRenderedSide = template.activeSide
         }
 
         binding.tvOutOfBounds.visibility =
             if (state.hasOutOfBoundsElements) View.VISIBLE else View.GONE
 
-        // Back-side switch — avoid triggering listener feedback
-        binding.switchBackSide.setOnCheckedChangeListener(null)
-        binding.switchBackSide.isChecked = template.isBackSideEnabled
-        binding.switchBackSide.jumpDrawablesToCurrentState() // Fixes unwanted animation bug
-        binding.switchBackSide.setOnCheckedChangeListener { _, isChecked ->
-            if (viewModel.isBackSideEnabled != isChecked) viewModel.toggleBackSide()
+        // Back-side switch — only touch the widget when the value actually changed
+        if (lastRenderedBackEnabled != backEnabled) {
+            lastRenderedBackEnabled = backEnabled
+            binding.switchBackSide.setOnCheckedChangeListener(null)
+            binding.switchBackSide.isChecked = backEnabled
+            binding.switchBackSide.jumpDrawablesToCurrentState()
+            binding.switchBackSide.setOnCheckedChangeListener { _, isChecked ->
+                if (viewModel.isBackSideEnabled != isChecked) viewModel.toggleBackSide()
+            }
         }
 
         // Notify bottom sheet
@@ -212,8 +248,19 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
             bottomSheetFragment.onUiStateChanged(state)
         }
 
-        // After side switch — consume flag (list refresh handled inside fragment)
+        // After side switch — consume flag
         if (state.sideSwitched) viewModel.consumeSideSwitched()
+
+        // Enable/disable toolbar actions based on unsaved changes
+        val hasChanges = state.hasUnsavedChanges
+        binding.toolbar.menu.findItem(R.id.action_save)?.let { item ->
+            item.isEnabled = hasChanges
+            item.icon?.alpha = if (hasChanges) 255 else 80
+        }
+        binding.toolbar.menu.findItem(R.id.action_restore)?.let { item ->
+            item.isEnabled = hasChanges
+            item.icon?.alpha = if (hasChanges) 255 else 80
+        }
     }
 
     // ── CardCanvasView.Listener ───────────────────────────────────────────────
@@ -249,6 +296,18 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
             )
         }
         viewModel.updateCardHeightRatio(target)
+    }
+
+    override fun onElementDeleteRequested(id: String) {
+        val el = viewModel.currentElements.firstOrNull { it.id == id } ?: return
+        MaterialAlertDialogBuilder(this)
+            .setTitle("حذف العنصر")
+            .setMessage("هل تريد حذف هذا العنصر؟")
+            .setNegativeButton(R.string.btn_cancel, null)
+            .setPositiveButton(R.string.btn_delete) { _, _ ->
+                viewModel.deleteElement(id)
+            }
+            .show()
     }
 
     // ── Dialogs ───────────────────────────────────────────────────────────────

@@ -9,6 +9,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.SimpleItemAnimator
 import dev.anonymous.cardsdesignerpro.data.model.TemplateElement
 import dev.anonymous.cardsdesignerpro.databinding.FragmentElementsListBinding
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorUiState
@@ -21,7 +22,6 @@ class ElementsListFragment : Fragment() {
     val viewModel: EditorViewModel by activityViewModels()
     private lateinit var adapter: ElementAdapter
 
-    /** True while the user is actively dragging an item — prevents submitList interference. */
     private var isDragging = false
 
     override fun onCreateView(
@@ -34,20 +34,16 @@ class ElementsListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupRecyclerView()
-        refreshList()
+        adapter.submitList(viewModel.currentElements.toList())
     }
 
     private fun isLocked(el: TemplateElement?) =
         el is TemplateElement.CardBackground ||
-        el is TemplateElement.BackgroundDecorationElement ||
         el is TemplateElement.FrameElement
 
     private fun setupRecyclerView() {
         adapter = ElementAdapter(
-            onSelect = { id ->
-                // Focus only — no tab switch when selecting from list
-                viewModel.selectElement(id)
-            },
+            onSelect = { id -> viewModel.selectElement(id) },
             onVisibilityToggle = { id -> viewModel.toggleVisibility(id) },
             onEdit = { id ->
                 viewModel.selectElement(id)
@@ -58,6 +54,8 @@ class ElementsListFragment : Fragment() {
         )
         binding.rvElements.layoutManager = LinearLayoutManager(requireContext())
         binding.rvElements.adapter = adapter
+        binding.rvElements.setHasFixedSize(true)
+        (binding.rvElements.itemAnimator as? SimpleItemAnimator)?.supportsChangeAnimations = false
 
         val touchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
             ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0
@@ -72,11 +70,8 @@ class ElementsListFragment : Fragment() {
                 if (from < 0 || to < 0) return false
 
                 val items = adapter.currentList
-                // Block dragging locked elements or dropping onto them
                 if (isLocked(items.getOrNull(from)) || isLocked(items.getOrNull(to))) return false
 
-                // Update adapter locally for smooth drag animation.
-                // Do NOT call ViewModel here — that causes a double-update and duplicates.
                 isDragging = true
                 val mutable = items.toMutableList()
                 mutable.add(to, mutable.removeAt(from))
@@ -87,7 +82,6 @@ class ElementsListFragment : Fragment() {
             override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
                 super.clearView(recyclerView, viewHolder)
                 if (isDragging) {
-                    // Commit final order to ViewModel once the finger is lifted
                     val finalIds = adapter.currentList.map { it.id }
                     viewModel.reorderElementsToOrder(finalIds)
                     isDragging = false
@@ -104,17 +98,11 @@ class ElementsListFragment : Fragment() {
         if (_binding == null) return
         adapter.selectedId = state.selectedElementId
         if (state.sideSwitched) {
-            // Full side switch: DiffUtil would produce wrong animations — force full refresh
-            adapter.submitList(null) // clear so DiffUtil sees a fresh list
+            adapter.submitList(null)
             adapter.submitList(viewModel.currentElements.toList())
         } else if (!isDragging) {
-            refreshList()
+            adapter.submitList(viewModel.currentElements.toList())
         }
-    }
-
-    private fun refreshList() {
-        if (_binding == null) return
-        adapter.submitList(viewModel.currentElements.toList())
     }
 
     override fun onDestroyView() {

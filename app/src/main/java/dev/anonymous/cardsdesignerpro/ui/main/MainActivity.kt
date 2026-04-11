@@ -168,23 +168,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showNewDefaultTemplateDialog() {
-        val dialogBinding = DialogTemplateNameBinding.inflate(layoutInflater)
-        dialogBinding.etName.setText("قالب شبكة افتراضي")
-        dialogBinding.etName.selectAll()
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.btn_edit_default_template)
-            .setView(dialogBinding.root)
-            .setNegativeButton(R.string.btn_cancel, null)
-            .setPositiveButton(R.string.btn_save) { _, _ ->
-                val name = dialogBinding.etName.text?.toString()?.trim()
-                if (!name.isNullOrEmpty()) {
-                    viewModel.extractDefaultTemplate(name) { newId ->
-                        if (newId != null) openEditor(newId)
-                        else snack("فشل استخراج القالب الافتراضي")
-                    }
-                }
-            }
-            .show()
+        DefaultTemplatesBottomSheet().show(supportFragmentManager, DefaultTemplatesBottomSheet.TAG)
     }
 
     private fun showDeleteDialog(template: Template) {
@@ -200,13 +184,13 @@ class MainActivity : AppCompatActivity() {
 
     // ── Navigation ────────────────────────────────────────────────────────────
 
-    private fun openEditor(templateId: String) {
+    fun openEditor(templateId: String) {
         startActivity(
             Intent(this, EditorActivity::class.java)
                 .putExtra(EditorActivity.EXTRA_TEMPLATE_ID, templateId)
         )
     }
 
-    private fun snack(msg: String) =
+    fun snack(msg: String) =
         Snackbar.make(binding.root, msg, Snackbar.LENGTH_LONG).show()
 }

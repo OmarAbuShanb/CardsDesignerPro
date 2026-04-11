@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:layoutDirection="rtl">
@@ -11,7 +12,7 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Background color row -->
+        <!-- ── Background color ─────────────────────────────────── -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -41,7 +42,7 @@
                 android:text="#FFFFFF" />
         </LinearLayout>
 
-        <!-- Background image row -->
+        <!-- ── Background image ─────────────────────────────────── -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -56,7 +57,6 @@
             android:layout_height="wrap_content"
             android:text="@string/prop_choose_image" />
 
-        <!-- Background image: path + delete button in a row -->
         <LinearLayout
             android:id="@+id/layout_image_info"
             android:layout_width="match_parent"
@@ -84,8 +84,138 @@
                 android:text="@string/prop_remove_image"
                 app:icon="@drawable/ic_delete"
                 app:iconGravity="textStart"
-                xmlns:app="http://schemas.android.com/apk/res-auto"
                 android:textColor="?attr/colorError" />
+        </LinearLayout>
+
+        <!-- ── Divider ──────────────────────────────────────────── -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?attr/colorOutlineVariant"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- ── Pattern toggle ───────────────────────────────────── -->
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/switch_pattern"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="تفعيل نمط الخلفية"
+            android:layout_marginBottom="12dp" />
+
+        <!-- ── Pattern options (shown when toggle is on) ────────── -->
+        <LinearLayout
+            android:id="@+id/layout_pattern_options"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <!-- Pattern shape -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="شكل النمط"
+                android:textAppearance="?attr/textAppearanceLabelMedium"
+                android:layout_marginBottom="6dp" />
+            <Spinner android:id="@+id/spinner_pattern_shape"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginBottom="6dp" />
+
+            <!-- Custom image info (shown below spinner when custom image is set) -->
+            <LinearLayout
+                android:id="@+id/layout_pattern_custom_image"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="8dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tv_pattern_custom_image_name"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:maxLines="1"
+                    android:ellipsize="middle" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_remove_pattern_image"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/prop_remove_image"
+                    android:textColor="?attr/colorError" />
+            </LinearLayout>
+
+            <!-- Pattern density -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="كثافة النمط"
+                android:textAppearance="?attr/textAppearanceLabelMedium"
+                android:layout_marginBottom="6dp" />
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slider_pattern_density"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:valueFrom="0"
+                android:valueTo="1"
+                android:value="0.5"
+                android:stepSize="0.05"
+                android:layout_marginBottom="14dp" />
+
+            <!-- Custom image tint checkbox (only for CUSTOM_IMAGE) -->
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/cb_pattern_custom_tint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="تلوين الشعار"
+                android:visibility="gone"
+                android:layout_marginBottom="6dp" />
+
+            <!-- Pattern color -->
+            <LinearLayout
+                android:id="@+id/layout_pattern_color"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="14dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="لون النمط"
+                    android:textAppearance="?attr/textAppearanceLabelMedium"
+                    android:layout_marginBottom="6dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <dev.anonymous.cardsdesignerpro.common.widget.ColorPreviewView
+                        android:id="@+id/cpv_pattern_color"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_marginEnd="12dp" />
+
+                    <TextView
+                        android:id="@+id/tv_pattern_color_hex"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
+                        android:textAppearance="?attr/textAppearanceBodyMedium"
+                        android:text="#CCCCCC" />
+                </LinearLayout>
+            </LinearLayout>
+
+
 
         </LinearLayout>
 

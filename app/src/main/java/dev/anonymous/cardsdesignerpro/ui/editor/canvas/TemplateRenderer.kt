@@ -21,6 +21,7 @@ import com.github.alexzhirkevich.customqrgenerator.vector.style.QrVectorLogo
 import com.github.alexzhirkevich.customqrgenerator.vector.style.QrVectorLogoPadding
 import com.github.alexzhirkevich.customqrgenerator.vector.style.QrVectorPixelShape
 import com.github.alexzhirkevich.customqrgenerator.vector.style.QrVectorShapes
+import dev.anonymous.cardsdesignerpro.data.model.CardStyle
 import dev.anonymous.cardsdesignerpro.data.model.DecorationShape
 import dev.anonymous.cardsdesignerpro.data.model.Template
 import dev.anonymous.cardsdesignerpro.data.model.TemplateElement
@@ -68,8 +69,6 @@ class TemplateRenderer(private val context: Context) {
             when (el) {
                 is TemplateElement.CardBackground ->
                     drawCardBackground(canvas, template, cardLeft, cardTop, cardWidthPx, cardHeightPx, renderScale)
-                is TemplateElement.BackgroundDecorationElement ->
-                    drawDecoration(canvas, el, cardLeft, cardTop, cardWidthPx, cardHeightPx, template, renderScale)
                 is TemplateElement.FrameElement ->
                     drawFrame(canvas, el, cardLeft, cardTop, scaleX, scaleY)
                 is TemplateElement.TextElement ->
@@ -92,9 +91,10 @@ class TemplateRenderer(private val context: Context) {
     // ── Background ────────────────────────────────────────────────────────────
 
     private fun drawCardBackground(canvas: Canvas, template: Template, left: Float, top: Float, w: Float, h: Float, renderScale: Float) {
-        paint.reset(); paint.color = parseColor(template.card.backgroundColor); paint.style = Paint.Style.FILL
+        val card = template.card
+        paint.reset(); paint.color = parseColor(card.backgroundColor); paint.style = Paint.Style.FILL
         canvas.drawRect(left, top, left + w, top + h, paint)
-        template.card.backgroundImagePath?.let { path ->
+        card.backgroundImagePath?.let { path ->
             if (path.lowercase().endsWith(".svg")) {
                 loadSvg(path)?.let { svg ->
                     canvas.save()
@@ -113,41 +113,45 @@ class TemplateRenderer(private val context: Context) {
                 }
             }
         }
+        // Draw pattern from CardStyle (replaces the old BackgroundDecorationElement)
+        if (card.patternEnabled) {
+            drawPattern(canvas, card, left, top, w, h, template, renderScale)
+        }
     }
 
-    // ── Decoration ────────────────────────────────────────────────────────────
+    // ── Pattern (from CardStyle) ──────────────────────────────────────────────
 
-    private fun drawDecoration(canvas: Canvas, el: TemplateElement.BackgroundDecorationElement,
-                               left: Float, top: Float, w: Float, h: Float, template: Template, renderScale: Float) {
+    private fun drawPattern(canvas: Canvas, card: CardStyle,
+                            left: Float, top: Float, w: Float, h: Float, template: Template, renderScale: Float) {
         val frame = template.elements.filterIsInstance<TemplateElement.FrameElement>().firstOrNull()
         val aL = if (frame != null) left + frame.paddingDp else left
         val aT = if (frame != null) top  + frame.paddingDp else top
         val aR = if (frame != null) left + w - frame.paddingDp else left + w
         val aB = if (frame != null) top  + h - frame.paddingDp else top  + h
         val aW = aR - aL; val aH = aB - aT
-        val color = parseColor(el.color)
-        if (el.shapeType == DecorationShape.CUSTOM_IMAGE && el.customImagePath != null) {
-            val applyTint = el.customImageTintEnabled
-            drawDecoGrid(canvas, el, aL, aT, aW, aH, el.customImagePath, color, applyTint, renderScale); return
+        val color = parseColor(card.patternColor)
+        if (card.patternShape == DecorationShape.CUSTOM_IMAGE && card.patternCustomImagePath != null) {
+            val applyTint = card.patternCustomImageTintEnabled
+            drawPatternGrid(canvas, card.patternDensity, aL, aT, aW, aH, card.patternCustomImagePath, color, applyTint, renderScale); return
         }
-        val cols = (4 + el.density * 8).toInt().coerceIn(2, 14)
+        val cols = (4 + card.patternDensity * 8).toInt().coerceIn(2, 14)
         val rows = (cols * aH / aW).toInt().coerceAtLeast(2)
         val cellW = aW / cols; val cellH = aH / rows
-        val rf = when (el.shapeType) {
+        val rf = when (card.patternShape) {
             DecorationShape.DOTS_SMALL -> 0.08f
             DecorationShape.CIRCLES_HOLLOW -> 0.15f
             DecorationShape.STARS_FOUR_POINT -> 0.14f
             else -> 0.10f
         }
         paint.reset(); paint.color = color; paint.isAntiAlias = true
-        paint.style = if (el.shapeType == DecorationShape.CIRCLES_HOLLOW) Paint.Style.STROKE else Paint.Style.FILL
+        paint.style = if (card.patternShape == DecorationShape.CIRCLES_HOLLOW) Paint.Style.STROKE else Paint.Style.FILL
         paint.strokeWidth = cellW * 0.05f
         for (row in 0 until rows) for (col in 0 until cols) {
             val cx = aL + cellW * (col + 0.5f); val cy = aT + cellH * (row + 0.5f)
             val r = minOf(cellW, cellH) * rf
             if (frame != null && frame.cornerRadiusDp > 0 && isCornerExclusion(cx, cy, aL, aT, aR, aB, frame.cornerRadiusDp)) continue
-            
-            if (el.shapeType == DecorationShape.STARS_FOUR_POINT) {
+
+            if (card.patternShape == DecorationShape.STARS_FOUR_POINT) {
                 val path = Path()
                 path.moveTo(cx, cy - r)
                 path.lineTo(cx + r * 0.3f, cy - r * 0.3f)
@@ -165,21 +169,21 @@ class TemplateRenderer(private val context: Context) {
         }
     }
 
-    private fun drawDecoGrid(canvas: Canvas, el: TemplateElement.BackgroundDecorationElement,
+    private fun drawPatternGrid(canvas: Canvas, density: Float,
                              aL: Float, aT: Float, aW: Float, aH: Float, path: String, tint: Int, applyTint: Boolean, renderScale: Float) {
-        val cols = (4 + el.density * 8).toInt().coerceIn(2, 14)
+        val cols = (4 + density * 8).toInt().coerceIn(2, 14)
         val rows = (cols * aH / aW).toInt().coerceAtLeast(2)
         val cellW = aW / cols; val cellH = aH / rows; val boundingSz = minOf(cellW, cellH) * 0.55f
-        
+
         // Use 4x scale for sharpness
         val reqDim = (boundingSz * renderScale * 4f).toInt().coerceIn(128, 1024)
         val originalBmp = loadBitmap(path, reqDim) ?: return
-        
+
         val aspect = originalBmp.width.toFloat() / originalBmp.height.toFloat()
         val w = if (aspect > 1f) boundingSz else boundingSz * aspect
         val h = if (aspect > 1f) boundingSz / aspect else boundingSz
 
-        // Offscreen pre-render for PDF efficiency (prevents Android from embedding the image 100 times)
+        // Offscreen pre-render for PDF efficiency
         val offScale = renderScale * 2f
         val offW = (aW * offScale).toInt().coerceAtLeast(1)
         val offH = (aH * offScale).toInt().coerceAtLeast(1)

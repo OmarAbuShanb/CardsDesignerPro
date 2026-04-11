@@ -122,6 +122,9 @@ object TemplateZipManager {
     private fun collectLocalPaths(template: Template): Set<String> {
         val paths = mutableSetOf<String>()
         template.card.backgroundImagePath?.let { if (!it.startsWith("pack:")) paths.add(it) }
+        template.card.patternCustomImagePath?.let { if (!it.startsWith("pack:")) paths.add(it) }
+        template.backCard?.backgroundImagePath?.let { if (!it.startsWith("pack:")) paths.add(it) }
+        template.backCard?.patternCustomImagePath?.let { if (!it.startsWith("pack:")) paths.add(it) }
         fun collect(elements: List<dev.anonymous.cardsdesignerpro.data.model.TemplateElement>) {
             elements.forEach { el ->
                 when (el) {
@@ -129,8 +132,6 @@ object TemplateZipManager {
                         if (!el.imagePath.startsWith("pack:")) paths.add(el.imagePath)
                     is dev.anonymous.cardsdesignerpro.data.model.TemplateElement.QrElement ->
                         el.logoPath?.let { if (!it.startsWith("pack:")) paths.add(it) }
-                    is dev.anonymous.cardsdesignerpro.data.model.TemplateElement.BackgroundDecorationElement ->
-                        el.customImagePath?.let { if (!it.startsWith("pack:")) paths.add(it) }
                     else -> Unit
                 }
             }
@@ -146,7 +147,12 @@ object TemplateZipManager {
             else "$imageDir/${java.io.File(path).name}"
 
         val newCard = template.card.copy(
-            backgroundImagePath = rewrite(template.card.backgroundImagePath)
+            backgroundImagePath = rewrite(template.card.backgroundImagePath),
+            patternCustomImagePath = rewrite(template.card.patternCustomImagePath)
+        )
+        val newBackCard = template.backCard?.copy(
+            backgroundImagePath = rewrite(template.backCard.backgroundImagePath),
+            patternCustomImagePath = rewrite(template.backCard.patternCustomImagePath)
         )
 
         fun rewriteElements(elements: List<dev.anonymous.cardsdesignerpro.data.model.TemplateElement>) =
@@ -156,14 +162,13 @@ object TemplateZipManager {
                         el.copy(imagePath = rewrite(el.imagePath) ?: el.imagePath)
                     is dev.anonymous.cardsdesignerpro.data.model.TemplateElement.QrElement ->
                         el.copy(logoPath = rewrite(el.logoPath))
-                    is dev.anonymous.cardsdesignerpro.data.model.TemplateElement.BackgroundDecorationElement ->
-                        el.copy(customImagePath = rewrite(el.customImagePath))
                     else -> el
                 }
             }
 
         return template.copy(
             card = newCard,
+            backCard = newBackCard,
             elements = rewriteElements(template.elements),
             backElements = template.backElements?.let { rewriteElements(it) }
         )

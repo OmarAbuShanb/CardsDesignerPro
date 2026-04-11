@@ -214,7 +214,8 @@ object PdfExporter {
      */
     private fun backFaceTemplate(template: Template): Template? {
         val back = template.backElements ?: return null
-        return template.copy(elements = back)
+        val backStyle = template.backCard ?: template.card
+        return template.copy(elements = back, card = backStyle)
     }
 
     /** Writes a complete single-face PDF to [outputStream]. */

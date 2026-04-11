@@ -5,7 +5,8 @@
     <!-- Main Screen -->
     <string name="btn_export_cards">تصدير البطاقات</string>
     <string name="btn_new_template">إنشاء قالب من الصفر</string>
-    <string name="btn_edit_default_template">التعديل على القالب الافتراضي</string>
+    <string name="btn_edit_default_template">اختيار قالب جاهز للتعديل عليه</string>
+    <string name="title_default_templates_sheet">اختر قالب للتعديل عليه</string>
     <string name="btn_import_template">استيراد قالب موجود</string>
     <string name="templates_empty">لا توجد قوالب. ابدأ بإنشاء قالب جديد.</string>
     <string name="templates_title">القوالب</string>
@@ -66,6 +67,9 @@
     <string name="btn_discard">تجاهل</string>
     <string name="editor_save_success">تم الحفظ</string>
     <string name="out_of_bounds_warning">بعض العناصر أصبحت خارج حدود البطاقة</string>
+    <string name="editor_restore_title">إعادة ضبط</string>
+    <string name="editor_restore_message">سيتم التراجع عن جميع التغييرات التي أجريتها في هذه الجلسة. هل تريد المتابعة؟</string>
+    <string name="btn_restore">إعادة ضبط</string>
 
     <!-- Editor – Add Element Tab -->
     <string name="tab_add_element">إضافة عنصر</string>
@@ -79,7 +83,15 @@
     <string name="btn_add_date">تاريخ</string>
     <string name="btn_add_frame">إطار البطاقة</string>
     <string name="btn_add_decoration">نمط الخلفية</string>
-    <string name="btn_add_pack">قوالب جاهزة</string>
+    <string name="btn_add_pack">عناصر جاهزة</string>
+
+    <!-- Pack Browser -->
+    <string name="pack_title">عناصر جاهزة</string>
+    <string name="pack_tab_icons">أيقونات</string>
+    <string name="pack_tab_fields">حقول</string>
+    <string name="pack_tab_dividers">قواسم</string>
+    <string name="pack_tab_logos">شعارات</string>
+    <string name="pack_tab_misc">متنوع</string>
 
     <!-- Editor – Properties -->
     <string name="prop_no_selection">قم بتحديد أي عنصر لتغيير خصائصه</string>
@@ -124,6 +136,11 @@
     <string name="elem_username">اسم المستخدم</string>
     <string name="elem_password">كلمة المرور</string>
     <string name="elem_image">صورة</string>
+    <string name="elem_icon">أيقونة</string>
+    <string name="elem_field">حقل</string>
+    <string name="elem_divider">قاسم</string>
+    <string name="elem_logo">شعار</string>
+    <string name="elem_misc">عنصر جاهز</string>
     <string name="elem_qr">رمز QR</string>
     <string name="elem_date">تاريخ</string>
     <string name="elem_frame">إطار البطاقة</string>

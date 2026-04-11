@@ -147,34 +147,57 @@ class PdfExportService : Service() {
 
     private fun showSuccessNotification(request: ExportManager.ExportRequest) {
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val isDual = request.mode == ExportManager.ExportRequest.Mode.SEPARATE
+
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("تمت العملية بنجاح! \uD83C\uDF89")
-            .setContentText("تم تصدير ملف الـ PDF الخاص بك، اضغط هنا للمعاينة.")
             .setSmallIcon(android.R.drawable.stat_sys_download_done)
             .setAutoCancel(true)
 
-        val isDual = request.mode == ExportManager.ExportRequest.Mode.SEPARATE
-        val intent = if (isDual && request.frontUri != null && request.backUri != null) {
-            Intent(this, ExportCardsActivity::class.java).apply {
-                putExtra("show_dual_preview", true)
-                putExtra("front_uri", request.frontUri.toString())
-                putExtra("back_uri", request.backUri.toString())
+        if (isDual && request.frontUri != null && request.backUri != null) {
+            builder.setContentTitle("تمت العملية بنجاح! \uD83C\uDF89")
+            builder.setContentText("تم تصدير ملفين PDF، اختر أحدهما للمعاينة.")
+
+            // Action: Preview Front
+            val frontIntent = Intent(this, PdfViewerActivity::class.java).apply {
+                putExtra(PdfViewerActivity.EXTRA_PDF_URI, request.frontUri.toString())
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
+            val frontPi = PendingIntent.getActivity(
+                this, System.currentTimeMillis().toInt(), frontIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            builder.addAction(0, "معاينة الأمامي", frontPi)
+
+            // Action: Preview Back
+            val backIntent = Intent(this, PdfViewerActivity::class.java).apply {
+                putExtra(PdfViewerActivity.EXTRA_PDF_URI, request.backUri.toString())
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            val backPi = PendingIntent.getActivity(
+                this, (System.currentTimeMillis() + 1).toInt(), backIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            builder.addAction(0, "معاينة الخلفي", backPi)
+
         } else {
+            builder.setContentTitle("تمت العملية بنجاح! \uD83C\uDF89")
+            builder.setContentText("تم تصدير ملف الـ PDF الخاص بك، اضغط هنا للمعاينة.")
+
             val singleUri = request.outputUri ?: request.frontUri
-            Intent(this, PdfViewerActivity::class.java).apply {
+            val intent = Intent(this, PdfViewerActivity::class.java).apply {
                 putExtra(PdfViewerActivity.EXTRA_PDF_URI, singleUri?.toString())
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
+            val pendingIntent = PendingIntent.getActivity(
+                this, System.currentTimeMillis().toInt(), intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            builder.setContentIntent(pendingIntent)
         }
 
-        val pendingIntent = PendingIntent.getActivity(
-            this, System.currentTimeMillis().toInt(), intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        builder.setContentIntent(pendingIntent)
         manager.notify(NOTIFICATION_ID + 1, builder.build())
     }
 

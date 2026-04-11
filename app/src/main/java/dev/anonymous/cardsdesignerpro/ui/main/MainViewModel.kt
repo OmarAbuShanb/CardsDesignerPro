@@ -30,6 +30,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         loadTemplates()
+        viewModelScope.launch { getDefaultTemplates() }
     }
 
     fun loadTemplates() {
@@ -99,10 +100,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun extractDefaultTemplate(name: String, onExtracted: (String?) -> Unit) {
+    private var defaultTemplatesCache: List<Pair<String, Template>>? = null
+
+    suspend fun getDefaultTemplates(): List<Pair<String, Template>> {
+        if (defaultTemplatesCache != null) return defaultTemplatesCache!!
+        val templates = repo.getDefaultTemplates()
+        defaultTemplatesCache = templates
+        return templates
+    }
+
+    fun extractDefaultTemplate(sourceDir: String, name: String, onExtracted: (String?) -> Unit) {
         viewModelScope.launch {
             _isLoading.value = true
-            val extracted = repo.extractDefaultTemplate(name)
+            val extracted = repo.extractDefaultTemplate(sourceDir, name)
             if (extracted != null) {
                 loadTemplates()
                 onExtracted(extracted.id)

@@ -6,6 +6,7 @@ plugins {
 android {
     namespace = "dev.anonymous.cardsdesignerpro"
     compileSdk = 36
+    compileSdkExtension = 19
 
     defaultConfig {
         applicationId = "dev.anonymous.cardsdesignerpro"
@@ -29,8 +30,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-        // Required for java.time APIs used by Apache POI on older API levels
-        isCoreLibraryDesugaringEnabled = true
     }
     buildFeatures {
         viewBinding = true
@@ -38,8 +37,6 @@ android {
 }
 
 dependencies {
-    // Core desugaring (for java.time on API < 26)
-    coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -66,20 +63,23 @@ dependencies {
 
     // QR Code generation — custom-qr-generator (powered by ZXing internally, adds shape/logo/color support)
     implementation(libs.custom.qr.generator)
+    
+    // Modern pure Kotlin 16KB safe PDF Viewer (For Android < 12)
+    implementation(libs.afreakyelf.pdf.viewer)
+    
+    // Jetpack PDF Viewer (For Android 12+)
+    implementation(libs.androidx.pdf.viewer)
 
     // Color picker
     implementation(libs.colorpickerview)
 
-    // PDF viewer
-//    implementation(libs.android.pdf.viewer)
-
-    implementation (libs.mhiew.android.pdf.viewer)
+    // PDF viewer dependency removed (using native PdfRenderer)
 
     // Image loading
     implementation(libs.coil)
     
     // SVG Parsing
-    implementation("com.caverock:androidsvg-aar:1.4")
+    implementation(libs.androidsvg.aar)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

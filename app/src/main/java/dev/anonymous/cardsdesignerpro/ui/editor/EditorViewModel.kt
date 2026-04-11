@@ -5,6 +5,8 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.anonymous.cardsdesignerpro.data.model.CardSide
+import dev.anonymous.cardsdesignerpro.data.model.CardStyle
+import dev.anonymous.cardsdesignerpro.data.model.DecorationShape
 import dev.anonymous.cardsdesignerpro.data.model.Template
 import dev.anonymous.cardsdesignerpro.data.model.TemplateElement
 import dev.anonymous.cardsdesignerpro.data.repository.TemplateRepository
@@ -37,6 +39,12 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
 
     private var isInitialized = false
 
+    /** Snapshot of the template as loaded from disk — used to restore on discard. */
+    private var originalTemplate: Template? = null
+
+    /** Saved pattern shape index before switching to CUSTOM_IMAGE — survives config changes. */
+    var previousPatternShapeIndex = 0
+
     // ── Initialization ────────────────────────────────────────────────────────
 
     fun init(templateId: String) {
@@ -44,6 +52,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         isInitialized = true
         viewModelScope.launch {
             val template = repo.getById(templateId) ?: return@launch
+            originalTemplate = template
             _uiState.value = EditorUiState(
                 template = template,
                 selectedElementId = currentSideElements(template).firstOrNull()?.id
@@ -53,21 +62,42 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
 
     // ── Save ─────────────────────────────────────────────────────────────────
 
+    /** Explicit save (toolbar button / dialog). Clears the unsaved flag. */
     fun save() {
         viewModelScope.launch {
             repo.save(currentTemplate)
+            originalTemplate = currentTemplate
             _uiState.value = uiState.value.copy(hasUnsavedChanges = false)
         }
     }
 
+    /** Auto-save (onPause). Writes to disk but keeps hasUnsavedChanges so the
+     *  discard dialog still appears when the user returns. */
     fun saveIfNeeded() {
-        if (uiState.value.hasUnsavedChanges) save()
+        if (uiState.value.hasUnsavedChanges) {
+            viewModelScope.launch { repo.save(currentTemplate) }
+        }
     }
 
     fun discardAndCleanup() {
+        _uiState.value = uiState.value.copy(hasUnsavedChanges = false)
         viewModelScope.launch {
-            repo.cleanOrphanImages(currentTemplate)
+            originalTemplate?.let { orig ->
+                repo.save(orig)
+                // Clean based on the ORIGINAL template so images it references are kept
+                repo.cleanOrphanImages(orig)
+            }
         }
+    }
+
+    /** Resets the in-memory template to the original loaded state. */
+    fun restoreOriginal() {
+        val orig = originalTemplate ?: return
+        _uiState.value = EditorUiState(
+            template = orig,
+            selectedElementId = currentSideElements(orig).firstOrNull()?.id,
+            hasUnsavedChanges = false
+        )
     }
 
     // ── Dual-side control ─────────────────────────────────────────────────────
@@ -86,6 +116,11 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                     listOf(TemplateElement.CardBackground())
                 } else {
                     t.backElements
+                },
+                backCard = if (nowEnabled && t.backCard == null) {
+                    t.card.copy()  // Initialize back card with same style as front
+                } else {
+                    t.backCard
                 },
                 // If disabling, switch back to FRONT
                 activeSide = if (nowEnabled) t.activeSide else CardSide.FRONT
@@ -119,11 +154,49 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
 
     fun renameTemplate(newName: String) = mutateTemplate { it.copy(name = newName) }
 
+    /** Returns the card style for the currently active side. */
+    val activeCardStyle: CardStyle
+        get() {
+            val t = currentTemplate
+            return if (t.activeSide == CardSide.BACK && t.isBackSideEnabled)
+                t.backCard ?: t.card
+            else t.card
+        }
+
+    /** Updates the card style for the currently active side. */
+    private fun mutateActiveCardStyle(transform: (CardStyle) -> CardStyle) {
+        mutateTemplate { t ->
+            if (t.activeSide == CardSide.BACK && t.isBackSideEnabled) {
+                t.copy(backCard = transform(t.backCard ?: t.card))
+            } else {
+                t.copy(card = transform(t.card))
+            }
+        }
+    }
+
     fun updateCardBackgroundColor(color: String) =
-        mutateTemplate { it.copy(card = it.card.copy(backgroundColor = color)) }
+        mutateActiveCardStyle { it.copy(backgroundColor = color) }
 
     fun updateCardBackgroundImage(path: String?) =
-        mutateTemplate { it.copy(card = it.card.copy(backgroundImagePath = path)) }
+        mutateActiveCardStyle { it.copy(backgroundImagePath = path) }
+
+    fun updatePatternEnabled(enabled: Boolean) =
+        mutateActiveCardStyle { it.copy(patternEnabled = enabled) }
+
+    fun updatePatternShape(shape: DecorationShape) =
+        mutateActiveCardStyle { it.copy(patternShape = shape) }
+
+    fun updatePatternDensity(density: Float) =
+        mutateActiveCardStyle { it.copy(patternDensity = density) }
+
+    fun updatePatternColor(color: String) =
+        mutateActiveCardStyle { it.copy(patternColor = color) }
+
+    fun updatePatternCustomImage(path: String?) =
+        mutateActiveCardStyle { it.copy(patternCustomImagePath = path) }
+
+    fun updatePatternCustomImageTint(enabled: Boolean) =
+        mutateActiveCardStyle { it.copy(patternCustomImageTintEnabled = enabled) }
 
     /**
      * Adjusts the card height ratio, clamping to [0.2, 2.0].
@@ -133,17 +206,17 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         val clamped = ratio.coerceIn(0.2f, 1.5f)   // max = widthDp × 1.5 as per UX requirement
         mutateTemplate { template ->
             val newCard = template.card.copy(heightRatio = clamped)
+            val newBackCard = template.backCard?.copy(heightRatio = clamped)
             fun resizeElements(elements: List<TemplateElement>) = elements.map { el ->
                 when (el) {
                     is TemplateElement.FrameElement ->
-                        el.copy(x = 0f, y = 0f, width = newCard.widthDp, height = newCard.widthDp * clamped)
-                    is TemplateElement.BackgroundDecorationElement ->
                         el.copy(x = 0f, y = 0f, width = newCard.widthDp, height = newCard.widthDp * clamped)
                     else -> el
                 }
             }
             template.copy(
                 card = newCard,
+                backCard = newBackCard,
                 elements = resizeElements(template.elements),
                 backElements = template.backElements?.let { resizeElements(it) }
             )
@@ -207,10 +280,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         enforceLayerOrder()
     }
 
-    fun addBackgroundDecoration() {
-        addElement(TemplateElement.BackgroundDecorationElement())
-        enforceLayerOrder()
-    }
+
 
     fun addImageElement(imagePath: String, srcW: Int = 0, srcH: Int = 0) {
         val card = currentTemplate.card
@@ -268,7 +338,6 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 is TemplateElement.QrElement -> el.copy(isVisible = !el.isVisible)
                 is TemplateElement.DateElement -> el.copy(isVisible = !el.isVisible)
                 is TemplateElement.FrameElement -> el.copy(isVisible = !el.isVisible)
-                is TemplateElement.BackgroundDecorationElement -> el.copy(isVisible = !el.isVisible)
                 is TemplateElement.CardBackground -> el
             }
         }
@@ -299,14 +368,13 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 is TemplateElement.QrElement -> el.copy(x = el.x + dx, y = el.y + dy)
                 is TemplateElement.DateElement -> el.copy(x = el.x + dx, y = el.y + dy)
                 is TemplateElement.FrameElement -> el.copy(x = el.x + dx, y = el.y + dy)
-                is TemplateElement.BackgroundDecorationElement -> el.copy(x = el.x + dx, y = el.y + dy)
                 is TemplateElement.CardBackground -> el
             }
         }
     }
 
     fun resizeElement(id: String, newWidth: Float, newHeight: Float) {
-        val minSize = 20f
+        val minSize = 0.1f
         val safeW = newWidth.coerceAtLeast(minSize)
         val safeH = newHeight.coerceAtLeast(minSize)
         mutateElement(id) { el ->
@@ -335,7 +403,6 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 is TemplateElement.ImageElement -> el.copy(width = safeW, height = safeH)
                 is TemplateElement.QrElement -> el.copy(width = safeW, height = safeH)
                 is TemplateElement.FrameElement -> el.copy(width = safeW, height = safeH)
-                is TemplateElement.BackgroundDecorationElement -> el.copy(width = safeW, height = safeH)
                 is TemplateElement.CardBackground -> el
             }
         }
@@ -352,7 +419,6 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 is TemplateElement.QrElement -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
                 is TemplateElement.DateElement -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
                 is TemplateElement.FrameElement -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
-                is TemplateElement.BackgroundDecorationElement -> el
                 is TemplateElement.CardBackground -> el
             }
         }
@@ -375,9 +441,9 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         val items = currentSideElements(prev.template)
         val moving = items.getOrNull(from)
         val target = items.getOrNull(to)
-        if (moving is TemplateElement.CardBackground || moving is TemplateElement.BackgroundDecorationElement
+        if (moving is TemplateElement.CardBackground
             || moving is TemplateElement.FrameElement) return
-        if (target is TemplateElement.CardBackground || target is TemplateElement.BackgroundDecorationElement
+        if (target is TemplateElement.CardBackground
             || target is TemplateElement.FrameElement) return
         val mutable = items.toMutableList()
         val item = mutable.removeAt(from)
@@ -410,7 +476,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     fun hasQrElement()        = currentElements.any { it is TemplateElement.QrElement }
     fun hasDateElement()      = currentElements.any { it is TemplateElement.DateElement }
     fun hasFrameElement()     = currentElements.any { it is TemplateElement.FrameElement }
-    fun hasDecorationElement()= currentElements.any { it is TemplateElement.BackgroundDecorationElement }
+
 
     fun getImageDirForCurrentTemplate(): java.io.File =
         repo.getOrCreateImageDir(currentTemplate.id)
@@ -466,19 +532,26 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         update(prev.copy(template = setSideElements(prev.template, ordered)))
     }
 
+    /**
+     * List order (top → bottom in UI list):
+     *   1. Regular elements (text, image, qr, etc.)
+     *   2. Frame (below regular elements in the list)
+     *   3. CardBackground (always last)
+     *
+     * Draw order (TemplateRenderer uses asReversed()):
+     *   CardBackground → Frame → regular elements
+     * So Frame is drawn ON TOP of regular elements despite being below in the list.
+     */
     private fun enforceOrder(elements: List<TemplateElement>): List<TemplateElement> {
         val bg    = elements.filterIsInstance<TemplateElement.CardBackground>().firstOrNull()
-        val deco  = elements.filterIsInstance<TemplateElement.BackgroundDecorationElement>().firstOrNull()
         val frame = elements.filterIsInstance<TemplateElement.FrameElement>().firstOrNull()
         val users = elements.filter {
             it !is TemplateElement.CardBackground &&
-            it !is TemplateElement.BackgroundDecorationElement &&
             it !is TemplateElement.FrameElement
         }
         val ordered = mutableListOf<TemplateElement>()
-        if (frame != null) ordered.add(frame)
         ordered.addAll(users)
-        if (deco  != null) ordered.add(deco)
+        if (frame != null) ordered.add(frame)
         if (bg    != null) ordered.add(bg)
         return ordered
     }
@@ -488,7 +561,6 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         val cardH = template.card.widthDp * template.card.heightRatio
         val outOfBounds = currentElements
             .filter { it !is TemplateElement.CardBackground
-                    && it !is TemplateElement.BackgroundDecorationElement
                     && it !is TemplateElement.FrameElement }
             .any { el ->
                 if (el is TemplateElement.TextElement || el is TemplateElement.UsernameElement

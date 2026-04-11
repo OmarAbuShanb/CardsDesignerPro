@@ -26,9 +26,9 @@ import kotlin.math.hypot
  * Interactive canvas for the Template Editor.
  *
  * Handle layout (when an element is selected):
- *  - top-center   → move    (ic_handle_move)
- *  - top-right    → rotate  (ic_handle_rotate)
- *  - bottom-right → resize  (ic_handle_resize — two diagonal arrows at 45°)
+ *  - top-left      → delete  (ic_handle_delete) — offset away from corner
+ *  - top-right     → rotate  (ic_handle_rotate) — offset away from corner
+ *  - bottom-right  → resize  (ic_handle_resize) — offset away from corner
  *
  * Height handle (only when card_background is selected):
  *  - centered at the bottom edge of the card (half inside / half outside — NOT clipped)
@@ -48,6 +48,7 @@ class CardCanvasView @JvmOverloads constructor(
         fun onElementMoved(id: String, dx: Float, dy: Float)
         fun onElementResized(id: String, newW: Float, newH: Float)
         fun onElementRotated(id: String, angleDelta: Float)
+        fun onElementDeleteRequested(id: String)
         fun onCardBackgroundSelected()
         fun onCardHeightDrag(deltaRatio: Float)
     }
@@ -76,7 +77,8 @@ class CardCanvasView @JvmOverloads constructor(
     private var scaleY = 1f
 
     private val dp = resources.displayMetrics.density
-    private val HR          = 15f * dp    // handle circle radius
+    private val HR          = 11f * dp    // handle circle radius (smaller)
+    private val HANDLE_OFF  = 8f  * dp    // offset distance from element corner
     private val TAP_SLOP    = 8f  * dp    // px threshold for tap vs drag
     private val TEXT_PAD_DP = 6f          // padding around text in template-dp units (matches renderer)
 
@@ -129,13 +131,17 @@ class CardCanvasView @JvmOverloads constructor(
         is TemplateElement.TextElement ->
             TextMeasureInfo(el.text.ifBlank { "A" }, el.textSizeSp, el.fontName, el.isBold)
         is TemplateElement.UsernameElement ->
-            TextMeasureInfo("1".repeat(el.digitCount.coerceAtLeast(1)), el.textSizeSp, el.fontName, el.isBold)
+            TextMeasureInfo(dummyDigits(el.digitCount.coerceAtLeast(1)), el.textSizeSp, el.fontName, el.isBold)
         is TemplateElement.PasswordElement ->
-            TextMeasureInfo("●".repeat(el.digitCount.coerceAtLeast(1)), el.textSizeSp, el.fontName, el.isBold)
+            TextMeasureInfo(dummyDigits(el.digitCount.coerceAtLeast(1)), el.textSizeSp, el.fontName, el.isBold)
         is TemplateElement.DateElement ->
             TextMeasureInfo("2026/01/01", el.textSizeSp, el.fontName, el.isBold)
         else -> null
     }
+
+    /** Must match TemplateRenderer.dummyDigits() exactly. */
+    private fun dummyDigits(count: Int): String =
+        (1..count).joinToString("") { (it % 10).toString() }
 
     private fun resolveTypeface(fontName: String, isBold: Boolean): Typeface {
         val style = if (isBold) Typeface.BOLD else Typeface.NORMAL
@@ -150,9 +156,10 @@ class CardCanvasView @JvmOverloads constructor(
     private fun isTextEl(el: TemplateElement) = textMeasureInfo(el) != null
 
     // ── Handle icons (lazy) ───────────────────────────────────────────────────
-    private val iconMove:   Drawable? by lazy { loadIcon(R.drawable.ic_handle_move)   }
     private val iconResize: Drawable? by lazy { loadIcon(R.drawable.ic_handle_resize) }
     private val iconRotate: Drawable? by lazy { loadIcon(R.drawable.ic_handle_rotate) }
+    private val iconDelete: Drawable? by lazy { loadIcon(R.drawable.ic_handle_delete) }
+    private val iconMove:   Drawable? by lazy { loadIcon(R.drawable.ic_handle_move)   }
     private val iconHeight: Drawable? by lazy { loadIcon(R.drawable.ic_handle_height) }
     private fun loadIcon(res: Int) = AppCompatResources.getDrawable(context, res)
         ?.mutate()?.apply { setTint(Color.DKGRAY) }
@@ -173,10 +180,13 @@ class CardCanvasView @JvmOverloads constructor(
     // ── Public API ────────────────────────────────────────────────────────────
 
     fun bind(template: Template, selectedId: String?, activeSide: CardSide = CardSide.FRONT) {
+        val needsLayout = this.template == null
+            || this.template!!.card.heightRatio != template.card.heightRatio
+            || this.template!!.card.widthDp != template.card.widthDp
         this.template = template
         this.selectedId = selectedId
         this.activeSide = activeSide
-        requestLayout()
+        if (needsLayout) requestLayout()
         invalidate()
     }
 
@@ -209,8 +219,10 @@ class CardCanvasView @JvmOverloads constructor(
         val t = template ?: return
         recalc()
         // Build a render-proxy: same card style, but active side's elements
+        val activeCard = if (activeSide == CardSide.BACK && t.isBackSideEnabled)
+            t.backCard ?: t.card else t.card
         val renderTemplate = if (activeSide == CardSide.BACK && t.isBackSideEnabled)
-            t.copy(elements = t.backElements ?: emptyList())
+            t.copy(elements = t.backElements ?: emptyList(), card = activeCard)
         else t
         renderer.draw(canvas, renderTemplate, 0f, 0f, cardWidthPx, cardHeightPx)
         drawElementOverlay(canvas, renderTemplate)
@@ -221,8 +233,8 @@ class CardCanvasView @JvmOverloads constructor(
         val id = selectedId ?: return
         if (id == "card_background") return
         val el = t.elements.firstOrNull { it.id == id } ?: return
-        // Frame and BackgroundDecoration fill the entire card — no handles needed
-        if (el is TemplateElement.FrameElement || el is TemplateElement.BackgroundDecorationElement) return
+        // Frame fills the entire card — no handles needed
+        if (el is TemplateElement.FrameElement) return
 
         val cx = (el.x + el.width  / 2) * scaleX
         val cy = (el.y + el.height / 2) * scaleY
@@ -239,10 +251,11 @@ class CardCanvasView @JvmOverloads constructor(
         canvas.drawRect(rect, selBorderDark)
         canvas.drawRect(rect, selBorderLight)
         selBorderDark.pathEffect = null; selBorderLight.pathEffect = null
-        // Handles
-        drawHandle(canvas, cx + hw, cy + hh, iconResize)  // bottom-right → resize
-        drawHandle(canvas, cx + hw, cy - hh, iconRotate)  // top-right    → rotate
-        drawHandle(canvas, cx,      cy - hh - HR, iconMove) // top-center → move
+        // Handles — offset away from the element corners (4 handles)
+        drawHandle(canvas, cx + hw + HANDLE_OFF, cy + hh + HANDLE_OFF, iconResize)  // bottom-right → resize
+        drawHandle(canvas, cx + hw + HANDLE_OFF, cy - hh - HANDLE_OFF, iconRotate)  // top-right    → rotate
+        drawHandle(canvas, cx - hw - HANDLE_OFF, cy - hh - HANDLE_OFF, iconDelete)  // top-left     → delete
+        drawHandle(canvas, cx - hw - HANDLE_OFF, cy + hh + HANDLE_OFF, iconMove)    // bottom-left  → move
         canvas.restore()
     }
 
@@ -272,9 +285,12 @@ class CardCanvasView @JvmOverloads constructor(
         }
     }
 
+    var isInteractive: Boolean = true
+
     // ── Touch ─────────────────────────────────────────────────────────────────
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (!isInteractive) return super.onTouchEvent(event)
         when (event.actionMasked) {
 
             MotionEvent.ACTION_DOWN -> {
@@ -341,8 +357,7 @@ class CardCanvasView @JvmOverloads constructor(
         val id = selectedId ?: return
         val el = activeElements.firstOrNull { it.id == id } ?: return
         if (el is TemplateElement.CardBackground
-            || el is TemplateElement.FrameElement
-            || el is TemplateElement.BackgroundDecorationElement) return
+            || el is TemplateElement.FrameElement) return
 
         val cx = (el.x + el.width  / 2) * scaleX
         val cy = (el.y + el.height / 2) * scaleY
@@ -350,21 +365,28 @@ class CardCanvasView @JvmOverloads constructor(
         val (hw, hh) = elementHalfSizes(el)
 
         // ── Inverse-rotate touch into element's unrotated local space ───────
-        // The overlay handles are drawn after canvas.rotate(el.rotation, cx, cy).
-        // To hit-test them correctly we must reverse that rotation on the touch point.
         val rad = Math.toRadians(el.rotation.toDouble())
         val cosR = kotlin.math.cos(rad).toFloat()
         val sinR = kotlin.math.sin(rad).toFloat()
         val dx = x - cx; val dy = y - cy
-        // Inverse rotation: rotateBy(-θ) = [dx*cos + dy*sin, -dx*sin + dy*cos]
         val lx = cx + dx * cosR + dy * sinR
         val ly = cy - dx * sinR + dy * cosR
 
-        if (dist(lx, ly, cx + hw, cy - hh) < HR * 2f) {          // rotate (top-right)
+        // Delete handle (top-left, offset)
+        if (dist(lx, ly, cx - hw - HANDLE_OFF, cy - hh - HANDLE_OFF) < HR * 2f) {
+            // Fire delete immediately, don't enter a drag mode
+            listener?.onElementDeleteRequested(id)
+            return
+        }
+        // Move handle (bottom-left, offset)
+        if (dist(lx, ly, cx - hw - HANDLE_OFF, cy + hh + HANDLE_OFF) < HR * 2f) {
+            mode = Mode.DRAG; return
+        }
+        if (dist(lx, ly, cx + hw + HANDLE_OFF, cy - hh - HANDLE_OFF) < HR * 2f) {   // rotate (top-right)
             mode = Mode.ROTATE
             lastAngle = atan2((y - cy).toDouble(), (x - cx).toDouble()).toFloat(); return
         }
-        if (dist(lx, ly, cx + hw, cy + hh) < HR * 2f) {          // resize (bottom-right)
+        if (dist(lx, ly, cx + hw + HANDLE_OFF, cy + hh + HANDLE_OFF) < HR * 2f) {   // resize (bottom-right)
             mode = Mode.RESIZE
             resizeStartW = el.width; resizeStartH = el.height
             resizeStartX = x; resizeStartY = y
@@ -378,7 +400,7 @@ class CardCanvasView @JvmOverloads constructor(
             return
         }
         val elRect = RectF(cx - hw, cy - hh, cx + hw, cy + hh)
-        if (dist(lx, ly, cx, cy - hh - HR) < HR * 2f || elRect.contains(lx, ly)) {
+        if (elRect.contains(lx, ly)) {
             mode = Mode.DRAG                                     // move
         }
     }
@@ -394,15 +416,15 @@ class CardCanvasView @JvmOverloads constructor(
             Mode.RESIZE -> {
                 val el = activeElements.firstOrNull { it.id == id } ?: return
                 if (isTextEl(el)) {
-                    // For text, visual width and logical width don't match.
-                    // Calculate visual scale from drag delta, then apply that scale to logical width.
                     val distDelta = (x - resizeStartX) / scaleX
                     val visualScale = ((resizeStartVisualW + distDelta) / resizeStartVisualW).coerceAtLeast(0.1f)
                     val newW = (resizeStartW * visualScale).coerceAtLeast(10f)
                     val newH = (resizeStartH * visualScale).coerceAtLeast(10f)
                     listener?.onElementResized(id, newW, newH)
                 } else if (resizeStartAspect > 0f) {
-                    val newW = (resizeStartW + (x - resizeStartX) / scaleX).coerceAtLeast(20f)
+                    val rawW = resizeStartW + (x - resizeStartX) / scaleX
+                    val minW = if (resizeStartAspect > 1f) 20f / resizeStartAspect else 20f
+                    val newW = rawW.coerceAtLeast(minW)
                     listener?.onElementResized(id, newW, newW * resizeStartAspect)
                 } else {
                     val newW = (resizeStartW + (x - resizeStartX) / scaleX).coerceAtLeast(20f)
@@ -436,7 +458,6 @@ class CardCanvasView @JvmOverloads constructor(
         }
         for (el in activeElements) {
             if (!el.isVisible || el is TemplateElement.CardBackground
-                || el is TemplateElement.BackgroundDecorationElement
                 || el is TemplateElement.FrameElement) continue
             val cx = (el.x + el.width / 2) * scaleX
             val cy = (el.y + el.height / 2) * scaleY

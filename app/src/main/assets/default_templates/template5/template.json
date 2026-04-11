@@ -61,7 +61,7 @@
       "height": 62.77778,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "images/ic_user_circle.svg"
+      "imagePath": "pack:packs/icons/ic_user_circle.svg"
     },
     {
       "type": "image",
@@ -72,7 +72,7 @@
       "height": 10.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "images/line.svg"
+      "imagePath": "pack:packs/dividers/line.svg"
     },
     {
       "type": "password",
@@ -98,7 +98,7 @@
       "height": 62.77778,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "images/ic_lock_circle.svg"
+      "imagePath": "pack:packs/icons/ic_lock_circle.svg"
     },
     {
       "type": "text",
@@ -124,7 +124,7 @@
       "height": 35.370373,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "images/ic_dollar_circle.svg"
+      "imagePath": "pack:packs/icons/ic_dollar_circle.svg"
     },
     {
       "type": "text",
@@ -150,7 +150,7 @@
       "height": 34.62963,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "images/ic_clock_circle.svg"
+      "imagePath": "pack:packs/icons/ic_clock_circle.svg"
     },
     {
       "type": "text",

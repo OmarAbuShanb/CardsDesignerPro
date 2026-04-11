@@ -39,6 +39,7 @@ class PropertiesContainerFragment : Fragment(), PropertyFragment {
                 ?.onUiStateChanged(state)
             return
         }
+//        Log.d("PROPS_DEBUG", "REPLACING fragment: $lastSelectedId → $selectedId")
         lastSelectedId = selectedId
 
         if (!isAdded || view == null) return
@@ -55,7 +56,6 @@ class PropertiesContainerFragment : Fragment(), PropertyFragment {
                     is TemplateElement.QrElement -> QrPropertiesFragment()
                     is TemplateElement.DateElement -> DatePropertiesFragment()
                     is TemplateElement.FrameElement -> FramePropertiesFragment()
-                    is TemplateElement.BackgroundDecorationElement -> BackgroundDecorationPropertiesFragment()
                     else -> NoSelectionFragment()
                 }
             }

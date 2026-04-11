@@ -33,7 +33,7 @@
         android:layout_width="36dp"
         android:layout_height="36dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@android:drawable/ic_menu_view"
+        android:src="@drawable/ic_visibility_24"
         android:contentDescription="@null" />
 
     <!-- Edit properties -->

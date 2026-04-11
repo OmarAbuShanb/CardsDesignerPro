@@ -35,6 +35,7 @@ class AddElementFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         setupButtons()
         updateButtonStates()
+        listenForPackResult()
     }
 
     private fun setupButtons() {
@@ -55,12 +56,34 @@ class AddElementFragment : Fragment() {
         binding.btnAddFrame.setOnClickListener {
             if (!viewModel.hasFrameElement()) viewModel.addFrameElement()
         }
-        binding.btnAddDecoration.setOnClickListener {
-            if (!viewModel.hasDecorationElement()) viewModel.addBackgroundDecoration()
-        }
+
         binding.btnAddPack.setOnClickListener {
             PackBrowserBottomSheet().show(parentFragmentManager, "pack_browser")
         }
+    }
+
+    private fun listenForPackResult() {
+        parentFragmentManager.setFragmentResultListener(
+            PackBrowserBottomSheet.RESULT_KEY, viewLifecycleOwner
+        ) { _, bundle ->
+            val packPath = bundle.getString(PackBrowserBottomSheet.KEY_PACK_PATH) ?: return@setFragmentResultListener
+            // Read SVG dimensions so the element gets correct aspect ratio
+            val assetPath = packPath.removePrefix("pack:")
+            val (w, h) = readSvgDimensions(assetPath)
+            viewModel.addImageElement(packPath, w, h)
+        }
+    }
+
+    /** Parses an SVG from assets and returns (width, height) in px. Returns (0,0) on failure. */
+    private fun readSvgDimensions(assetPath: String): Pair<Int, Int> {
+        return runCatching {
+            val svg = requireContext().assets.open(assetPath).use {
+                com.caverock.androidsvg.SVG.getFromInputStream(it)
+            }
+            val w = if (svg.documentWidth > 0f) svg.documentWidth.toInt() else 24
+            val h = if (svg.documentHeight > 0f) svg.documentHeight.toInt() else 24
+            w to h
+        }.getOrDefault(0 to 0)
     }
 
     fun onUiStateChanged(state: EditorUiState) {
@@ -74,7 +97,7 @@ class AddElementFragment : Fragment() {
         binding.btnAddPassword.isEnabled   = !viewModel.hasPasswordElement()
         binding.btnAddQr.isEnabled         = !viewModel.hasQrElement()
         binding.btnAddFrame.isEnabled      = !viewModel.hasFrameElement()
-        binding.btnAddDecoration.isEnabled = !viewModel.hasDecorationElement()
+
         binding.btnAddDate.isEnabled       = !viewModel.hasDateElement()
     }
 

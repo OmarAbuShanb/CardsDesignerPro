@@ -179,27 +179,6 @@ sealed class TemplateElement {
         val dashGapDp: Float = 4f,
         val isDashRounded: Boolean = false,
     ) : TemplateElement()
-
-    // ── Background Decoration ─────────────────────────────────────────────────
-
-    @Serializable
-    @SerialName("bg_decoration")
-    data class BackgroundDecorationElement(
-        override val id: String = "bg_decoration",
-        override val x: Float = 0f,
-        override val y: Float = 0f,
-        override val width: Float = 1f,
-        override val height: Float = 1f,
-        override val isVisible: Boolean = true,
-        override val rotation: Float = 0f,
-        val shapeType: DecorationShape = DecorationShape.DOTS_SMALL,
-        /** Controls row/column count. Higher = more items, smaller size. */
-        val density: Float = 0.5f,
-        val color: String = "#CCCCCC",
-        /** Optional custom image path (overrides shapeType if set). */
-        val customImagePath: String? = null,
-        val customImageTintEnabled: Boolean = false,
-    ) : TemplateElement()
 }
 
 // ── Supporting enums ──────────────────────────────────────────────────────────
@@ -215,5 +194,5 @@ enum class DecorationShape(val displayName: String) {
     STARS_FOUR_POINT("نجوم"),
     DOTS_SMALL("نقاط صغيرة"),
     CIRCLES_HOLLOW("دوائر مفرغة"),
-    CUSTOM_IMAGE("مخصصة");
+    CUSTOM_IMAGE("تخصيص (إختيار شعار مُفرّغ من المعرض)");
 }

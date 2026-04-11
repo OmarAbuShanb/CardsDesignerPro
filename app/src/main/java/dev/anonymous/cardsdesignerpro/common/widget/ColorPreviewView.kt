@@ -79,17 +79,10 @@ class ColorPreviewView @JvmOverloads constructor(
             .attachBrightnessSlideBar(true)
 
         // ── Initial picker color ──────────────────────────────────────────────
-        // If the initial color is very dark (V ≈ 0 → black), moving the hue wheel
-        // while V=0 always outputs black regardless of hue.  Boost V to FULL (1.0)
-        // so the wheel is immediately usable for any color change.
-        // trackedHex still holds the original, so OK without changes = no effect.
+        // Show the actual color as-is without any HSV manipulation
         try {
             val parsed = Color.parseColor(colorHex)
-            val alpha  = Color.alpha(parsed)
-            val hsv    = FloatArray(3)
-            Color.colorToHSV(parsed, hsv)
-            if (hsv[2] < 0.25f) hsv[2] = 1.0f   // lift dark → full brightness so wheel is vivid
-            builder.colorPickerView.setInitialColor(Color.HSVToColor(alpha, hsv))
+            builder.colorPickerView.setInitialColor(parsed)
         } catch (_: Exception) {}
 
         builder.colorPickerView.setColorListener(

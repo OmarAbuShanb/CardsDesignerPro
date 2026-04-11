@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -89,7 +89,7 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintWidth_max="600dp">
-                    
+
                     <TextView
                         android:id="@+id/tv_side_title"
                         android:layout_width="wrap_content"
@@ -98,7 +98,7 @@
                         android:textAppearance="?attr/textAppearanceTitleLarge"
                         android:textStyle="bold"
                         android:textColor="?attr/colorPrimary" />
-                        
+
                     <TextView
                         android:id="@+id/tv_side_subtitle"
                         android:layout_width="wrap_content"
@@ -163,7 +163,7 @@
         android:id="@+id/bottom_sheet_host"
         android:layout_width="match_parent"
         android:layout_height="400dp"
-        android:layout_alignParentBottom="true"
+        android:layout_gravity="bottom"
         app:cardBackgroundColor="?attr/colorSurface"
         app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.TopRounded"
         app:strokeWidth="0dp"
@@ -190,4 +190,4 @@
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
-</RelativeLayout>
+</FrameLayout>

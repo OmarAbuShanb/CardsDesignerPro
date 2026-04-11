@@ -87,22 +87,17 @@ class TemplateRepository(private val context: Context) {
 
         fun rewrite(path: String?): String? = path?.let { pathMap[it] ?: it }
 
-        val newCard =
-            original.card.copy(backgroundImagePath = rewrite(original.card.backgroundImagePath))
+        val newCard = original.card.copy(backgroundImagePath = rewrite(original.card.backgroundImagePath),
+            patternCustomImagePath = rewrite(original.card.patternCustomImagePath))
+        val newBackCard = original.backCard?.copy(backgroundImagePath = rewrite(original.backCard.backgroundImagePath),
+            patternCustomImagePath = rewrite(original.backCard.patternCustomImagePath))
 
         fun rewriteElements(elements: List<TemplateElement>) = elements.map { el ->
             when (el) {
                 is TemplateElement.ImageElement -> el.copy(
                     imagePath = rewrite(el.imagePath) ?: el.imagePath
                 )
-
                 is TemplateElement.QrElement -> el.copy(logoPath = rewrite(el.logoPath))
-                is TemplateElement.BackgroundDecorationElement -> el.copy(
-                    customImagePath = rewrite(
-                        el.customImagePath
-                    )
-                )
-
                 else -> el
             }
         }
@@ -111,6 +106,7 @@ class TemplateRepository(private val context: Context) {
             id = newId,
             name = newName,
             card = newCard,
+            backCard = newBackCard,
             elements = rewriteElements(original.elements),
             backElements = original.backElements?.let { rewriteElements(it) }
         )
@@ -124,10 +120,28 @@ class TemplateRepository(private val context: Context) {
         template
     }
 
+    /** Gets a list of all available default templates from assets. */
+    suspend fun getDefaultTemplates(): List<Pair<String, Template>> = withContext(Dispatchers.IO) {
+        val dirs = context.assets.list("default_templates") ?: return@withContext emptyList()
+        val result = mutableListOf<Pair<String, Template>>()
+        for (dir in dirs) {
+            val jsonStr = runCatching {
+                context.assets.open("default_templates/$dir/template.json").bufferedReader().use { it.readText() }
+            }.getOrNull()
+            if (jsonStr != null) {
+                val template = runCatching { AppJson.decode(jsonStr) }.getOrNull()
+                if (template != null) {
+                    result.add(dir to template)
+                }
+            }
+        }
+        result
+    }
+
     /** Extracts the default template from assets and saves it as a new template with the given name. */
-    suspend fun extractDefaultTemplate(name: String): Template? = withContext(Dispatchers.IO) {
+    suspend fun extractDefaultTemplate(sourceDir: String, name: String): Template? = withContext(Dispatchers.IO) {
         val jsonStr = runCatching {
-            context.assets.open("default_templates/template5/template.json").bufferedReader()
+            context.assets.open("default_templates/$sourceDir/template.json").bufferedReader()
                 .use { it.readText() }
         }.getOrNull() ?: return@withContext null
 
@@ -137,7 +151,7 @@ class TemplateRepository(private val context: Context) {
             
         // Copy SVGs/images from assets to local storage
         val imageDir = getOrCreateImageDir(newId)
-        val assetsImageDir = "default_templates/template5/images"
+        val assetsImageDir = "default_templates/$sourceDir/images"
         runCatching {
             context.assets.list(assetsImageDir)?.forEach { fileName ->
                 val outFile = File(imageDir, fileName)
@@ -150,7 +164,7 @@ class TemplateRepository(private val context: Context) {
         }
         
         fun rewrite(path: String?): String? {
-            if (path == null) return null
+            if (path == null || path.startsWith("pack:")) return path
             if (path.startsWith("images/")) {
                 return File(imageDir, path.removePrefix("images/")).absolutePath
             }
@@ -161,17 +175,22 @@ class TemplateRepository(private val context: Context) {
             when (el) {
                 is TemplateElement.ImageElement -> el.copy(imagePath = rewrite(el.imagePath) ?: el.imagePath)
                 is TemplateElement.QrElement -> el.copy(logoPath = rewrite(el.logoPath))
-                is TemplateElement.BackgroundDecorationElement -> el.copy(customImagePath = rewrite(el.customImagePath))
                 else -> el
             }
         }
         
-        val extractedCard = defaultTemplate.card.copy(backgroundImagePath = rewrite(defaultTemplate.card.backgroundImagePath))
+        val extractedCard = defaultTemplate.card.copy(
+            backgroundImagePath = rewrite(defaultTemplate.card.backgroundImagePath),
+            patternCustomImagePath = rewrite(defaultTemplate.card.patternCustomImagePath))
+        val extractedBackCard = defaultTemplate.backCard?.copy(
+            backgroundImagePath = rewrite(defaultTemplate.backCard.backgroundImagePath),
+            patternCustomImagePath = rewrite(defaultTemplate.backCard.patternCustomImagePath))
 
         val extracted = defaultTemplate.copy(
             id = newId,
             name = name,
             card = extractedCard,
+            backCard = extractedBackCard,
             elements = rewriteElements(defaultTemplate.elements),
             backElements = defaultTemplate.backElements?.let { rewriteElements(it) }
         )
@@ -203,26 +222,14 @@ class TemplateRepository(private val context: Context) {
     private fun collectAllLocalPaths(template: Template): Set<String> {
         val paths = mutableSetOf<String>()
         template.card.backgroundImagePath?.let { if (!it.startsWith("pack:")) paths.add(it) }
+        template.card.patternCustomImagePath?.let { if (!it.startsWith("pack:")) paths.add(it) }
+        template.backCard?.backgroundImagePath?.let { if (!it.startsWith("pack:")) paths.add(it) }
+        template.backCard?.patternCustomImagePath?.let { if (!it.startsWith("pack:")) paths.add(it) }
         fun collectFromElements(elements: List<TemplateElement>) {
             elements.forEach { el ->
                 when (el) {
-                    is TemplateElement.ImageElement -> if (!el.imagePath.startsWith("pack:")) paths.add(
-                        el.imagePath
-                    )
-
-                    is TemplateElement.QrElement -> el.logoPath?.let {
-                        if (!it.startsWith("pack:")) paths.add(
-                            it
-                        )
-                    }
-
-                    is TemplateElement.BackgroundDecorationElement -> el.customImagePath?.let {
-                        if (!it.startsWith(
-                                "pack:"
-                            )
-                        ) paths.add(it)
-                    }
-
+                    is TemplateElement.ImageElement -> if (!el.imagePath.startsWith("pack:")) paths.add(el.imagePath)
+                    is TemplateElement.QrElement -> el.logoPath?.let { if (!it.startsWith("pack:")) paths.add(it) }
                     else -> Unit
                 }
             }

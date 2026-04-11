@@ -10,16 +10,9 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import dev.anonymous.cardsdesignerpro.R
 import dev.anonymous.cardsdesignerpro.data.model.DateFormat
-import dev.anonymous.cardsdesignerpro.data.model.DecorationShape
 import dev.anonymous.cardsdesignerpro.data.model.TemplateElement
-import android.net.Uri
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
-import dev.anonymous.cardsdesignerpro.util.ImageUtils
-import java.io.File
 import dev.anonymous.cardsdesignerpro.databinding.FragmentPropDateBinding
 import dev.anonymous.cardsdesignerpro.databinding.FragmentPropFrameBinding
-import dev.anonymous.cardsdesignerpro.databinding.FragmentPropDecorationBinding
 import dev.anonymous.cardsdesignerpro.databinding.FragmentPropNoSelectionBinding
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorUiState
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel
@@ -66,6 +59,18 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
             val e = viewModel.selectedElement as? TemplateElement.DateElement
             if (e != null) viewModel.updateElement(e.copy(textColor = hex))
         }
+        // Background color
+        b.cpvBgColor.onColorSelected = { hex ->
+            b.tvBgColorHex.text = hex
+            val e = viewModel.selectedElement as? TemplateElement.DateElement
+            if (e != null) viewModel.updateElement(e.copy(bgColor = hex))
+        }
+        b.btnClearBgColor.setOnClickListener {
+            b.tvBgColorHex.text = "—"
+            b.cpvBgColor.colorHex = "#00000000"
+            val e = viewModel.selectedElement as? TemplateElement.DateElement
+            if (e != null) viewModel.updateElement(e.copy(bgColor = null))
+        }
         b.cbBold.setOnCheckedChangeListener { _, checked ->
             if (!updating) {
                 val e = viewModel.selectedElement as? TemplateElement.DateElement ?: return@setOnCheckedChangeListener
@@ -96,6 +101,17 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
         if (b.spinnerDateFormat.selectedItemPosition != fmtIdx) b.spinnerDateFormat.setSelection(fmtIdx)
         if (b.cpvTextColor.colorHex != el.textColor) b.cpvTextColor.colorHex = el.textColor
         b.tvColorHex.text = el.textColor
+        // Background color
+        val bg = el.bgColor
+        if (bg != null) {
+            if (b.cpvBgColor.colorHex != bg) b.cpvBgColor.colorHex = bg
+            b.tvBgColorHex.text = bg
+            b.btnClearBgColor.visibility = View.VISIBLE
+        } else {
+            b.cpvBgColor.colorHex = "#FFFFFFFF"
+            b.tvBgColorHex.text = "لا يوجد خلفية للنص بشكل افتراضي"
+            b.btnClearBgColor.visibility = View.GONE
+        }
         if (b.cbBold.isChecked != el.isBold) b.cbBold.isChecked = el.isBold
         val targetSize = el.textSizeSp.toInt()
         if (b.stepperFontSize.value != targetSize) {
@@ -195,119 +211,6 @@ class FramePropertiesFragment : Fragment(), PropertyFragment {
         val el = state.template.elements.firstOrNull { it.id == state.selectedElementId }
             as? TemplateElement.FrameElement ?: return
         populate(el)
-    }
-
-    override fun onDestroyView() { super.onDestroyView(); _b = null }
-}
-
-// ── Background Decoration Properties ─────────────────────────────────────────
-
-class BackgroundDecorationPropertiesFragment : Fragment(), PropertyFragment {
-    private var _b: FragmentPropDecorationBinding? = null
-    private val b get() = _b!!
-    val viewModel: EditorViewModel by activityViewModels()
-    private var updating = false
-
-    private val pickBgImageLauncher = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? ->
-        if (uri != null) {
-            copyImage(uri)
-        } else {
-            val e = viewModel.selectedElement as? TemplateElement.BackgroundDecorationElement ?: return@registerForActivityResult
-            if (e.shapeType == DecorationShape.CUSTOM_IMAGE && e.customImagePath == null) {
-                viewModel.updateElement(e.copy(shapeType = DecorationShape.STARS_FOUR_POINT))
-            }
-        }
-    }
-
-    override fun onCreateView(i: LayoutInflater, c: ViewGroup?, s: Bundle?): View {
-        _b = FragmentPropDecorationBinding.inflate(i, c, false); return b.root
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        val shapes = DecorationShape.values()
-        b.spinnerShape.adapter = ArrayAdapter(requireContext(),
-            android.R.layout.simple_spinner_item, shapes.map { it.displayName })
-            .apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
-
-        val el = viewModel.selectedElement as? TemplateElement.BackgroundDecorationElement ?: return
-        populate(el, shapes)
-
-        b.spinnerShape.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
-                if (updating) return
-                val e = viewModel.selectedElement as? TemplateElement.BackgroundDecorationElement ?: return
-                val newShape = shapes[pos]
-                if (e.shapeType == newShape) return   // spurious fire
-                if (newShape == DecorationShape.CUSTOM_IMAGE && e.shapeType != DecorationShape.CUSTOM_IMAGE) {
-                    if (e.customImagePath == null) {
-                        pickBgImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                    }
-                }
-                viewModel.updateElement(e.copy(shapeType = newShape))
-            }
-            override fun onNothingSelected(p: AdapterView<*>?) {}
-        }
-        b.sliderDensity.addOnChangeListener { _, value, _ ->
-            val e = viewModel.selectedElement as? TemplateElement.BackgroundDecorationElement ?: return@addOnChangeListener
-            viewModel.updateElement(e.copy(density = value))
-        }
-        b.cbCustomTint.setOnCheckedChangeListener { _, isChecked ->
-            if (updating) return@setOnCheckedChangeListener
-            val e = viewModel.selectedElement as? TemplateElement.BackgroundDecorationElement ?: return@setOnCheckedChangeListener
-            viewModel.updateElement(e.copy(customImageTintEnabled = isChecked))
-        }
-
-        b.cpvDecoColor.onColorSelected = { hex ->
-            b.tvColorHex.text = hex
-            val e = viewModel.selectedElement as? TemplateElement.BackgroundDecorationElement
-            if (e != null) viewModel.updateElement(e.copy(color = hex))
-        }
-
-        b.btnRemoveCustomImage.setOnClickListener {
-            val e = viewModel.selectedElement as? TemplateElement.BackgroundDecorationElement ?: return@setOnClickListener
-            viewModel.updateElement(e.copy(customImagePath = null, shapeType = DecorationShape.STARS_FOUR_POINT))
-        }
-    }
-
-    private fun copyImage(uri: Uri) {
-        val dir = viewModel.getImageDirForCurrentTemplate()
-        val result = ImageUtils.copyAndFixExif(requireContext(), uri, dir) ?: return
-        val e = viewModel.selectedElement as? TemplateElement.BackgroundDecorationElement ?: return
-        viewModel.updateElement(e.copy(customImagePath = result.file.absolutePath))
-    }
-
-    private fun populate(el: TemplateElement.BackgroundDecorationElement, shapes: Array<DecorationShape>) {
-        updating = true
-        val shapeIdx = shapes.indexOf(el.shapeType).coerceAtLeast(0)
-        if (b.spinnerShape.selectedItemPosition != shapeIdx) b.spinnerShape.setSelection(shapeIdx)
-        val density = el.density.coerceIn(0f, 1f)
-        if (b.sliderDensity.value != density) b.sliderDensity.value = density
-        if (b.cpvDecoColor.colorHex != el.color) b.cpvDecoColor.colorHex = el.color
-        b.tvColorHex.text = el.color
-        if (el.shapeType == DecorationShape.CUSTOM_IMAGE) {
-            b.cbCustomTint.visibility = View.VISIBLE
-            if (b.cbCustomTint.isChecked != el.customImageTintEnabled) {
-                b.cbCustomTint.isChecked = el.customImageTintEnabled
-            }
-            b.layoutColor.visibility = if (el.customImageTintEnabled) View.VISIBLE else View.GONE
-            b.layoutCustomImage.visibility = if (el.customImagePath != null) View.VISIBLE else View.GONE
-            if (el.customImagePath != null) {
-                b.tvCustomImageName.text = File(el.customImagePath).name
-            }
-        } else {
-            b.cbCustomTint.visibility = View.GONE
-            b.layoutColor.visibility = View.VISIBLE
-            b.layoutCustomImage.visibility = View.GONE
-        }
-        updating = false
-    }
-
-    override fun onUiStateChanged(state: EditorUiState) {
-        if (_b == null) return
-        val el = state.template.elements.firstOrNull { it.id == state.selectedElementId }
-            as? TemplateElement.BackgroundDecorationElement ?: return
-        populate(el, DecorationShape.values())
     }
 
     override fun onDestroyView() { super.onDestroyView(); _b = null }

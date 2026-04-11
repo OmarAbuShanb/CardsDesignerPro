@@ -5,6 +5,15 @@
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="vertical" android:padding="16dp">
 
+        <!-- Change Image button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_change_image"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="تغيير الصورة"
+            android:layout_marginBottom="16dp" />
+
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
             android:text="@string/prop_tint" android:textAppearance="?attr/textAppearanceLabelMedium"
             android:layout_marginBottom="6dp" />

@@ -26,6 +26,13 @@ class ImagePropertiesFragment : Fragment(), PropertyFragment {
     private val binding get() = _binding!!
     val viewModel: EditorViewModel by activityViewModels()
 
+    /** Pick a new image to replace the current one — preserves size and position. */
+    private val changeImageLauncher = registerForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        uri?.let { changeImage(it) }
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentPropImageBinding.inflate(inflater, container, false)
         return binding.root
@@ -50,6 +57,100 @@ class ImagePropertiesFragment : Fragment(), PropertyFragment {
             binding.tvTintHex.text = getString(R.string.prop_tint_none)
             binding.btnClearTint.visibility = View.GONE
         }
+        binding.btnChangeImage.setOnClickListener {
+            val e = viewModel.selectedElement as? TemplateElement.ImageElement ?: return@setOnClickListener
+            if (e.imagePath.startsWith("pack:")) {
+                val sheet = dev.anonymous.cardsdesignerpro.ui.editor.addelem.PackBrowserBottomSheet()
+                sheet.show(parentFragmentManager, "pack_change")
+            } else {
+                changeImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            }
+        }
+
+        // Listen for pack browser result (replacing a pack image)
+        parentFragmentManager.setFragmentResultListener(
+            dev.anonymous.cardsdesignerpro.ui.editor.addelem.PackBrowserBottomSheet.RESULT_KEY,
+            viewLifecycleOwner
+        ) { _, bundle ->
+            val packPath = bundle.getString(
+                dev.anonymous.cardsdesignerpro.ui.editor.addelem.PackBrowserBottomSheet.KEY_PACK_PATH
+            ) ?: return@setFragmentResultListener
+            val e = viewModel.selectedElement as? TemplateElement.ImageElement ?: return@setFragmentResultListener
+            
+            val assetPath = packPath.removePrefix("pack:")
+            val (srcW, srcH) = readSvgDimensions(assetPath)
+            
+            val oldW = e.width
+            val oldH = e.height
+            var newW = oldW
+            var newH = oldH
+            if (srcW > 0 && srcH > 0) {
+                val aspect = srcW.toFloat() / srcH.toFloat()
+                if (oldW / aspect <= oldH) {
+                    newW = oldW
+                    newH = oldW / aspect
+                } else {
+                    newH = oldH
+                    newW = oldH * aspect
+                }
+            }
+            
+            val cx = e.x + oldW / 2f
+            val cy = e.y + oldH / 2f
+            
+            viewModel.updateElement(e.copy(
+                imagePath = packPath,
+                width = newW,
+                height = newH,
+                x = cx - newW / 2f,
+                y = cy - newH / 2f
+            ))
+        }
+    }
+
+    private fun readSvgDimensions(assetPath: String): Pair<Int, Int> {
+        return runCatching {
+            val svg = requireContext().assets.open(assetPath).use {
+                com.caverock.androidsvg.SVG.getFromInputStream(it)
+            }
+            val w = if (svg.documentWidth > 0f) svg.documentWidth.toInt() else 24
+            val h = if (svg.documentHeight > 0f) svg.documentHeight.toInt() else 24
+            w to h
+        }.getOrDefault(0 to 0)
+    }
+
+    private fun changeImage(uri: Uri) {
+        val dir = viewModel.getImageDirForCurrentTemplate()
+        val result = ImageUtils.copyAndFixExif(requireContext(), uri, dir) ?: return
+        val e = viewModel.selectedElement as? TemplateElement.ImageElement ?: return
+
+        // Fit new image aspect ratio within old element bounds (no stretching)
+        val oldW = e.width
+        val oldH = e.height
+        val srcW = result.width
+        val srcH = result.height
+        var newW = oldW
+        var newH = oldH
+        if (srcW > 0 && srcH > 0) {
+            val aspect = srcW.toFloat() / srcH.toFloat()
+            if (oldW / aspect <= oldH) {
+                newW = oldW
+                newH = oldW / aspect
+            } else {
+                newH = oldH
+                newW = oldH * aspect
+            }
+        }
+        // Keep element centered at the same position
+        val cx = e.x + oldW / 2f
+        val cy = e.y + oldH / 2f
+        viewModel.updateElement(e.copy(
+            imagePath = result.file.absolutePath,
+            width = newW,
+            height = newH,
+            x = cx - newW / 2f,
+            y = cy - newH / 2f
+        ))
     }
 
     override fun onUiStateChanged(state: EditorUiState) {

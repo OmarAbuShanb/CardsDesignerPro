@@ -1,13 +1,9 @@
 package dev.anonymous.cardsdesignerpro.ui.viewer
 
-import android.net.Uri
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
+import androidx.core.net.toUri
 import dev.anonymous.cardsdesignerpro.databinding.ActivityPdfViewerBinding
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class PdfViewerActivity : AppCompatActivity() {
 
@@ -16,7 +12,6 @@ class PdfViewerActivity : AppCompatActivity() {
     }
 
     private lateinit var binding: ActivityPdfViewerBinding
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityPdfViewerBinding.inflate(layoutInflater)
@@ -25,41 +20,45 @@ class PdfViewerActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         binding.toolbar.setNavigationOnClickListener { finish() }
 
-        val uri = intent.data ?: intent.getStringExtra(EXTRA_PDF_URI)?.let { Uri.parse(it) } ?: run { finish(); return }
-
-        // Fix: PDFView.fromStream() is ASYNC — the stream is closed by use{} before
-        // the decoder reads it → "Stream Closed" IOException.
-        // Solution: read ALL bytes eagerly on IO thread first, then hand a ByteArray
-        // to fromBytes() which is safe to use asynchronously.
-        lifecycleScope.launch {
-            val bytes = withContext(Dispatchers.IO) {
-                runCatching {
-                    contentResolver.openInputStream(uri)?.use { it.readBytes() }
-                }.getOrNull()
-            }
-            if (bytes == null) {
-                withContext(Dispatchers.Main) {
-                    com.google.android.material.dialog.MaterialAlertDialogBuilder(this@PdfViewerActivity)
-                        .setTitle("تنبيه أمان الأندرويد")
-                        .setMessage("اكتمل حفظ الملف بنجاح وتم وضعه في المجلد الذي اخترته.\n\nبسبب قيود نظام أندرويد الأمنية للملفات الخارجية، لا يمكننا فتحه لك من هنا بعد إغلاق التطبيق. يرجى التوجه لمدير الملفات (أو مجلد التنزيلات) وفتحه من هناك.")
-                        .setPositiveButton("موافق") { _, _ -> finish() }
-                        .setOnDismissListener { finish() }
-                        .show()
-                }
-                return@launch
+        val uri = intent.data
+            ?: intent.getStringExtra(EXTRA_PDF_URI)?.toUri()
+            ?: run {
+                finish()
+                return
             }
 
-            binding.pdfView
-                .fromBytes(bytes)
-                .enableSwipe(true)
-                .swipeHorizontal(false)
-                .enableDoubletap(true)
-                .defaultPage(0)
-                .spacing(12)
-                .load()
-                
-            binding.pdfView.maxZoom = 6.0f
-            binding.pdfView.midZoom = 3.0f
+        val supportsJetpackPdf = if (android.os.Build.VERSION.SDK_INT >= 30) {
+            android.os.ext.SdkExtensions.getExtensionVersion(android.os.Build.VERSION_CODES.S) >= 19
+        } else {
+            false
+        }
+
+        if (supportsJetpackPdf) {
+            // Android 12+ (API 31+) with required S Extension 19: Use Google's official Jetpack PdfViewer
+            binding.pdfFragmentModern.visibility = android.view.View.VISIBLE
+
+            val fragmentManager = supportFragmentManager
+            val pdfViewerFragment =
+                fragmentManager.findFragmentById(dev.anonymous.cardsdesignerpro.R.id.pdf_fragment_modern) as? androidx.pdf.viewer.fragment.PdfViewerFragment
+
+            if (pdfViewerFragment != null) {
+                // Must suppress lint here since we already manually verified the S Extension version above
+                @android.annotation.SuppressLint("NewApi")
+                pdfViewerFragment.documentUri = uri
+            } else {
+                com.google.android.material.dialog.MaterialAlertDialogBuilder(this@PdfViewerActivity)
+                    .setTitle("خطأ في التحميل")
+                    .setMessage("فشل في تهيئة العارض الحديث.")
+                    .setPositiveButton("موافق") { _, _ -> finish() }
+                    .setOnDismissListener { finish() }
+                    .show()
+            }
+        } else {
+            // Android < 12 (API 26-30) or missing S Extensions: Use lightweight aFreakyElf PdfRendererView
+            binding.tvQualityWarning.visibility = android.view.View.VISIBLE
+            binding.pdfViewLegacy.visibility = android.view.View.VISIBLE
+            binding.pdfViewLegacy.initWithUri(uri)
+            binding.pdfViewLegacy.setMaxZoomScale(5f)
         }
     }
 }

@@ -23,7 +23,6 @@ object AppJson {
                 subclass(TemplateElement.QrElement::class)
                 subclass(TemplateElement.DateElement::class)
                 subclass(TemplateElement.FrameElement::class)
-                subclass(TemplateElement.BackgroundDecorationElement::class)
             }
         }
         prettyPrint = false

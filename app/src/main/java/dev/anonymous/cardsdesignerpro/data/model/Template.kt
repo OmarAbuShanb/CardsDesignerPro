@@ -17,6 +17,8 @@ data class Template(
     val id: String,
     val name: String,
     val card: CardStyle,
+    /** Back-face card style. null = uses front card style. */
+    val backCard: CardStyle? = null,
     val elements: List<TemplateElement> = emptyList(),
     /** Back-face elements. null = back side not enabled. emptyList = enabled but empty. */
     val backElements: List<TemplateElement>? = null,
@@ -38,6 +40,14 @@ data class CardStyle(
     val backgroundColor: String = "#FFFFFF",
     /** Absolute path inside filesDir, null = no background image. */
     val backgroundImagePath: String? = null,
+    // ── Pattern (formerly BackgroundDecorationElement) ────────────────────────
+    val patternEnabled: Boolean = false,
+    val patternShape: DecorationShape = DecorationShape.STARS_FOUR_POINT,
+    val patternDensity: Float = 0.5f,
+    val patternColor: String = "#CCCCCC",
+    /** Optional custom image path (overrides patternShape if set). */
+    val patternCustomImagePath: String? = null,
+    val patternCustomImageTintEnabled: Boolean = false,
 )
 
 @Serializable
@@ -78,4 +88,3 @@ enum class FlipEdge(val displayName: String) {
     LONG_EDGE("القلب على الحافة الطويلة (موصى به)"),
     SHORT_EDGE("القلب على الحافة القصيرة");
 }
-

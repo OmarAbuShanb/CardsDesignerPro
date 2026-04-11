@@ -22,9 +22,9 @@ class ElementAdapter(
 
     var selectedId: String? = null
         set(value) {
+            if (field == value) return
             val old = field
             field = value
-            // Rebind only the two affected items — DiffUtil won't do it since element data didn't change
             currentList.indexOfFirst { it.id == old }.takeIf { it >= 0 }?.let { notifyItemChanged(it) }
             currentList.indexOfFirst { it.id == value }.takeIf { it >= 0 }?.let { notifyItemChanged(it) }
         }
@@ -35,15 +35,12 @@ class ElementAdapter(
             binding.tvElementLabel.text = el.labelRes(binding.root.context)
 
             val isCardBg  = el is TemplateElement.CardBackground
-            val isLocked  = isCardBg || el is TemplateElement.BackgroundDecorationElement || el is TemplateElement.FrameElement
-            // Drag handle: hidden for locked elements (their order is enforced programmatically)
+            val isLocked  = isCardBg || el is TemplateElement.FrameElement
             binding.ivDragHandle.visibility = if (isLocked) View.INVISIBLE else View.VISIBLE
-            // Delete: only hidden for CardBackground (the base card can never be removed)
             binding.btnDelete.visibility = if (isCardBg) View.INVISIBLE else View.VISIBLE
-            // Visibility toggle: hidden only for CardBackground (can't hide the card itself)
             binding.btnVisibility.visibility = if (isCardBg) View.INVISIBLE else View.VISIBLE
 
-            // Highlight selected: border-only stroke, no background fill
+            // Selection highlight
             val isSelected = el.id == selectedId
             if (isSelected) {
                 val dp = binding.root.resources.displayMetrics.density
@@ -60,7 +57,11 @@ class ElementAdapter(
             }
 
             // Visibility icon
-            binding.btnVisibility.alpha = if (el.isVisible) 1f else 0.4f
+            binding.btnVisibility.setImageResource(
+                if (el.isVisible) R.drawable.ic_visibility_24
+                else R.drawable.ic_visibility_off_24
+            )
+            binding.btnVisibility.alpha = if (el.isVisible) 1f else 0.5f
 
             binding.root.setOnClickListener { onSelect(el.id) }
             binding.btnVisibility.setOnClickListener { onVisibilityToggle(el.id) }
@@ -82,16 +83,25 @@ class ElementAdapter(
     }
 }
 
-private fun TemplateElement.labelRes(ctx: android.content.Context): String = ctx.getString(
-    when (this) {
+private fun TemplateElement.labelRes(ctx: android.content.Context): String {
+    if (this is TemplateElement.ImageElement) {
+        return ctx.getString(when {
+            imagePath.contains("packs/icons/")    -> R.string.elem_icon
+            imagePath.contains("packs/fields/")   -> R.string.elem_field
+            imagePath.contains("packs/dividers/") -> R.string.elem_divider
+            imagePath.contains("packs/logos/")    -> R.string.elem_logo
+            imagePath.contains("packs/misc/")     -> R.string.elem_misc
+            else -> R.string.elem_image
+        })
+    }
+    return ctx.getString(when (this) {
         is TemplateElement.CardBackground -> R.string.elem_card_background
         is TemplateElement.TextElement -> R.string.elem_text
         is TemplateElement.UsernameElement -> R.string.elem_username
         is TemplateElement.PasswordElement -> R.string.elem_password
-        is TemplateElement.ImageElement -> R.string.elem_image
         is TemplateElement.QrElement -> R.string.elem_qr
         is TemplateElement.DateElement -> R.string.elem_date
         is TemplateElement.FrameElement -> R.string.elem_frame
-        is TemplateElement.BackgroundDecorationElement -> R.string.elem_decoration
-    }
-)
+        else -> R.string.elem_image
+    })
+}

@@ -23,7 +23,9 @@ class StepperView @JvmOverloads constructor(
     var maxValue: Int = 100
     var value: Int = 1
         set(v) {
-            field = v.coerceIn(minValue, maxValue)
+            val clamped = v.coerceIn(minValue, maxValue)
+            if (field == clamped) return           // ← skip if unchanged
+            field = clamped
             binding.tvValue.text = field.toString()
             onValueChanged?.invoke(field)
         }
