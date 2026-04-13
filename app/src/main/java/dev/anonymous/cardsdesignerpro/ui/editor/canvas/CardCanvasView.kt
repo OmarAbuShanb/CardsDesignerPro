@@ -55,10 +55,20 @@ class CardCanvasView @JvmOverloads constructor(
 
     var listener: Listener? = null
 
-    private val renderer = TemplateRenderer(context)
+    private val renderer = TemplateRenderer(context).apply {
+        // WYSIWYG: editor shows FULL quality so the design matches the best possible export
+        val q = dev.anonymous.cardsdesignerpro.data.model.ExportQuality.FULL
+        maxImageDim   = q.maxImageDim
+        maxPatternDim = q.maxPatternDim
+        maxQrDim      = q.maxQrDim
+    }
     private var template: Template? = null
     private var selectedId: String? = null
     private var activeSide: CardSide = CardSide.FRONT
+
+    /** Cached bitmap for non-interactive preview (e.g. default-templates list). */
+    private var previewCache: android.graphics.Bitmap? = null
+    private var previewRendering = false
 
     /** The element list for the currently rendered side. */
     private val activeElements: List<TemplateElement>
@@ -186,6 +196,9 @@ class CardCanvasView @JvmOverloads constructor(
         this.template = template
         this.selectedId = selectedId
         this.activeSide = activeSide
+        previewCache?.recycle()
+        previewCache = null
+        previewRendering = false
         if (needsLayout) requestLayout()
         invalidate()
     }
@@ -218,6 +231,51 @@ class CardCanvasView @JvmOverloads constructor(
         super.onDraw(canvas)
         val t = template ?: return
         recalc()
+
+        // Non-interactive preview: render asynchronously and cache for smooth scrolling
+        if (!isInteractive) {
+            val cached = previewCache
+            if (cached != null) {
+                val dstRect = android.graphics.RectF(0f, 0f, cardWidthPx, cardHeightPx)
+                canvas.drawBitmap(cached, null, dstRect, null)
+            } else {
+                // Draw placeholder (card background color) while rendering in background
+                val bgPaint = Paint().apply { color = parseColorSafe(t.card.backgroundColor) }
+                canvas.drawRect(0f, 0f, cardWidthPx, cardHeightPx, bgPaint)
+
+                if (!previewRendering && cardWidthPx > 0 && cardHeightPx > 0) {
+                    previewRendering = true
+                    val tCopy = t
+                    
+                    // Cap the preview dimension drastically to resolve heavy landscape scrolling lag
+                    val maxDim = 800f
+                    val scale = if (cardWidthPx > maxDim) maxDim / cardWidthPx else 1f
+                    val reqW = (cardWidthPx * scale).toInt().coerceAtLeast(1)
+                    val reqH = (cardHeightPx * scale).toInt().coerceAtLeast(1)
+
+                    PREVIEW_EXECUTOR.execute {
+                        try {
+                            val q = dev.anonymous.cardsdesignerpro.data.model.ExportQuality.LOW
+                            renderer.maxImageDim = q.maxImageDim
+                            renderer.maxPatternDim = q.maxPatternDim
+                            renderer.maxQrDim = q.maxQrDim
+
+                            val bmp = android.graphics.Bitmap.createBitmap(reqW, reqH, android.graphics.Bitmap.Config.ARGB_8888)
+                            renderer.draw(Canvas(bmp), tCopy, 0f, 0f, reqW.toFloat(), reqH.toFloat())
+                            post {
+                                previewCache = bmp
+                                previewRendering = false
+                                invalidate()
+                            }
+                        } catch (_: Exception) {
+                            post { previewRendering = false }
+                        }
+                    }
+                }
+            }
+            return
+        }
+
         // Build a render-proxy: same card style, but active side's elements
         val activeCard = if (activeSide == CardSide.BACK && t.isBackSideEnabled)
             t.backCard ?: t.card else t.card
@@ -475,4 +533,12 @@ class CardCanvasView @JvmOverloads constructor(
         hypot((x1 - x2).toDouble(), (y1 - y2).toDouble()).toFloat()
 
     fun clearCache() = renderer.clearBitmapCache()
+
+    private fun parseColorSafe(hex: String) =
+        runCatching { Color.parseColor(hex) }.getOrElse { Color.WHITE }
+
+    companion object {
+        /** Single background thread shared by all preview instances to avoid thread explosion. */
+        private val PREVIEW_EXECUTOR = java.util.concurrent.Executors.newSingleThreadExecutor()
+    }
 }

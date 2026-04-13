@@ -36,6 +36,14 @@ class PagePreviewView @JvmOverloads constructor(
     }
     private val renderer = TemplateRenderer(context)
 
+    /** Update renderer quality to match the user's selected export quality. */
+    fun setQuality(q: dev.anonymous.cardsdesignerpro.data.model.ExportQuality) {
+        renderer.maxImageDim   = q.maxImageDim
+        renderer.maxPatternDim = q.maxPatternDim
+        renderer.maxQrDim      = q.maxQrDim
+        invalidate()
+    }
+
     fun bind(
         template: Template?,
         layout: PdfExporter.LayoutInfo?,

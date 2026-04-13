@@ -303,22 +303,20 @@
                         android:background="@drawable/bg_spinner_outline"
                         android:layout_marginBottom="20dp" />
 
-                    <!-- Card width -->
+                    <!-- Card layout preset -->
                     <TextView
-                        android:id="@+id/tv_card_width_label"
+                        android:id="@+id/tv_card_layout_label"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/label_card_width"
+                        android:text="@string/label_card_layout"
                         android:textAppearance="?attr/textAppearanceTitleSmall"
-                        android:layout_marginBottom="4dp" />
-                    <com.google.android.material.slider.Slider
-                        android:id="@+id/slider_card_width"
+                        android:layout_marginBottom="8dp" />
+                    <Spinner
+                        android:id="@+id/spinner_card_layout"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:valueFrom="0.1"
-                        android:valueTo="0.9"
-                        android:stepSize="0.01"
-                        android:layout_marginBottom="16dp" />
+                        android:layout_height="52dp"
+                        android:background="@drawable/bg_spinner_outline"
+                        android:layout_marginBottom="20dp" />
 
                     <!-- H spacing -->
                     <TextView
@@ -361,6 +359,20 @@
                         android:layout_marginBottom="8dp" />
                     <Spinner
                         android:id="@+id/spinner_page_size"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:background="@drawable/bg_spinner_outline"
+                        android:layout_marginBottom="20dp" />
+
+                    <!-- Export quality -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/label_export_quality"
+                        android:textAppearance="?attr/textAppearanceTitleSmall"
+                        android:layout_marginBottom="8dp" />
+                    <Spinner
+                        android:id="@+id/spinner_quality"
                         android:layout_width="match_parent"
                         android:layout_height="52dp"
                         android:background="@drawable/bg_spinner_outline"

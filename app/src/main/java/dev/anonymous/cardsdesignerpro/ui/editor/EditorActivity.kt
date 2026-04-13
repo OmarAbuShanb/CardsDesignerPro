@@ -58,6 +58,20 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
         viewModel.saveIfNeeded()
     }
 
+    override fun finish() {
+        // Ensure any unsaved changes are saved BEFORE we extract the metadata for the result
+        viewModel.saveIfNeeded()
+        val template = viewModel.uiState.value.template
+        if (template.id.isNotEmpty()) {
+            val resultIntent = android.content.Intent().apply {
+                putExtra(EXTRA_TEMPLATE_ID, template.id)
+                putExtra("extra_template_version", template.version)
+            }
+            setResult(RESULT_OK, resultIntent)
+        }
+        super.finish()
+    }
+
     // ── Setup ─────────────────────────────────────────────────────────────────
 
     private fun setupToolbar() {
@@ -219,13 +233,19 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
 
         // Side toggle visibility
         val backEnabled = template.isBackSideEnabled
-        binding.llActiveSideToggle.visibility =
-            if (backEnabled) View.VISIBLE else View.GONE
+        val targetVis = if (backEnabled) View.VISIBLE else View.GONE
+        
+        if (binding.llActiveSideToggle.visibility != targetVis) {
+            val transition = android.transition.AutoTransition()
+            transition.duration = 250
+            android.transition.TransitionManager.beginDelayedTransition(binding.llActiveSideToggle.parent as android.view.ViewGroup, transition)
+            binding.llActiveSideToggle.visibility = targetVis
+        }
 
         if (backEnabled && template.activeSide != lastRenderedSide) {
             val isFront = template.activeSide == CardSide.FRONT
-            binding.tvSideTitle.text = if (isFront) "الوجه الأمامي" else "الوجه الخلفي"
-            binding.tvSideSubtitle.text = if (isFront) "إضغط لرؤية الوجه الخلفي" else "إضغط لرؤية الوجه الأمامي"
+            binding.tvSideTitle.text = if (isFront) getString(R.string.editor_front_side_title) else getString(R.string.editor_back_side_title)
+            binding.tvSideSubtitle.text = if (isFront) getString(R.string.editor_front_side_subtitle) else getString(R.string.editor_back_side_subtitle)
             lastRenderedSide = template.activeSide
         }
 

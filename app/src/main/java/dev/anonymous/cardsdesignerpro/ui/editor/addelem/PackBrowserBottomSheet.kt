@@ -6,7 +6,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.core.os.bundleOf
 import androidx.fragment.app.setFragmentResult
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -59,7 +58,8 @@ class PackBrowserBottomSheet : BottomSheetDialogFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         adapter = PackAssetAdapter { packPath ->
-            parentFragmentManager.setFragmentResult(RESULT_KEY, bundleOf(KEY_PACK_PATH to packPath))
+            val bundle = Bundle().apply { putString(KEY_PACK_PATH, packPath) }
+            parentFragmentManager.setFragmentResult(RESULT_KEY, bundle)
             dismiss()
         }
 

@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.anonymous.cardsdesignerpro.data.model.ExportSettings
+import dev.anonymous.cardsdesignerpro.data.model.ExportQuality
 import dev.anonymous.cardsdesignerpro.data.model.FlipEdge
 import dev.anonymous.cardsdesignerpro.data.model.PageSize
 import dev.anonymous.cardsdesignerpro.data.model.Template
@@ -143,6 +144,14 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
     /** Legacy single-file API kept for compatibility. */
     fun setFile(uri: Uri, displayName: String) = addFiles(listOf(uri), listOf(displayName))
 
+    fun setFilesOrder(files: List<SelectedFile>) {
+        _uiState.value = _uiState.value.copy(
+            selectedFiles = files,
+            combinedParseResult = combineParseResults(files)
+        )
+        recalcLayout()
+    }
+
     private fun parseNewFiles(uris: List<Uri>, names: List<String>) {
         uris.forEachIndexed { i, uri ->
             val name = names.getOrElse(i) { "" }
@@ -176,10 +185,13 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
     }
 
 
-    fun updateCardWidthFraction(v: Float) { mutateSettings { it.copy(cardWidthFraction = v) } }
+    fun updateCardLayout(index: Int) { mutateSettings { it.copy(selectedLayoutIndex = index) } }
     fun updateHorizontalSpacing(v: Float) { mutateSettings { it.copy(horizontalSpacingDp = v) } }
     fun updateVerticalSpacing(v: Float)   { mutateSettings { it.copy(verticalSpacingDp = v) } }
     fun updatePageSize(p: PageSize)       { mutateSettings { it.copy(pageSize = p) } }
+    fun updateQuality(q: ExportQuality) {
+        _uiState.value = _uiState.value.copy(settings = _uiState.value.settings.copy(quality = q))
+    }
     fun updateFlipEdge(e: FlipEdge)       {
         _uiState.value = _uiState.value.copy(settings = _uiState.value.settings.copy(flipEdge = e))
     }

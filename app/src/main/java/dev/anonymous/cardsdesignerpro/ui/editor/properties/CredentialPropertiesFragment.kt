@@ -76,7 +76,7 @@ abstract class CredentialPropertiesFragment : Fragment(), PropertyFragment {
             binding.btnClearBgColor.visibility = android.view.View.VISIBLE
         } else {
             binding.cpvBgColor.colorHex = "#FFFFFFFF"
-            binding.tvBgColorHex.text = "لا يوجد خلفية للنص بشكل افتراضي"
+            binding.tvBgColorHex.text = getString(dev.anonymous.cardsdesignerpro.R.string.prop_no_bg_color)
             binding.btnClearBgColor.visibility = android.view.View.GONE
         }
         val bold = isBold(el)

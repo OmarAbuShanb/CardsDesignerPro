@@ -3,6 +3,8 @@ package dev.anonymous.cardsdesignerpro.ui.viewer
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
+import androidx.pdf.viewer.fragment.PdfViewerFragment
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dev.anonymous.cardsdesignerpro.databinding.ActivityPdfViewerBinding
 
 class PdfViewerActivity : AppCompatActivity() {
@@ -39,14 +41,22 @@ class PdfViewerActivity : AppCompatActivity() {
 
             val fragmentManager = supportFragmentManager
             val pdfViewerFragment =
-                fragmentManager.findFragmentById(dev.anonymous.cardsdesignerpro.R.id.pdf_fragment_modern) as? androidx.pdf.viewer.fragment.PdfViewerFragment
+                fragmentManager.findFragmentById(dev.anonymous.cardsdesignerpro.R.id.pdf_fragment_modern) as? PdfViewerFragment
 
             if (pdfViewerFragment != null) {
                 // Must suppress lint here since we already manually verified the S Extension version above
                 @android.annotation.SuppressLint("NewApi")
                 pdfViewerFragment.documentUri = uri
+
+                // Remove the annotation/edit FAB so the fragment can't re-show it on tap
+                pdfViewerFragment.viewLifecycleOwnerLiveData.observe(this) {
+                    val fab = pdfViewerFragment.view?.findViewById<android.view.View>(
+                        resources.getIdentifier("edit_fab", "id", packageName)
+                    )
+                    (fab?.parent as? android.view.ViewGroup)?.removeView(fab)
+                }
             } else {
-                com.google.android.material.dialog.MaterialAlertDialogBuilder(this@PdfViewerActivity)
+                MaterialAlertDialogBuilder(this@PdfViewerActivity)
                     .setTitle("خطأ في التحميل")
                     .setMessage("فشل في تهيئة العارض الحديث.")
                     .setPositiveButton("موافق") { _, _ -> finish() }

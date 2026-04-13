@@ -8,6 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -30,20 +31,36 @@ class MainActivity : AppCompatActivity() {
     private val viewModel: MainViewModel by viewModels()
     private lateinit var adapter: TemplateAdapter
 
-    // SAF launchers
-    private var pendingExportTemplateId: String? = null
+    private var pendingExportTemplateIds: List<String>? = null
+
+    private val editorLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val data = result.data ?: return@registerForActivityResult
+            val templateId = data.getStringExtra(EditorActivity.EXTRA_TEMPLATE_ID) ?: return@registerForActivityResult
+            val returnedVersion = data.getIntExtra("extra_template_version", -1)
+
+            val currentList = viewModel.templates.value
+            val currentVersion = currentList?.find { it.id == templateId }?.version ?: -1
+
+            if (returnedVersion != currentVersion) {
+                viewModel.reloadSingleTemplate(templateId)
+            }
+        }
+    }
 
     private val importLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
-        uri?.let { viewModel.importTemplate(it) }
+        uri?.let { viewModel.peekImport(it) }
     }
 
     private val exportLauncher = registerForActivityResult(
-        ActivityResultContracts.CreateDocument("application/zip")
+        ActivityResultContracts.CreateDocument("application/octet-stream")
     ) { uri: Uri? ->
-        uri?.let { pendingExportTemplateId?.let { id -> viewModel.exportTemplate(id, it) } }
-        pendingExportTemplateId = null
+        uri?.let { dest -> pendingExportTemplateIds?.let { ids -> viewModel.exportTemplates(ids, dest) } }
+        pendingExportTemplateIds = null
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,8 +68,6 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
-
-
 
         setupRecyclerView()
         setupButtons()
@@ -64,10 +79,6 @@ class MainActivity : AppCompatActivity() {
             onOpen = { template -> openEditor(template.id) },
             onRename = { template -> showRenameDialog(template) },
             onDuplicate = { template -> viewModel.duplicateTemplate(template.id) },
-            onExport = { template ->
-                pendingExportTemplateId = template.id
-                exportLauncher.launch("${template.name}.zip")
-            },
             onDelete = { template -> showDeleteDialog(template) }
         )
         binding.rvTemplates.layoutManager = LinearLayoutManager(this)
@@ -84,8 +95,12 @@ class MainActivity : AppCompatActivity() {
         binding.btnEditDefault.setOnClickListener {
             showNewDefaultTemplateDialog()
         }
+        binding.btnExportAllTemplates.setOnClickListener {
+            showExportDialog()
+        }
         binding.btnImportTemplate.setOnClickListener {
-            importLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
+            // Need */* or application/octet-stream since we use a custom extension
+            importLauncher.launch(arrayOf("*/*"))
         }
     }
 
@@ -94,12 +109,17 @@ class MainActivity : AppCompatActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.templates.collect { templates ->
-                        val isFirstLoad = adapter.currentList.isEmpty() && templates.isNotEmpty()
-                        adapter.submitList(templates) {
-                            if (isFirstLoad) binding.rvTemplates.scheduleLayoutAnimation()
+                        if (templates == null) {
+                            binding.rvTemplates.visibility = View.GONE
+                            binding.tvEmpty.visibility = View.GONE
+                        } else {
+                            val isFirstLoad = adapter.currentList.isEmpty() && templates.isNotEmpty()
+                            adapter.submitList(templates) {
+                                if (isFirstLoad) binding.rvTemplates.scheduleLayoutAnimation()
+                            }
+                            binding.tvEmpty.visibility = if (templates.isEmpty()) View.VISIBLE else View.GONE
+                            binding.rvTemplates.visibility = if (templates.isEmpty()) View.GONE else View.VISIBLE
                         }
-                        binding.tvEmpty.visibility = if (templates.isEmpty()) View.VISIBLE else View.GONE
-                        binding.rvTemplates.visibility = if (templates.isEmpty()) View.GONE else View.VISIBLE
                     }
                 }
                 launch {
@@ -110,12 +130,19 @@ class MainActivity : AppCompatActivity() {
                                 snack(getString(R.string.export_template_success))
                             is MainEvent.ExportFailed ->
                                 snack(getString(R.string.export_template_failed))
+                            is MainEvent.ShowImportDialog ->
+                                showImportDialog(event.uri, event.templates)
                             is MainEvent.ImportSuccess ->
-                                snack(getString(R.string.import_success, event.name))
+                                snack(getString(R.string.import_templates_success, event.count))
                             is MainEvent.ImportFailed ->
                                 snack(getString(R.string.import_failed))
                         }
                         viewModel.consumeEvent()
+                    }
+                }
+                launch {
+                    viewModel.isLoading.collect { loading ->
+                        if (loading) showProgressDialog() else hideProgressDialog()
                     }
                 }
             }
@@ -126,9 +153,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun showNewTemplateDialog() {
         val dialogBinding = DialogTemplateNameBinding.inflate(layoutInflater)
-        MaterialAlertDialogBuilder(this)
+        val dialog = MaterialAlertDialogBuilder(this)
             .setTitle(R.string.dialog_new_template_title)
             .setView(dialogBinding.root)
+            .setCancelable(false)
             .setNegativeButton(R.string.btn_cancel, null)
             .setPositiveButton(R.string.btn_next) { _, _ ->
                 val name = dialogBinding.etName.text?.toString()?.trim()
@@ -137,34 +165,51 @@ class MainActivity : AppCompatActivity() {
                     openEditor(id)
                 }
             }
-            .show()
-            .also { dialog ->
-                // Enable Done key on keyboard
-                dialogBinding.etName.setOnEditorActionListener { _, _, _ ->
-                    val name = dialogBinding.etName.text?.toString()?.trim()
-                    if (!name.isNullOrEmpty()) {
-                        val id = viewModel.createTemplate(name)
-                        dialog.dismiss()
-                        openEditor(id)
-                    }
-                    true
-                }
+            .create()
+            
+        dialog.show()
+        val btnPositive = dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
+        btnPositive.isEnabled = false // initially empty
+
+        dialogBinding.etName.doAfterTextChanged { editable ->
+            btnPositive.isEnabled = !editable?.toString()?.trim().isNullOrEmpty()
+        }
+
+        // Enable Done key on keyboard
+        dialogBinding.etName.setOnEditorActionListener { _, _, _ ->
+            val name = dialogBinding.etName.text?.toString()?.trim()
+            if (!name.isNullOrEmpty()) {
+                val id = viewModel.createTemplate(name)
+                dialog.dismiss()
+                openEditor(id)
             }
+            true
+        }
     }
 
     private fun showRenameDialog(template: Template) {
         val dialogBinding = DialogTemplateNameBinding.inflate(layoutInflater)
         dialogBinding.etName.setText(template.name)
         dialogBinding.etName.selectAll()
-        MaterialAlertDialogBuilder(this)
+        
+        val dialog = MaterialAlertDialogBuilder(this)
             .setTitle(R.string.dialog_rename_template_title)
             .setView(dialogBinding.root)
+            .setCancelable(false)
             .setNegativeButton(R.string.btn_cancel, null)
             .setPositiveButton(R.string.btn_save) { _, _ ->
                 val name = dialogBinding.etName.text?.toString()?.trim()
                 if (!name.isNullOrEmpty()) viewModel.renameTemplate(template.id, name)
             }
-            .show()
+            .create()
+            
+        dialog.show()
+        val btnPositive = dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
+        btnPositive.isEnabled = template.name.isNotEmpty()
+
+        dialogBinding.etName.doAfterTextChanged { editable ->
+            btnPositive.isEnabled = !editable?.toString()?.trim().isNullOrEmpty()
+        }
     }
 
     private fun showNewDefaultTemplateDialog() {
@@ -182,10 +227,121 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
+    // ── Batch Export / Import Dialogs ─────────────────────────────────────────
+
+    private fun showExportDialog() {
+        val allTemplates = viewModel.templates.value
+        if (allTemplates == null || allTemplates.isEmpty()) {
+            snack(getString(R.string.no_templates_to_export))
+            return
+        }
+
+        var onSelectionUpdated: (() -> Unit)? = null
+        val items = allTemplates.map { SelectionItem(it, isSelected = true) }
+        val selectionAdapter = TemplateSelectionAdapter(items) {
+            onSelectionUpdated?.invoke()
+        }
+
+        val view = layoutInflater.inflate(R.layout.dialog_select_templates, null)
+        val rv = view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rv_select_templates)
+        rv.layoutManager = LinearLayoutManager(this)
+        rv.adapter = selectionAdapter
+
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.dialog_export_templates_title)
+            .setView(view)
+            .setNegativeButton(R.string.btn_cancel, null)
+            .setPositiveButton(R.string.btn_export_selected_templates) { _, _ ->
+                val selected = selectionAdapter.getSelectedIds()
+                if (selected.isNotEmpty()) {
+                    pendingExportTemplateIds = selected.toList()
+                    exportLauncher.launch("CardsDesignerProTemplates.templates")
+                }
+            }
+            .create()
+
+        dialog.show()
+        val btnPositive = dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
+        onSelectionUpdated = {
+            btnPositive.isEnabled = selectionAdapter.getSelectedIds().isNotEmpty()
+        }
+    }
+
+    private fun showImportDialog(uri: Uri, zippedTemplates: List<Template>) {
+        val currentTemplates = viewModel.templates.value ?: emptyList()
+        val items = zippedTemplates.map { zipped ->
+            val current = currentTemplates.find { it.id == zipped.id }
+            val status = when {
+                current == null -> null // New, the user requested no text
+                zipped.version > current.version -> getString(R.string.status_newer_version)
+                zipped.version < current.version -> getString(R.string.status_older_version)
+                else -> getString(R.string.status_same_version)
+            }
+            SelectionItem(zipped, isSelected = true, statusText = status)
+        }
+
+        var onSelectionUpdated: (() -> Unit)? = null
+        val selectionAdapter = TemplateSelectionAdapter(items) {
+            onSelectionUpdated?.invoke()
+        }
+        val view = layoutInflater.inflate(R.layout.dialog_select_templates, null)
+        val rv = view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rv_select_templates)
+        rv.layoutManager = LinearLayoutManager(this)
+        rv.adapter = selectionAdapter
+
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.dialog_import_templates_title)
+            .setView(view)
+            .setNegativeButton(R.string.btn_cancel, null)
+            .setPositiveButton(R.string.btn_import_selected_templates) { _, _ ->
+                val selected = selectionAdapter.getSelectedIds()
+                if (selected.isNotEmpty()) {
+                    // Check for overrides
+                    val hasOverrides = items.any { it.isSelected && it.statusText != null }
+                    if (hasOverrides) {
+                        MaterialAlertDialogBuilder(this)
+                            .setTitle(R.string.import_warning_title)
+                            .setMessage(R.string.import_warning_message)
+                            .setNegativeButton(R.string.btn_cancel, null)
+                            .setPositiveButton(R.string.btn_confirm) { _, _ ->
+                                viewModel.confirmImport(uri, selected)
+                            }
+                            .show()
+                    } else {
+                        viewModel.confirmImport(uri, selected)
+                    }
+                }
+            }
+            .create()
+
+        dialog.show()
+        val btnPositive = dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
+        onSelectionUpdated = {
+            btnPositive.isEnabled = selectionAdapter.getSelectedIds().isNotEmpty()
+        }
+    }
+
+    private var progressDialog: AlertDialog? = null
+
+    private fun showProgressDialog() {
+        if (progressDialog == null) {
+            val view = layoutInflater.inflate(R.layout.dialog_loading, null)
+            progressDialog = MaterialAlertDialogBuilder(this)
+                .setView(view)
+                .setCancelable(false)
+                .create()
+        }
+        progressDialog?.show()
+    }
+
+    private fun hideProgressDialog() {
+        progressDialog?.dismiss()
+    }
+
     // ── Navigation ────────────────────────────────────────────────────────────
 
     fun openEditor(templateId: String) {
-        startActivity(
+        editorLauncher.launch(
             Intent(this, EditorActivity::class.java)
                 .putExtra(EditorActivity.EXTRA_TEMPLATE_ID, templateId)
         )

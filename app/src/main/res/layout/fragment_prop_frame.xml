@@ -26,8 +26,9 @@
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
             android:text="@string/prop_frame_corner_radius" android:textAppearance="?attr/textAppearanceLabelMedium"
             android:layout_marginBottom="6dp" />
-        <dev.anonymous.cardsdesignerpro.common.widget.StepperView android:id="@+id/stepper_corner_radius"
-            android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="14dp" />
+        <com.google.android.material.slider.Slider android:id="@+id/slider_corner_radius"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:valueFrom="0" android:valueTo="100" android:stepSize="1" android:layout_marginBottom="14dp" />
 
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
             android:text="@string/prop_frame_padding" android:textAppearance="?attr/textAppearanceLabelMedium"

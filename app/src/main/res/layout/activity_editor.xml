@@ -94,7 +94,7 @@
                         android:id="@+id/tv_side_title"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="الوجه الأمامي"
+                        android:text="@string/editor_front_side_title"
                         android:textAppearance="?attr/textAppearanceTitleLarge"
                         android:textStyle="bold"
                         android:textColor="?attr/colorPrimary" />
@@ -104,7 +104,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="إضغط لرؤية الوجه الخلفي"
+                        android:text="@string/editor_front_side_subtitle"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant" />
                 </LinearLayout>

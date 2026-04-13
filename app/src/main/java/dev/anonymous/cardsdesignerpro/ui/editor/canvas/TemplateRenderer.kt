@@ -44,6 +44,15 @@ class TemplateRenderer(private val context: Context) {
     private val qrCache = mutableMapOf<String, Bitmap?>()
     private val svgCache = mutableMapOf<String, com.caverock.androidsvg.SVG?>()
 
+    /**
+     * Maximum bitmap dimensions for each content type.
+     * Set before [draw] when exporting PDF to control quality per content type.
+     * Screen rendering uses the defaults; PDF export overrides via [ExportQuality].
+     */
+    var maxImageDim: Int = 2048
+    var maxPatternDim: Int = 2048
+    var maxQrDim: Int = 1024
+
     /** Padding around text background (dp in template coordinate space). Must match CardCanvasView.TEXT_PAD_DP. */
     private val TEXT_PAD_DP = 6f
 
@@ -106,7 +115,7 @@ class TemplateRenderer(private val context: Context) {
                     canvas.restore()
                 }
             } else {
-                val reqDim = (maxOf(w, h) * renderScale * 2f).toInt().coerceIn(512, 4096)
+                val reqDim = (maxOf(w, h) * renderScale * 2f).toInt().coerceIn(64, maxImageDim)
                 loadBitmap(path, reqDim)?.let { bmp ->
                     // FIT_XY: stretch to fill the card completely
                     canvas.drawBitmap(bmp, null, RectF(left, top, left + w, top + h), null)
@@ -176,7 +185,7 @@ class TemplateRenderer(private val context: Context) {
         val cellW = aW / cols; val cellH = aH / rows; val boundingSz = minOf(cellW, cellH) * 0.55f
 
         // Use 4x scale for sharpness
-        val reqDim = (boundingSz * renderScale * 4f).toInt().coerceIn(128, 1024)
+        val reqDim = (boundingSz * renderScale * 4f).toInt().coerceIn(48, maxPatternDim)
         val originalBmp = loadBitmap(path, reqDim) ?: return
 
         val aspect = originalBmp.width.toFloat() / originalBmp.height.toFloat()
@@ -184,9 +193,9 @@ class TemplateRenderer(private val context: Context) {
         val h = if (aspect > 1f) boundingSz / aspect else boundingSz
 
         // Offscreen pre-render for PDF efficiency
-        val offScale = renderScale * 2f
-        val offW = (aW * offScale).toInt().coerceAtLeast(1)
-        val offH = (aH * offScale).toInt().coerceAtLeast(1)
+        val offScale = renderScale * 3f
+        val offW = (aW * offScale).toInt().coerceIn(1, maxPatternDim)
+        val offH = (aH * offScale).toInt().coerceIn(1, maxPatternDim)
         val offBmp = Bitmap.createBitmap(offW, offH, Bitmap.Config.ARGB_8888)
         val offCanvas = Canvas(offBmp)
         offCanvas.translate(-aL * offScale, -aT * offScale)
@@ -314,7 +323,7 @@ class TemplateRenderer(private val context: Context) {
                 canvas.restore()
             }
         } else {
-            val reqDim = (maxOf(w, h) * renderScale * 2f).toInt().coerceIn(256, 3000)
+            val reqDim = (maxOf(w, h) * renderScale * 2f).toInt().coerceIn(64, maxImageDim)
             val bmp = loadBitmap(path, reqDim)
             if (bmp != null) {
                 canvas.drawBitmap(bmp, null, RectF(l, t, r, b), paint)
@@ -337,7 +346,7 @@ class TemplateRenderer(private val context: Context) {
         val qrT = t + (b - t - side) / 2f
 
         // Scan clarity doesn't require massive bitmaps; restrict it to 1024 to prevent memory exhaustion
-        val bitmapSize = (side * renderScale * 2f).toInt().coerceIn(256, 1024)
+        val bitmapSize = (side * renderScale * 4f).toInt().coerceIn(128, maxQrDim.coerceAtMost(1024))
         val qrBmp = generateQrBitmapForEl(content, bitmapSize, el) ?: return
 
         canvas.save()

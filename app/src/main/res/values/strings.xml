@@ -7,7 +7,7 @@
     <string name="btn_new_template">إنشاء قالب من الصفر</string>
     <string name="btn_edit_default_template">اختيار قالب جاهز للتعديل عليه</string>
     <string name="title_default_templates_sheet">اختر قالب للتعديل عليه</string>
-    <string name="btn_import_template">استيراد قالب موجود</string>
+    <string name="btn_import_template">استيراد قوالب موجودة</string>
     <string name="templates_empty">لا توجد قوالب. ابدأ بإنشاء قالب جديد.</string>
     <string name="templates_title">القوالب</string>
 
@@ -36,18 +36,62 @@
     <string name="import_failed">فشل استيراد القالب. تأكد من صحة الملف.</string>
     <string name="export_template_success">تم تصدير القالب بنجاح</string>
     <string name="export_template_failed">فشل تصدير القالب</string>
+    
+    <!-- Batch Export/Import -->
+    <string name="btn_export_all_templates">تصدير الجميع</string>
+    <string name="btn_export_templates">تصدير القوالب</string>
+    <string name="btn_export_selected_templates">تصدير القوالب المحددة</string>
+    <string name="btn_import_selected_templates">استيراد القوالب المحددة</string>
+    <string name="dialog_export_templates_title">تصدير القوالب</string>
+    <string name="dialog_import_templates_title">استيراد القوالب</string>
+    <string name="status_newer_version">إصدار أحدث</string>
+    <string name="status_older_version">إصدار سابق</string>
+    <string name="status_same_version">موجود</string>
+    <string name="import_warning_title">تنبيه بالاستبدال</string>
+    <string name="import_warning_message">سيتم استبدال القوالب المستوردة بالحالية. هذا الإجراء لا يمكن التراجع عنه وقد تفقد أية تغييرات مهمة موجودة حالياً. هل تريد المتابعة؟</string>
+    <string name="import_templates_success">تم استيراد قوالب عدد %d بنجاح</string>
 
     <!-- Export Cards Screen -->
     <string name="export_cards_title">تصدير البطاقات</string>
     <string name="btn_choose_file">اختيار الملف</string>
     <string name="hint_no_file_chosen">لم يتم اختيار ملف</string>
     <string name="label_template">القالب</string>
-    <string name="label_no_templates">لا توجد قوالب</string>
-    <string name="label_card_width">عرض البطاقة</string>
+    <string name="label_no_templates">لا يوجد\nقوالب</string>
+    <string name="no_templates_to_export">لا يوجد قوالب لتصديرها</string>
+    <string name="label_card_layout">تخطيط البطاقات في الصفحة</string>
+    <string name="layout_preset_format">%1$d بطاقة (%2$d أعمدة × %3$d صف)</string>
+    <string name="label_recommended_suffix"> — موصى به</string>
+
+    <!-- PDF Export Service -->
+    <string name="notif_channel_export_name">عملية التصدير للخلفية</string>
+    <string name="notif_channel_export_desc">يعرض حالة تصدير البطاقات في الخلفية لحين الانتهاء.</string>
+    <string name="notif_title_app_name">صانع البطاقات (Cards Designer Pro)</string>
+    <string name="notif_export_init">تهيئة عملية التصدير…</string>
+    <string name="notif_export_progress">جاري تصدير قالب: %s</string>
+    <string name="notif_export_success_title">تمت العملية بنجاح! \uD83C\uDF89</string>
+    <string name="notif_export_success_dual_desc">تم تصدير ملفين PDF، اختر أحدهما للمعاينة.</string>
+    <string name="notif_export_success_single_desc">تم تصدير ملف الـ PDF الخاص بك، اضغط هنا للمعاينة.</string>
+    <string name="notif_action_preview_front">معاينة الأمامي</string>
+    <string name="notif_action_preview_back">معاينة الخلفي</string>
     <string name="label_horizontal_spacing">المسافة الأفقية</string>
     <string name="label_vertical_spacing">المسافة العمودية</string>
     <string name="label_page_size">حجم الصفحة</string>
-    <string name="label_data_file">ملف البيانات (CSV / Excel)</string>
+    
+    <!-- Editor and Default Templates -->
+    <string name="flip_long_edge_desc">القلب على الحافة الطويلة</string>
+    <string name="flip_short_edge_desc">القلب على الحافة القصيرة</string>
+    <string name="editor_front_side_title">الوجه الأمامي</string>
+    <string name="editor_back_side_title">الوجه الخلفي</string>
+    <string name="editor_front_side_subtitle">إضغط لرؤية الوجه الخلفي</string>
+    <string name="editor_back_side_subtitle">إضغط لرؤية الوجه الأمامي</string>
+    <string name="error_extracting_template">فشل استخراج القالب</string>
+    <string name="template_name_copy">%s - نسخة</string>
+    
+    <!-- QR Edit -->
+    <string name="btn_pick_qr_logo">اختيار شعار للQR</string>
+    <string name="label_chosen_logo">الشعار المختار</string>
+    <string name="cb_tint_logo">تلوين الشعار بنفس لون الباركود</string>
+    <string name="label_data_file">ملف أو ملفات البيانات (CSV / Excel)</string>
     <string name="label_cards_per_page">عدد البطاقات التي تتسعها الصفحة</string>
     <string name="label_total_pages">عدد الصفحات</string>
     <string name="label_no_file_yet">لم يتم اختيار ملف بعد</string>
@@ -167,9 +211,9 @@
 
     <!-- Dual-sided card feature — Export settings -->
     <string name="label_export_front_only">تصدير الوجه الأمامي فقط (تجاهل الوجه الخلفي)</string>
-    <string name="flip_edge_long">الحافة الطويلة (افتراضي)</string>
+    <string name="flip_edge_long">الحافة الطويلة</string>
     <string name="flip_edge_short">الحافة القصيرة</string>
-    <string name="label_flip_edge_hint">اتجاه قلب الورقة عند طباعة الوجهين — اختر الوضع المناسب لطابعتك</string>
+    <string name="label_flip_edge_hint">اتجاه قلب الورقة — الحافة الطويلة هي الخيار الافتراضي والموصى به</string>
     <string name="flip_hint_long_edge">(قلب على الحافة الطويلة)</string>
     <string name="flip_hint_short_edge">(قلب على الحافة القصيرة)</string>
 
@@ -205,4 +249,14 @@
     <!-- Export settings bottom sheet title -->
     <string name="title_export_settings">إعدادات التصدير</string>
 
+    <!-- Export quality -->
+    <string name="label_export_quality">جودة التصدير</string>
+    <string name="quality_full">الجودة الكاملة — للطباعة الاحترافية</string>
+    <string name="quality_high">جودة عالية (افتراضي)</string>
+    <string name="quality_good">جودة جيدة</string>
+    <string name="quality_medium">جودة متوسطة</string>
+    <string name="quality_low">جودة منخفضة — تصدير سريع</string>
+
+    <string name="default_text_placeholder">نص افتراضي</string>
+    <string name="prop_no_bg_color">لا يوجد خلفية للنص بشكل افتراضي</string>
 </resources>

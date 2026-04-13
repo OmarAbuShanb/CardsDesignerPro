@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -28,12 +29,13 @@ class DefaultTemplatesBottomSheet : BottomSheetDialogFragment() {
 
         val adapter = DefaultTemplateAdapter { dirName, template ->
             val dialogBinding = dev.anonymous.cardsdesignerpro.databinding.DialogTemplateNameBinding.inflate(layoutInflater)
-            dialogBinding.etName.setText("${template.name} - نسخة")
+            dialogBinding.etName.setText(getString(dev.anonymous.cardsdesignerpro.R.string.template_name_copy, template.name))
             dialogBinding.etName.selectAll()
             
-            com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
                 .setTitle(dev.anonymous.cardsdesignerpro.R.string.btn_edit_default_template)
                 .setView(dialogBinding.root)
+                .setCancelable(false)
                 .setNegativeButton(dev.anonymous.cardsdesignerpro.R.string.btn_cancel, null)
                 .setPositiveButton(dev.anonymous.cardsdesignerpro.R.string.btn_save) { _, _ ->
                     val enteredName = dialogBinding.etName.text?.toString()?.trim()
@@ -43,12 +45,20 @@ class DefaultTemplatesBottomSheet : BottomSheetDialogFragment() {
                                 (activity as? MainActivity)?.openEditor(newId)
                                 dismiss()
                             } else {
-                                (activity as? MainActivity)?.snack("فشل استخراج القالب الافتراضي")
+                                (activity as? MainActivity)?.snack(getString(dev.anonymous.cardsdesignerpro.R.string.error_extracting_template))
                             }
                         }
                     }
                 }
-                .show()
+                .create()
+                
+            dialog.show()
+            val btnPositive = dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
+            btnPositive.isEnabled = !dialogBinding.etName.text.isNullOrEmpty()
+
+            dialogBinding.etName.doAfterTextChanged { editable ->
+                btnPositive.isEnabled = !editable?.toString()?.trim().isNullOrEmpty()
+            }
         }
         binding.rvDefaultTemplates.adapter = adapter
 

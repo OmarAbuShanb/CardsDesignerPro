@@ -13,12 +13,30 @@ class SelectedFileAdapter(
     private val onRemove: (Uri) -> Unit
 ) : ListAdapter<SelectedFile, SelectedFileAdapter.VH>(DIFF) {
 
+    var onStartDrag: ((RecyclerView.ViewHolder) -> Unit)? = null
+    var onDropCommit: ((List<SelectedFile>) -> Unit)? = null
+    
+    private var dragList: MutableList<SelectedFile>? = null
+
+    fun startDragSession() {
+        dragList = currentList.toMutableList()
+    }
+
+    fun swapItems(from: Int, to: Int) {
+        val list = dragList ?: return
+        java.util.Collections.swap(list, from, to)
+        notifyItemMoved(from, to)
+    }
+
+    fun commitDragSession() {
+        dragList?.let { onDropCommit?.invoke(it.toList()) }
+        dragList = null
+    }
+
     inner class VH(private val b: ItemSelectedFileBinding) : RecyclerView.ViewHolder(b.root) {
         fun bind(item: SelectedFile) {
             b.tvFileName.text = item.displayName
-            // Unsupported indicator
             b.tvUnsupported.visibility = if (!item.isSupported) View.VISIBLE else View.GONE
-            // Card count badge: visible only when supported + parsed successfully
             val count = item.parseResult?.count
             if (item.isSupported && !item.isParsing && count != null && count > 0) {
                 b.tvCardCount.text = b.root.context.getString(dev.anonymous.cardsdesignerpro.R.string.label_cards_count, count)
@@ -26,9 +44,15 @@ class SelectedFileAdapter(
             } else {
                 b.tvCardCount.visibility = View.GONE
             }
-            // Dim while parsing
             b.root.alpha = if (item.isParsing) 0.5f else 1f
             b.btnRemoveFile.setOnClickListener { onRemove(item.uri) }
+            
+            b.ivDragHandle.setOnTouchListener { _, event ->
+                if (event.action == android.view.MotionEvent.ACTION_DOWN) {
+                    onStartDrag?.invoke(this)
+                }
+                false
+            }
         }
     }
 
@@ -36,7 +60,11 @@ class SelectedFileAdapter(
         ItemSelectedFileBinding.inflate(LayoutInflater.from(parent.context), parent, false)
     )
 
-    override fun onBindViewHolder(holder: VH, position: Int) = holder.bind(getItem(position))
+    override fun onBindViewHolder(holder: VH, position: Int) {
+        // If we are actively dragging, we read from the temporary dragList so the views bind correctly!
+        val item = if (dragList != null) dragList!![position] else getItem(position)
+        holder.bind(item)
+    }
 
     companion object {
         private val DIFF = object : DiffUtil.ItemCallback<SelectedFile>() {

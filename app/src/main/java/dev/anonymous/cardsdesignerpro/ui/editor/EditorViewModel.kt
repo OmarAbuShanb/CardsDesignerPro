@@ -64,10 +64,16 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
 
     /** Explicit save (toolbar button / dialog). Clears the unsaved flag. */
     fun save() {
+        // Bump version only if it hasn't been bumped yet relative to the original template
+        val templateToSave = if (currentTemplate.version == originalTemplate?.version) {
+            currentTemplate.copy(version = currentTemplate.version + 1)
+        } else {
+            currentTemplate
+        }
         viewModelScope.launch {
-            repo.save(currentTemplate)
-            originalTemplate = currentTemplate
-            _uiState.value = uiState.value.copy(hasUnsavedChanges = false)
+            repo.save(templateToSave)
+            originalTemplate = templateToSave
+            _uiState.value = uiState.value.copy(template = templateToSave, hasUnsavedChanges = false)
         }
     }
 
@@ -75,7 +81,13 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
      *  discard dialog still appears when the user returns. */
     fun saveIfNeeded() {
         if (uiState.value.hasUnsavedChanges) {
-            viewModelScope.launch { repo.save(currentTemplate) }
+            val templateToSave = if (currentTemplate.version == originalTemplate?.version) {
+                currentTemplate.copy(version = currentTemplate.version + 1)
+            } else {
+                currentTemplate
+            }
+            _uiState.value = uiState.value.copy(template = templateToSave)
+            viewModelScope.launch { repo.save(templateToSave) }
         }
     }
 

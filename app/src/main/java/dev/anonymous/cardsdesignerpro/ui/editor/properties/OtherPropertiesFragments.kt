@@ -32,13 +32,17 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val formats = DateFormat.values()
-        b.spinnerDateFormat.adapter = ArrayAdapter(requireContext(),
+        b.spinnerDateFormat.adapter = ArrayAdapter(
+            requireContext(),
             android.R.layout.simple_spinner_item, formats.map { it.displayName })
             .apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
 
-        val fontNames = listOf("Default" to "default", "Serif" to "serif",
-            "Sans-serif" to "sans-serif", "Monospace" to "monospace")
-        b.spinnerFont.adapter = ArrayAdapter(requireContext(),
+        val fontNames = listOf(
+            "Default" to "default", "Serif" to "serif",
+            "Sans-serif" to "sans-serif", "Monospace" to "monospace"
+        )
+        b.spinnerFont.adapter = ArrayAdapter(
+            requireContext(),
             android.R.layout.simple_spinner_item, fontNames.map { it.first })
             .apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
 
@@ -52,6 +56,7 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
                 if (e.format == formats[pos]) return   // spurious fire
                 viewModel.updateElement(e.copy(format = formats[pos]))
             }
+
             override fun onNothingSelected(p: AdapterView<*>?) {}
         }
         b.cpvTextColor.onColorSelected = { hex ->
@@ -73,7 +78,8 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
         }
         b.cbBold.setOnCheckedChangeListener { _, checked ->
             if (!updating) {
-                val e = viewModel.selectedElement as? TemplateElement.DateElement ?: return@setOnCheckedChangeListener
+                val e = viewModel.selectedElement as? TemplateElement.DateElement
+                    ?: return@setOnCheckedChangeListener
                 viewModel.updateElement(e.copy(isBold = checked))
             }
         }
@@ -90,15 +96,20 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
                 if (e.fontName == fontNames[pos].second) return   // spurious fire
                 viewModel.updateElement(e.copy(fontName = fontNames[pos].second))
             }
+
             override fun onNothingSelected(p: AdapterView<*>?) {}
         }
     }
 
-    private fun populate(el: TemplateElement.DateElement, formats: Array<DateFormat>,
-                         fontNames: List<Pair<String,String>>) {
+    private fun populate(
+        el: TemplateElement.DateElement, formats: Array<DateFormat>,
+        fontNames: List<Pair<String, String>>
+    ) {
         updating = true
         val fmtIdx = formats.indexOf(el.format).coerceAtLeast(0)
-        if (b.spinnerDateFormat.selectedItemPosition != fmtIdx) b.spinnerDateFormat.setSelection(fmtIdx)
+        if (b.spinnerDateFormat.selectedItemPosition != fmtIdx) b.spinnerDateFormat.setSelection(
+            fmtIdx
+        )
         if (b.cpvTextColor.colorHex != el.textColor) b.cpvTextColor.colorHex = el.textColor
         b.tvColorHex.text = el.textColor
         // Background color
@@ -109,7 +120,7 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
             b.btnClearBgColor.visibility = View.VISIBLE
         } else {
             b.cpvBgColor.colorHex = "#FFFFFFFF"
-            b.tvBgColorHex.text = "لا يوجد خلفية للنص بشكل افتراضي"
+            b.tvBgColorHex.text = getString(R.string.prop_no_bg_color)
             b.btnClearBgColor.visibility = View.GONE
         }
         if (b.cbBold.isChecked != el.isBold) b.cbBold.isChecked = el.isBold
@@ -117,7 +128,9 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
         if (b.stepperFontSize.value != targetSize) {
             b.stepperFontSize.minValue = 6; b.stepperFontSize.maxValue = 72
             b.stepperFontSize.value = targetSize
-        } else { b.stepperFontSize.minValue = 6; b.stepperFontSize.maxValue = 72 }
+        } else {
+            b.stepperFontSize.minValue = 6; b.stepperFontSize.maxValue = 72
+        }
         val fontIdx = fontNames.indexOfFirst { it.second == el.fontName }.coerceAtLeast(0)
         if (b.spinnerFont.selectedItemPosition != fontIdx) b.spinnerFont.setSelection(fontIdx)
         updating = false
@@ -126,12 +139,18 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
     override fun onUiStateChanged(state: EditorUiState) {
         if (_b == null) return
         val el = state.template.elements.firstOrNull { it.id == state.selectedElementId }
-            as? TemplateElement.DateElement ?: return
-        populate(el, DateFormat.values(), listOf("Default" to "default", "Serif" to "serif",
-            "Sans-serif" to "sans-serif", "Monospace" to "monospace"))
+                as? TemplateElement.DateElement ?: return
+        populate(
+            el, DateFormat.values(), listOf(
+                "Default" to "default", "Serif" to "serif",
+                "Sans-serif" to "sans-serif", "Monospace" to "monospace"
+            )
+        )
     }
 
-    override fun onDestroyView() { super.onDestroyView(); _b = null }
+    override fun onDestroyView() {
+        super.onDestroyView(); _b = null
+    }
 }
 
 // ── Frame Properties ─────────────────────────────────────────────────────────
@@ -155,8 +174,9 @@ class FramePropertiesFragment : Fragment(), PropertyFragment {
             b.tvColorHex.text = hex
             update { it.copy(color = hex) }
         }
-        b.stepperThickness.onValueChanged = { update { el2 -> el2.copy(strokeWidthDp = it.toFloat()) } }
-        b.stepperCornerRadius.onValueChanged = { update { el2 -> el2.copy(cornerRadiusDp = it.toFloat()) } }
+        b.stepperThickness.onValueChanged =
+            { update { el2 -> el2.copy(strokeWidthDp = it.toFloat()) } }
+        b.sliderCornerRadius.addOnChangeListener { _, value, _ -> update { it.copy(cornerRadiusDp = value) } }
         b.sliderPadding.addOnChangeListener { _, value, _ -> update { it.copy(paddingDp = value) } }
         b.cbDashed.setOnCheckedChangeListener { _, checked ->
             if (!updating) {
@@ -179,12 +199,11 @@ class FramePropertiesFragment : Fragment(), PropertyFragment {
         if (b.stepperThickness.value != thickness) {
             b.stepperThickness.minValue = 1; b.stepperThickness.maxValue = 20
             b.stepperThickness.value = thickness
-        } else { b.stepperThickness.minValue = 1; b.stepperThickness.maxValue = 20 }
-        val corner = el.cornerRadiusDp.toInt()
-        if (b.stepperCornerRadius.value != corner) {
-            b.stepperCornerRadius.minValue = 0; b.stepperCornerRadius.maxValue = 80
-            b.stepperCornerRadius.value = corner
-        } else { b.stepperCornerRadius.minValue = 0; b.stepperCornerRadius.maxValue = 80 }
+        } else {
+            b.stepperThickness.minValue = 1; b.stepperThickness.maxValue = 20
+        }
+        val corner = el.cornerRadiusDp.coerceIn(0f, 100f)
+        if (b.sliderCornerRadius.value != corner) b.sliderCornerRadius.value = corner
         val padding = el.paddingDp.coerceIn(0f, 60f)
         if (b.sliderPadding.value != padding) b.sliderPadding.value = padding
         // Checkbox: guard to prevent requestLayout from firing when value same
@@ -196,7 +215,8 @@ class FramePropertiesFragment : Fragment(), PropertyFragment {
         if (b.sliderDashLength.value != dashLen) b.sliderDashLength.value = dashLen
         val dashGap = el.dashGapDp.coerceIn(0f, 40f)
         if (b.sliderDashGap.value != dashGap) b.sliderDashGap.value = dashGap
-        if (b.cbDashRounded.isChecked != el.isDashRounded) b.cbDashRounded.isChecked = el.isDashRounded
+        if (b.cbDashRounded.isChecked != el.isDashRounded) b.cbDashRounded.isChecked =
+            el.isDashRounded
         updating = false
     }
 
@@ -209,11 +229,13 @@ class FramePropertiesFragment : Fragment(), PropertyFragment {
     override fun onUiStateChanged(state: EditorUiState) {
         if (_b == null) return
         val el = state.template.elements.firstOrNull { it.id == state.selectedElementId }
-            as? TemplateElement.FrameElement ?: return
+                as? TemplateElement.FrameElement ?: return
         populate(el)
     }
 
-    override fun onDestroyView() { super.onDestroyView(); _b = null }
+    override fun onDestroyView() {
+        super.onDestroyView(); _b = null
+    }
 }
 
 // ── No Selection ──────────────────────────────────────────────────────────────

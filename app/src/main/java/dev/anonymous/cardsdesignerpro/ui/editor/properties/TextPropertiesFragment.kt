@@ -9,6 +9,7 @@ import android.widget.ArrayAdapter
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import dev.anonymous.cardsdesignerpro.R
 import dev.anonymous.cardsdesignerpro.databinding.FragmentPropTextBinding
 import dev.anonymous.cardsdesignerpro.data.model.TemplateElement
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorUiState
@@ -50,7 +51,7 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
     private fun populateFrom(el: TemplateElement.TextElement) {
         updating = true
         // Text: only update if changed (setText triggers re-measure → scroll reset)
-        val showText = if (el.text == "نص افتراضي") "" else el.text
+        val showText = if (el.text == getString(R.string.default_text_placeholder)) "" else el.text
         if (binding.etText.text.toString() != showText) {
             binding.etText.setText(showText)
             binding.etText.setSelection(showText.length)
@@ -61,14 +62,14 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
 
         // Background color — null means "no background"
         if (el.bgColor != null) {
-            if (binding.cpvBgColor.colorHex != el.bgColor) binding.cpvBgColor.colorHex = el.bgColor!!
+            if (binding.cpvBgColor.colorHex != el.bgColor) binding.cpvBgColor.colorHex = el.bgColor
             binding.tvBgColorHex.text = el.bgColor
             binding.btnClearBgColor.visibility = View.VISIBLE
         } else {
             // Show opaque white in the picker (so alpha starts at 255 when user opens it)
             // but visually communicate "no color" via text.
             binding.cpvBgColor.colorHex = "#FFFFFFFF"
-            binding.tvBgColorHex.text = "لا يوجد خلفية للنص بشكل افتراضي"
+            binding.tvBgColorHex.text = getString(R.string.prop_no_bg_color)
             binding.btnClearBgColor.visibility = View.GONE
         }
 
@@ -97,7 +98,7 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
         binding.etText.doAfterTextChanged { text ->
             if (updating) return@doAfterTextChanged
             val el = viewModel.selectedElement as? TemplateElement.TextElement ?: return@doAfterTextChanged
-            val newText = text.toString().ifEmpty { "نص افتراضي" }
+            val newText = text.toString().ifEmpty { getString(R.string.default_text_placeholder) }
             if (el.text == newText) return@doAfterTextChanged   // no real change
             viewModel.updateElement(el.copy(text = newText))
         }

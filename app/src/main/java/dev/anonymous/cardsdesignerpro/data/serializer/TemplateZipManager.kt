@@ -29,33 +29,31 @@ object TemplateZipManager {
     private const val IMAGES_DIR = "images/"
 
     /**
-     * Exports [template] to a ZIP file written to [outputUri] via SAF.
-     * All local image paths referenced in the template are bundled under `assets/`.
-     * Returns true on success.
+     * Exports a list of templates to a ZIP file.
      */
-    suspend fun exportToZip(
+    suspend fun exportTemplatesToZip(
         context: Context,
-        template: Template,
+        templates: List<Template>,
         outputUri: Uri
     ): Boolean = withContext(Dispatchers.IO) {
         runCatching {
-            val json = AppJson.encode(template)
-            val localPaths = collectLocalPaths(template)
-
             context.contentResolver.openOutputStream(outputUri)?.use { rawOut ->
                 ZipOutputStream(rawOut.buffered()).use { zip ->
-                    // Write template JSON
-                    zip.putNextEntry(ZipEntry(JSON_ENTRY))
-                    zip.write(json.toByteArray(Charsets.UTF_8))
-                    zip.closeEntry()
+                    for (template in templates) {
+                        val basePath = "${template.id}/"
+                        val json = AppJson.encode(template)
+                        zip.putNextEntry(ZipEntry(basePath + JSON_ENTRY))
+                        zip.write(json.toByteArray(Charsets.UTF_8))
+                        zip.closeEntry()
 
-                    // Write referenced images
-                    for (path in localPaths) {
-                        val file = File(path)
-                        if (file.exists()) {
-                            zip.putNextEntry(ZipEntry("$IMAGES_DIR${file.name}"))
-                            FileInputStream(file).use { it.copyTo(zip) }
-                            zip.closeEntry()
+                        val localPaths = collectLocalPaths(template)
+                        for (path in localPaths) {
+                            val file = File(path)
+                            if (file.exists()) {
+                                zip.putNextEntry(ZipEntry(basePath + IMAGES_DIR + file.name))
+                                FileInputStream(file).use { it.copyTo(zip) }
+                                zip.closeEntry()
+                            }
                         }
                     }
                 }
@@ -67,28 +65,62 @@ object TemplateZipManager {
         }
     }
 
-    /**
-     * Imports a template from a ZIP at [inputUri].
-     * Images are extracted into `filesDir/templates/<id>/images/`.
-     * Returns the imported [Template] or null on failure.
-     */
-    suspend fun importFromZip(
+    /** Reads only the JSON templates from the ZIP to allow the user to select what to import. */
+    suspend fun peekTemplatesFromZip(
         context: Context,
         inputUri: Uri
-    ): Template? = withContext(Dispatchers.IO) {
+    ): List<Template>? = withContext(Dispatchers.IO) {
         runCatching {
-            var rawJson: String? = null
-            val imageBytes = mutableMapOf<String, ByteArray>() // name -> bytes
+            val list = mutableListOf<Template>()
+            context.contentResolver.openInputStream(inputUri)?.use { rawIn ->
+                ZipInputStream(rawIn.buffered()).use { zip ->
+                    var entry = zip.nextEntry
+                    while (entry != null) {
+                        if (entry.name.endsWith(JSON_ENTRY)) {
+                            val json = zip.readBytes().toString(Charsets.UTF_8)
+                            runCatching { AppJson.decode(json) }.getOrNull()?.let { list.add(it) }
+                        }
+                        zip.closeEntry()
+                        entry = zip.nextEntry
+                    }
+                }
+            }
+            list
+        }.getOrElse { e ->
+            e.printStackTrace()
+            null
+        }
+    }
+
+    /** Imports only the selected templates, overwriting existing ones. */
+    suspend fun importTemplatesFromZip(
+        context: Context,
+        inputUri: Uri,
+        selectedIds: Set<String>
+    ): List<Template>? = withContext(Dispatchers.IO) {
+        if (selectedIds.isEmpty()) return@withContext emptyList()
+        runCatching {
+            // Group bytes by template id
+            val imageBytes = mutableMapOf<String, MutableMap<String, ByteArray>>() // id -> name -> bytes
+            val jsonStrings = mutableMapOf<String, String>()
 
             context.contentResolver.openInputStream(inputUri)?.use { rawIn ->
                 ZipInputStream(rawIn.buffered()).use { zip ->
                     var entry = zip.nextEntry
                     while (entry != null) {
-                        when {
-                            entry.name == JSON_ENTRY -> rawJson = zip.readBytes().toString(Charsets.UTF_8)
-                            entry.name.startsWith(IMAGES_DIR) && !entry.isDirectory -> {
-                                val name = entry.name.removePrefix(IMAGES_DIR)
-                                if (name.isNotEmpty()) imageBytes[name] = zip.readBytes()
+                        val parts = entry.name.split("/")
+                        if (parts.isNotEmpty()) {
+                            val id = parts[0]
+                            if (id in selectedIds) {
+                                if (entry.name.endsWith(JSON_ENTRY)) {
+                                    jsonStrings[id] = zip.readBytes().toString(Charsets.UTF_8)
+                                } else if (entry.name.contains(IMAGES_DIR) && !entry.isDirectory) {
+                                    val name = entry.name.substringAfter(IMAGES_DIR)
+                                    if (name.isNotEmpty()) {
+                                        if (imageBytes[id] == null) imageBytes[id] = mutableMapOf()
+                                        imageBytes[id]!![name] = zip.readBytes()
+                                    }
+                                }
                             }
                         }
                         zip.closeEntry()
@@ -97,20 +129,21 @@ object TemplateZipManager {
                 }
             }
 
-            val json = rawJson ?: return@runCatching null
-            var template = AppJson.decode(json)
-
-            // Save extracted images and fix paths
-            if (imageBytes.isNotEmpty()) {
-                val imageDir = File(context.filesDir, "templates/${template.id}/images")
-                imageDir.mkdirs()
-                imageBytes.forEach { (name, bytes) ->
-                    File(imageDir, name).writeBytes(bytes)
+            val imported = mutableListOf<Template>()
+            for ((id, json) in jsonStrings) {
+                var template = AppJson.decode(json)
+                val images = imageBytes[id]
+                if (images != null && images.isNotEmpty()) {
+                    val imageDir = File(context.filesDir, "templates/$id/images")
+                    imageDir.mkdirs()
+                    images.forEach { (name, bytes) ->
+                        File(imageDir, name).writeBytes(bytes)
+                    }
+                    template = rewriteImagePaths(template, imageDir.absolutePath)
                 }
-                template = rewriteImagePaths(template, imageDir.absolutePath)
+                imported.add(template)
             }
-
-            template
+            imported
         }.getOrElse { e ->
             e.printStackTrace()
             null

@@ -45,13 +45,13 @@ class PdfExportService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(
                 NOTIFICATION_ID,
-                createProgressNotification("تهيئة عملية التصدير...", 0, 100),
+                createProgressNotification(getString(R.string.notif_export_init), 0, 100),
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
             )
         } else {
             startForeground(
                 NOTIFICATION_ID,
-                createProgressNotification("تهيئة عملية التصدير...", 0, 100)
+                createProgressNotification(getString(R.string.notif_export_init), 0, 100)
             )
         }
 
@@ -130,9 +130,15 @@ class PdfExportService : Service() {
     }
 
     private fun createProgressNotification(templateName: String, done: Int, total: Int): Notification {
-        val message = "جاري تصدير قالب: $templateName"
+        // If it's the init message it won't contain a template name, otherwise format it
+        val message = if (done == 0 && total == 100 && templateName.contains("…")) {
+            templateName 
+        } else {
+            getString(R.string.notif_export_progress, templateName)
+        }
+        
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("صانع البطاقات (Cards Designer Pro)")
+            .setContentTitle(getString(R.string.notif_title_app_name))
             .setContentText(message)
             .setSmallIcon(android.R.drawable.stat_sys_download)
             .setOngoing(true)
@@ -154,8 +160,8 @@ class PdfExportService : Service() {
             .setAutoCancel(true)
 
         if (isDual && request.frontUri != null && request.backUri != null) {
-            builder.setContentTitle("تمت العملية بنجاح! \uD83C\uDF89")
-            builder.setContentText("تم تصدير ملفين PDF، اختر أحدهما للمعاينة.")
+            builder.setContentTitle(getString(R.string.notif_export_success_title))
+            builder.setContentText(getString(R.string.notif_export_success_dual_desc))
 
             // Action: Preview Front
             val frontIntent = Intent(this, PdfViewerActivity::class.java).apply {
@@ -167,7 +173,7 @@ class PdfExportService : Service() {
                 this, System.currentTimeMillis().toInt(), frontIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            builder.addAction(0, "معاينة الأمامي", frontPi)
+            builder.addAction(0, getString(R.string.notif_action_preview_front), frontPi)
 
             // Action: Preview Back
             val backIntent = Intent(this, PdfViewerActivity::class.java).apply {
@@ -179,11 +185,11 @@ class PdfExportService : Service() {
                 this, (System.currentTimeMillis() + 1).toInt(), backIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            builder.addAction(0, "معاينة الخلفي", backPi)
+            builder.addAction(0, getString(R.string.notif_action_preview_back), backPi)
 
         } else {
-            builder.setContentTitle("تمت العملية بنجاح! \uD83C\uDF89")
-            builder.setContentText("تم تصدير ملف الـ PDF الخاص بك، اضغط هنا للمعاينة.")
+            builder.setContentTitle(getString(R.string.notif_export_success_title))
+            builder.setContentText(getString(R.string.notif_export_success_single_desc))
 
             val singleUri = request.outputUri ?: request.frontUri
             val intent = Intent(this, PdfViewerActivity::class.java).apply {
@@ -205,10 +211,10 @@ class PdfExportService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "عملية التصدير للخلفية",
+                getString(R.string.notif_channel_export_name),
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "يعرض حالة تصدير البطاقات في الخلفية لحين الانتهاء."
+                description = getString(R.string.notif_channel_export_desc)
             }
             val manager = getSystemService(NotificationManager::class.java)
             manager?.createNotificationChannel(channel)

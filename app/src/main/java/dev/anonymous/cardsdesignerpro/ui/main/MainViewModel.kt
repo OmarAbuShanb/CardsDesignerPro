@@ -19,8 +19,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repo = TemplateRepository(application)
 
-    private val _templates = MutableStateFlow<List<Template>>(emptyList())
-    val templates: StateFlow<List<Template>> = _templates.asStateFlow()
+    private val _templates = MutableStateFlow<List<Template>?>(null)
+    val templates: StateFlow<List<Template>?> = _templates.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -35,9 +35,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun loadTemplates() {
         viewModelScope.launch {
-            _isLoading.value = true
             _templates.value = repo.getAll()
-            _isLoading.value = false
+        }
+    }
+
+    fun reloadSingleTemplate(id: String) {
+        viewModelScope.launch {
+            val updated = repo.getById(id) ?: return@launch
+            val currentList = _templates.value?.toMutableList() ?: mutableListOf()
+            val index = currentList.indexOfFirst { it.id == id }
+            if (index != -1) {
+                // Only replace if version actually changed
+                if (currentList[index].version != updated.version) {
+                    currentList[index] = updated
+                    _templates.value = currentList
+                }
+            } else {
+                // If it's completely new, add it to the top
+                _templates.value = listOf(updated) + currentList
+            }
         }
     }
 
@@ -77,22 +93,37 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun exportTemplate(id: String, outputUri: Uri) {
+    fun exportTemplates(ids: List<String>, outputUri: Uri) {
         viewModelScope.launch {
-            val template = repo.getById(id) ?: return@launch
-            val success = TemplateZipManager.exportToZip(getApplication(), template, outputUri)
+            _isLoading.value = true
+            val templatesToExport = ids.mapNotNull { repo.getById(it) }
+            val success = TemplateZipManager.exportTemplatesToZip(getApplication(), templatesToExport, outputUri)
             _event.value = if (success) MainEvent.ExportSuccess else MainEvent.ExportFailed
+            _isLoading.value = false
         }
     }
 
-    fun importTemplate(inputUri: Uri) {
+    fun peekImport(inputUri: Uri) {
         viewModelScope.launch {
             _isLoading.value = true
-            val template = TemplateZipManager.importFromZip(getApplication(), inputUri)
-            if (template != null) {
-                repo.importTemplate(template)
+            val templates = TemplateZipManager.peekTemplatesFromZip(getApplication(), inputUri)
+            if (templates != null && templates.isNotEmpty()) {
+                _event.value = MainEvent.ShowImportDialog(inputUri, templates)
+            } else {
+                _event.value = MainEvent.ImportFailed
+            }
+            _isLoading.value = false
+        }
+    }
+
+    fun confirmImport(inputUri: Uri, selectedIds: Set<String>) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            val imported = TemplateZipManager.importTemplatesFromZip(getApplication(), inputUri, selectedIds)
+            if (imported != null && imported.isNotEmpty()) {
+                imported.forEach { repo.importTemplate(it) }
                 loadTemplates()
-                _event.value = MainEvent.ImportSuccess(template.name)
+                _event.value = MainEvent.ImportSuccess(imported.size)
             } else {
                 _event.value = MainEvent.ImportFailed
             }
@@ -111,7 +142,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun extractDefaultTemplate(sourceDir: String, name: String, onExtracted: (String?) -> Unit) {
         viewModelScope.launch {
-            _isLoading.value = true
             val extracted = repo.extractDefaultTemplate(sourceDir, name)
             if (extracted != null) {
                 loadTemplates()
@@ -119,7 +149,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             } else {
                 onExtracted(null)
             }
-            _isLoading.value = false
         }
     }
 
@@ -129,6 +158,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 sealed class MainEvent {
     object ExportSuccess : MainEvent()
     object ExportFailed : MainEvent()
-    data class ImportSuccess(val name: String) : MainEvent()
+    data class ShowImportDialog(val uri: Uri, val templates: List<Template>) : MainEvent()
+    data class ImportSuccess(val count: Int) : MainEvent()
     object ImportFailed : MainEvent()
 }

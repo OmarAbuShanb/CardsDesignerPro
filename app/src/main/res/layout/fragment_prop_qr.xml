@@ -66,8 +66,9 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_pick_logo"
             style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="اختيار شعار للQR"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_pick_qr_logo"
             android:layout_marginBottom="8dp" />
 
         <LinearLayout
@@ -92,7 +93,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginEnd="8dp"
-                    android:text="الشعار المختار"
+                    android:text="@string/label_chosen_logo"
                     android:textAppearance="?attr/textAppearanceBodyMedium" />
 
                 <ImageView
@@ -112,7 +113,7 @@
                 android:id="@+id/cb_tint_logo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="تلوين الشعار بنفس لون الباركود"
+                android:text="@string/cb_tint_logo"
                 android:layout_marginBottom="14dp" />
         </LinearLayout>
 

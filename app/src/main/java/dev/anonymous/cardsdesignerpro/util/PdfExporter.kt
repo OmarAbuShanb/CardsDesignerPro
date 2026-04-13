@@ -16,7 +16,6 @@ import java.io.OutputStream
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import kotlin.math.ceil
-import kotlin.math.floor
 
 /**
  * Generates multi-page PDFs from a [Template] and a list of credential records.
@@ -194,15 +193,37 @@ object PdfExporter {
     fun calculateLayout(template: Template, settings: ExportSettings): LayoutInfo {
         val pageW = settings.pageSize.widthPt
         val pageH = settings.pageSize.heightPt
-        val cardW = pageW * settings.cardWidthFraction
-        val cardH = cardW * template.card.heightRatio
-        val cols  = floor(pageW / (cardW + settings.horizontalSpacingDp)).toInt().coerceAtLeast(1)
-        val rows  = floor(pageH / (cardH + settings.verticalSpacingDp)).toInt().coerceAtLeast(1)
-        val perPage = (cols * rows).coerceAtLeast(1)
-        val gridW = cols * cardW + (cols - 1) * settings.horizontalSpacingDp
-        val gridH = rows * cardH + (rows - 1) * settings.verticalSpacingDp
+        val preset = settings.selectedPreset
+        val cols = preset.columns
+        val rows = preset.rows
+        val hSpacing = settings.horizontalSpacingDp
+        val vSpacing = settings.verticalSpacingDp
+        val aspectRatio = template.card.heightRatio  // height / width
+
+        // Available space for cards after subtracting spacing between them
+        val availableW = pageW - (cols - 1) * hSpacing
+        val availableH = pageH - (rows - 1) * vSpacing
+
+        // Maximum card dimensions that fit the grid
+        val maxCardW = availableW / cols
+        val maxCardH = availableH / rows
+
+        // Fit card while preserving aspect ratio
+        var cardW = maxCardW
+        var cardH = cardW * aspectRatio
+        if (cardH > maxCardH) {
+            cardH = maxCardH
+            cardW = cardH / aspectRatio
+        }
+
+        val perPage = cols * rows
+
+        // Center the grid on the page
+        val gridW = cols * cardW + (cols - 1) * hSpacing
+        val gridH = rows * cardH + (rows - 1) * vSpacing
         val marginLeft = (pageW - gridW) / 2f
         val marginTop  = (pageH - gridH) / 2f
+
         return LayoutInfo(cols, rows, perPage, cardW, cardH, pageW, pageH, marginLeft, marginTop, settings)
     }
 
@@ -311,6 +332,9 @@ object PdfExporter {
         flipEdge: FlipEdge = FlipEdge.LONG_EDGE
     ) {
         val s = layout.settings
+        renderer.maxImageDim   = s.quality.maxImageDim
+        renderer.maxPatternDim = s.quality.maxPatternDim
+        renderer.maxQrDim      = s.quality.maxQrDim
         for (slot in 0 until cardsOnPage) {
             val srcCol = slot % layout.columns
             val srcRow = slot / layout.columns
@@ -348,7 +372,7 @@ object PdfExporter {
                 username    = username,
                 password    = password,
                 date        = dateStr,
-                renderScale = 300f / 72f
+                renderScale = s.quality.renderScale
             )
             canvas.restore()
         }

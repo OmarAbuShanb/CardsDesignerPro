@@ -19,7 +19,6 @@ class TemplateAdapter(
     private val onOpen: (Template) -> Unit,
     private val onRename: (Template) -> Unit,
     private val onDuplicate: (Template) -> Unit,
-    private val onExport: (Template) -> Unit,
     private val onDelete: (Template) -> Unit,
 ) : ListAdapter<Template, TemplateAdapter.VH>(DIFF) {
 
@@ -29,8 +28,13 @@ class TemplateAdapter(
         private var lastDismissTime = 0L
 
         fun bind(template: Template) {
-            binding.btnOpenTemplate.text = template.name
-            binding.btnOpenTemplate.setOnClickListener { onOpen(template) }
+            binding.tvTemplateName.text = template.name
+            binding.cardContainer.setOnClickListener { onOpen(template) }
+            
+            // Render template efficiently
+            binding.cardCanvas.isInteractive = false
+            binding.cardCanvas.bind(template, selectedId = null)
+            
             binding.btnMore.setOnClickListener { view ->
                 if (System.currentTimeMillis() - lastDismissTime < 250) {
                     return@setOnClickListener
@@ -43,7 +47,6 @@ class TemplateAdapter(
                 val actions = listOf(
                     Triple(R.id.action_rename, R.string.menu_rename, R.drawable.ic_rename_24),
                     Triple(R.id.action_duplicate, R.string.menu_duplicate, R.drawable.ic_duplicate_24),
-                    Triple(R.id.action_export, R.string.menu_export_template, R.drawable.ic_export_24),
                     Triple(R.id.action_delete, R.string.menu_delete, R.drawable.ic_delete_24)
                 )
 
@@ -71,7 +74,6 @@ class TemplateAdapter(
                 popup?.setContentWidth(maxWidth)
 
                 popup?.setOnDismissListener {
-                    (view as? com.google.android.material.button.MaterialButton)?.isChecked = false
                     lastDismissTime = System.currentTimeMillis()
                     popup = null
                 }
@@ -80,13 +82,11 @@ class TemplateAdapter(
                     when (actions[position].first) {
                         R.id.action_rename -> onRename(template)
                         R.id.action_duplicate -> onDuplicate(template)
-                        R.id.action_export -> onExport(template)
                         R.id.action_delete -> onDelete(template)
                     }
                     popup?.dismiss()
                 }
                 
-                (view as? com.google.android.material.button.MaterialButton)?.isChecked = true
                 popup?.show()
             }
         }

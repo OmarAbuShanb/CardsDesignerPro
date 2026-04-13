@@ -213,10 +213,11 @@
   ],
   "exportSettings": {
     "pageSize": "A4",
-    "cardWidthFraction": 0.17999999,
-    "horizontalSpacingDp": 10.0,
-    "verticalSpacingDp": 12.0,
+    "selectedLayoutIndex": 8,
+    "horizontalSpacingDp": 2.0,
+    "verticalSpacingDp": 2.0,
     "flipEdge": "LONG_EDGE",
-    "exportFrontOnly": false
+    "exportFrontOnly": false,
+    "quality": "HIGH"
   }
 }

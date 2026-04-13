@@ -18,6 +18,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.slider.Slider
 import com.google.android.material.snackbar.Snackbar
 import dev.anonymous.cardsdesignerpro.R
+import dev.anonymous.cardsdesignerpro.data.model.CardLayoutPreset
+import dev.anonymous.cardsdesignerpro.data.model.ExportQuality
 import dev.anonymous.cardsdesignerpro.data.model.FlipEdge
 import dev.anonymous.cardsdesignerpro.data.model.PageSize
 import dev.anonymous.cardsdesignerpro.databinding.ActivityExportCardsBinding
@@ -113,8 +115,10 @@ class ExportCardsActivity : AppCompatActivity() {
         setupBottomSheetDrag()
         setupFileList()
         setupFilePicker()
-        setupSliders()
+        setupLayoutSpinner()
+        setupSpacingSliders()
         setupPageSizeSpinner()
+        setupQualitySpinner()
         setupFlipEdgeToggle()
         setupFrontOnlyCheckbox()
         setupExportButtons()
@@ -171,10 +175,46 @@ class ExportCardsActivity : AppCompatActivity() {
 
     private fun setupFileList() {
         fileAdapter = SelectedFileAdapter { uri -> viewModel.removeFile(uri) }
+        
+        val touchHelper = androidx.recyclerview.widget.ItemTouchHelper(object : androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(
+            androidx.recyclerview.widget.ItemTouchHelper.UP or androidx.recyclerview.widget.ItemTouchHelper.DOWN, 0
+        ) {
+            override fun onMove(
+                recyclerView: androidx.recyclerview.widget.RecyclerView,
+                viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder,
+                target: androidx.recyclerview.widget.RecyclerView.ViewHolder
+            ): Boolean {
+                val from = viewHolder.bindingAdapterPosition
+                val to = target.bindingAdapterPosition
+                if (from == androidx.recyclerview.widget.RecyclerView.NO_POSITION || to == androidx.recyclerview.widget.RecyclerView.NO_POSITION) return false
+                fileAdapter.swapItems(from, to)
+                return true
+            }
+
+            override fun onSwiped(viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder, direction: Int) {}
+            
+            override fun clearView(
+                recyclerView: androidx.recyclerview.widget.RecyclerView,
+                viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder
+            ) {
+                super.clearView(recyclerView, viewHolder)
+                fileAdapter.commitDragSession()
+            }
+        })
+
+        fileAdapter.onStartDrag = { 
+            fileAdapter.startDragSession()
+            touchHelper.startDrag(it) 
+        }
+        fileAdapter.onDropCommit = { newOrder ->
+            viewModel.setFilesOrder(newOrder)
+        }
+        
         binding.rvSelectedFiles.apply {
             adapter = fileAdapter
             layoutManager = LinearLayoutManager(this@ExportCardsActivity)
             isNestedScrollingEnabled = false
+            touchHelper.attachToRecyclerView(this)
         }
     }
 
@@ -191,10 +231,31 @@ class ExportCardsActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupSliders() {
-        binding.sliderCardWidth.addOnChangeListener(Slider.OnChangeListener { _, v, fromUser ->
-            if (fromUser) viewModel.updateCardWidthFraction(v)
-        })
+    private fun setupLayoutSpinner() {
+        val presets = CardLayoutPreset.ALL
+        val labels = presets.map { preset ->
+            val suffix = if (preset.isRecommended) getString(R.string.label_recommended_suffix) else ""
+            getString(
+                R.string.layout_preset_format,
+                preset.totalCards,
+                preset.columns,
+                preset.rows
+            ) + suffix
+        }
+        binding.spinnerCardLayout.adapter = ArrayAdapter(
+            this, android.R.layout.simple_spinner_item, labels
+        ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+
+        binding.spinnerCardLayout.onItemSelectedListener =
+            object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
+                    viewModel.updateCardLayout(pos)
+                }
+                override fun onNothingSelected(p: AdapterView<*>?) {}
+            }
+    }
+
+    private fun setupSpacingSliders() {
         binding.sliderHSpacing.addOnChangeListener(Slider.OnChangeListener { _, v, fromUser ->
             if (fromUser) viewModel.updateHorizontalSpacing(v)
         })
@@ -217,6 +278,32 @@ class ExportCardsActivity : AppCompatActivity() {
 
                 override fun onNothingSelected(p: AdapterView<*>?) {}
             }
+    }
+
+    private fun setupQualitySpinner() {
+        val qualities = ExportQuality.entries.toTypedArray()
+        val labels = qualities.map { getString(it.labelRes()) }
+        binding.spinnerQuality.adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item, labels
+        ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+
+        binding.spinnerQuality.onItemSelectedListener =
+            object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
+                    viewModel.updateQuality(qualities[pos])
+                }
+                override fun onNothingSelected(p: AdapterView<*>?) {}
+            }
+    }
+
+    /** Maps each [ExportQuality] to its string resource. */
+    private fun ExportQuality.labelRes(): Int = when (this) {
+        ExportQuality.FULL   -> R.string.quality_full
+        ExportQuality.HIGH   -> R.string.quality_high
+        ExportQuality.GOOD   -> R.string.quality_good
+        ExportQuality.MEDIUM -> R.string.quality_medium
+        ExportQuality.LOW    -> R.string.quality_low
     }
 
     private fun setupFlipEdgeToggle() {
@@ -306,9 +393,13 @@ class ExportCardsActivity : AppCompatActivity() {
         if (binding.spinnerTemplate.selectedItemPosition != state.selectedTemplateIndex)
             binding.spinnerTemplate.setSelection(state.selectedTemplateIndex)
 
-        // Sliders
-        if (binding.sliderCardWidth.value != state.settings.cardWidthFraction)
-            binding.sliderCardWidth.value = state.settings.cardWidthFraction.coerceIn(0.1f, 0.9f)
+        // Card layout spinner
+        val layoutIdx = state.settings.selectedLayoutIndex
+            .coerceIn(0, CardLayoutPreset.ALL.lastIndex)
+        if (binding.spinnerCardLayout.selectedItemPosition != layoutIdx)
+            binding.spinnerCardLayout.setSelection(layoutIdx)
+
+        // Spacing sliders
         if (binding.sliderHSpacing.value != state.settings.horizontalSpacingDp)
             binding.sliderHSpacing.value = state.settings.horizontalSpacingDp.coerceIn(0f, 60f)
         if (binding.sliderVSpacing.value != state.settings.verticalSpacingDp)
@@ -319,10 +410,14 @@ class ExportCardsActivity : AppCompatActivity() {
         if (binding.spinnerPageSize.selectedItemPosition != psIdx)
             binding.spinnerPageSize.setSelection(psIdx)
 
+        // Quality
+        val qIdx = ExportQuality.entries.indexOf(state.settings.quality).coerceAtLeast(0)
+        if (binding.spinnerQuality.selectedItemPosition != qIdx)
+            binding.spinnerQuality.setSelection(qIdx)
+
         val showDual = state.hasBackSide && !state.settings.exportFrontOnly
         val parse = state.combinedParseResult
 
-        // Stats
         // Stats
         val layout = state.layout
 
@@ -353,6 +448,10 @@ class ExportCardsActivity : AppCompatActivity() {
         }
         binding.layoutTotalDualPages.visibility = if (showDual) View.VISIBLE else View.GONE
         binding.tvFrontSideTitle.visibility = if (showDual) View.VISIBLE else View.GONE
+
+        // Apply selected quality to previews so they match the export output
+        binding.pagePreview.setQuality(state.settings.quality)
+        binding.pagePreviewBack.setQuality(state.settings.quality)
 
         // Front preview (not mirrored)
         binding.pagePreview.bind(state.templates.getOrNull(state.selectedTemplateIndex), layout)
