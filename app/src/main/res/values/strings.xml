@@ -7,7 +7,7 @@
     <string name="btn_new_template">إنشاء قالب من الصفر</string>
     <string name="btn_edit_default_template">اختيار قالب جاهز للتعديل عليه</string>
     <string name="title_default_templates_sheet">اختر قالب للتعديل عليه</string>
-    <string name="btn_import_template">استيراد قوالب موجودة</string>
+    <string name="btn_import_template">استيراد قوالب مخزنة على الجهاز</string>
     <string name="templates_empty">لا توجد قوالب. ابدأ بإنشاء قالب جديد.</string>
     <string name="templates_title">القوالب</string>
 
@@ -56,7 +56,7 @@
     <string name="btn_choose_file">اختيار الملف</string>
     <string name="hint_no_file_chosen">لم يتم اختيار ملف</string>
     <string name="label_template">القالب</string>
-    <string name="label_no_templates">لا يوجد\nقوالب</string>
+    <string name="label_no_templates">لا يوجد قوالب</string>
     <string name="no_templates_to_export">لا يوجد قوالب لتصديرها</string>
     <string name="label_card_layout">تخطيط البطاقات في الصفحة</string>
     <string name="layout_preset_format">%1$d بطاقة (%2$d أعمدة × %3$d صف)</string>
@@ -143,12 +143,17 @@
     <string name="prop_background_image">صورة الخلفية</string>
     <string name="prop_choose_image">اختيار صورة</string>
     <string name="prop_remove_image">حذف الصورة</string>
+    <string name="prop_bg_scale_fit">شد الصورة وتعبئتها</string>
+    <string name="prop_bg_scale_crop">توسيط الأبعاد مع القص</string>
     <string name="prop_text_content">محتوى النص</string>
     <string name="prop_text_color">لون النص</string>
     <string name="prop_text_bg_color">لون خلفية النص</string>
     <string name="prop_bold">نص غامق</string>
     <string name="prop_font">نوع الخط</string>
     <string name="prop_font_size">حجم الخط</string>
+    <string name="prop_enable_stroke">تفعيل حواف النص</string>
+    <string name="prop_stroke_color">لون الحواف</string>
+    <string name="prop_text_stroke">سُمك حواف النص</string>
     <string name="prop_digit_count">عدد الأرقام</string>
     <string name="prop_host">عنوان الخادم (Host)</string>
     <string name="prop_logo">شعار QR</string>
@@ -250,7 +255,7 @@
     <string name="title_export_settings">إعدادات التصدير</string>
 
     <!-- Export quality -->
-    <string name="label_export_quality">جودة التصدير</string>
+    <string name="label_export_quality">جودة التصدير (خاص بجودة صور المعرض والQr)</string>
     <string name="quality_full">الجودة الكاملة — للطباعة الاحترافية</string>
     <string name="quality_high">جودة عالية (افتراضي)</string>
     <string name="quality_good">جودة جيدة</string>
@@ -259,4 +264,13 @@
 
     <string name="default_text_placeholder">نص افتراضي</string>
     <string name="prop_no_bg_color">لا يوجد خلفية للنص بشكل افتراضي</string>
+
+    <string name="label_short_numbers_switch">استخدام الأرقام المختصرة</string>
+    <string name="btn_add_short_username">اسم المستخدم - المختصر</string>
+    <string name="btn_add_short_password">كلمة المرور - المختصرة</string>
+    <string name="prop_qr_short_numbers">ربط القارئ بالأرقام المختصرة</string>
+    <string name="label_short_data_file">ملف أو ملفات البيانات المختصرة</string>
+    <string name="label_original_data_file">ملف أو ملفات البيانات الأصلية</string>
+    <string name="short_numbers_warning_format">عدد البيانات الأصلية %1$d بينما عدد البيانات المختصرة %2$d</string>
+
 </resources>

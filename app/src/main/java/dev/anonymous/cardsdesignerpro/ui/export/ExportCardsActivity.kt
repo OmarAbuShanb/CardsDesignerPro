@@ -34,6 +34,7 @@ class ExportCardsActivity : AppCompatActivity() {
     private lateinit var binding: ActivityExportCardsBinding
     private val viewModel: ExportCardsViewModel by viewModels()
     private lateinit var fileAdapter: SelectedFileAdapter
+    private lateinit var shortFileAdapter: SelectedFileAdapter
 
     // ── File pickers ──────────────────────────────────────────────────────────
 
@@ -51,6 +52,22 @@ class ExportCardsActivity : AppCompatActivity() {
         }
         val names = uris.map { queryFileName(it) ?: it.lastPathSegment ?: "file" }
         viewModel.addFiles(uris, names)
+    }
+
+    private val multiFilePickerShort = registerForActivityResult(
+        ActivityResultContracts.OpenMultipleDocuments()
+    ) { uris: List<Uri> ->
+        if (uris.isEmpty()) return@registerForActivityResult
+        uris.forEach { uri ->
+            runCatching {
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            }
+        }
+        val names = uris.map { queryFileName(it) ?: it.lastPathSegment ?: "file" }
+        viewModel.addFiles(uris, names, isShort = true)
     }
 
     /** Single PDF — used for single-face or interleaved-dual export */
@@ -175,6 +192,7 @@ class ExportCardsActivity : AppCompatActivity() {
 
     private fun setupFileList() {
         fileAdapter = SelectedFileAdapter { uri -> viewModel.removeFile(uri) }
+        shortFileAdapter = SelectedFileAdapter { uri -> viewModel.removeFile(uri, isShort = true) }
         
         val touchHelper = androidx.recyclerview.widget.ItemTouchHelper(object : androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(
             androidx.recyclerview.widget.ItemTouchHelper.UP or androidx.recyclerview.widget.ItemTouchHelper.DOWN, 0
@@ -216,11 +234,62 @@ class ExportCardsActivity : AppCompatActivity() {
             isNestedScrollingEnabled = false
             touchHelper.attachToRecyclerView(this)
         }
+
+        val touchHelperShort = androidx.recyclerview.widget.ItemTouchHelper(object : androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(
+            androidx.recyclerview.widget.ItemTouchHelper.UP or androidx.recyclerview.widget.ItemTouchHelper.DOWN, 0
+        ) {
+            override fun onMove(
+                recyclerView: androidx.recyclerview.widget.RecyclerView,
+                viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder,
+                target: androidx.recyclerview.widget.RecyclerView.ViewHolder
+            ): Boolean {
+                val from = viewHolder.bindingAdapterPosition
+                val to = target.bindingAdapterPosition
+                if (from == androidx.recyclerview.widget.RecyclerView.NO_POSITION || to == androidx.recyclerview.widget.RecyclerView.NO_POSITION) return false
+                shortFileAdapter.swapItems(from, to)
+                return true
+            }
+
+            override fun onSwiped(viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder, direction: Int) {}
+            
+            override fun clearView(
+                recyclerView: androidx.recyclerview.widget.RecyclerView,
+                viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder
+            ) {
+                super.clearView(recyclerView, viewHolder)
+                shortFileAdapter.commitDragSession()
+            }
+        })
+
+        shortFileAdapter.onStartDrag = { 
+            shortFileAdapter.startDragSession()
+            touchHelperShort.startDrag(it) 
+        }
+        shortFileAdapter.onDropCommit = { newOrder ->
+            viewModel.setFilesOrder(newOrder, isShort = true)
+        }
+        
+        binding.rvSelectedShortFiles.apply {
+            adapter = shortFileAdapter
+            layoutManager = LinearLayoutManager(this@ExportCardsActivity)
+            isNestedScrollingEnabled = false
+            touchHelperShort.attachToRecyclerView(this)
+        }
     }
 
     private fun setupFilePicker() {
         binding.btnChooseFile.setOnClickListener {
             multiFilePicker.launch(
+                arrayOf(
+                    "text/csv", "text/comma-separated-values",
+                    "application/vnd.ms-excel",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "*/*"
+                )
+            )
+        }
+        binding.btnChooseShortFile.setOnClickListener {
+            multiFilePickerShort.launch(
                 arrayOf(
                     "text/csv", "text/comma-separated-values",
                     "application/vnd.ms-excel",
@@ -338,6 +407,13 @@ class ExportCardsActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             val state = viewModel.uiState.value
+            if (state.isShortNumbersEnabled) {
+                val shortParse = state.combinedShortParseResult
+                if (shortParse != null && parse.count > 0 && shortParse.count > 0 && parse.count != shortParse.count) {
+                    Snackbar.make(binding.root, getString(R.string.short_numbers_warning_format, parse.count, shortParse.count), Snackbar.LENGTH_LONG).show()
+                    return@setOnClickListener
+                }
+            }
             val name = viewModel.selectedTemplate?.name ?: "cards"
             val fname = if (state.hasBackSide && !state.settings.exportFrontOnly)
                 "${name}_${getString(R.string.dual_filename)}_${timestamp()}.pdf"
@@ -352,6 +428,14 @@ class ExportCardsActivity : AppCompatActivity() {
                 Snackbar.make(binding.root, R.string.error_no_valid_file, Snackbar.LENGTH_SHORT)
                     .show()
                 return@setOnClickListener
+            }
+            val state = viewModel.uiState.value
+            if (state.isShortNumbersEnabled) {
+                val shortParse = state.combinedShortParseResult
+                if (shortParse != null && parse.count > 0 && shortParse.count > 0 && parse.count != shortParse.count) {
+                    Snackbar.make(binding.root, getString(R.string.short_numbers_warning_format, parse.count, shortParse.count), Snackbar.LENGTH_LONG).show()
+                    return@setOnClickListener
+                }
             }
             val name = viewModel.selectedTemplate?.name ?: "cards"
             frontPdfSaver.launch("${name}_${getString(R.string.front_filename)}_${timestamp()}.pdf")
@@ -371,6 +455,23 @@ class ExportCardsActivity : AppCompatActivity() {
     private fun renderState(state: ExportUiState) {
         // File list
         fileAdapter.submitList(state.selectedFiles.toList())
+        shortFileAdapter.submitList(state.selectedShortFiles.toList())
+
+        // Setup Short Numbers UI based on template flag
+        if (state.isShortNumbersEnabled) {
+            binding.layoutShortFilePicker.visibility = View.VISIBLE
+            val shortParse = state.combinedShortParseResult
+            val normalParse = state.combinedParseResult
+            
+            if (shortParse != null && normalParse != null && shortParse.count > 0 && normalParse.count > 0 && shortParse.count != normalParse.count) {
+                binding.tvShortRecordsWarning.visibility = View.VISIBLE
+                binding.tvShortRecordsWarning.text = getString(R.string.short_numbers_warning_format, normalParse.count, shortParse.count)
+            } else {
+                binding.tvShortRecordsWarning.visibility = View.GONE
+            }
+        } else {
+            binding.layoutShortFilePicker.visibility = View.GONE
+        }
 
         // Template spinner
         val templates = state.templates
@@ -414,6 +515,26 @@ class ExportCardsActivity : AppCompatActivity() {
         val qIdx = ExportQuality.entries.indexOf(state.settings.quality).coerceAtLeast(0)
         if (binding.spinnerQuality.selectedItemPosition != qIdx)
             binding.spinnerQuality.setSelection(qIdx)
+
+        // Hide quality spinner if no images or QRs
+        val selectedTemplate = state.templates.getOrNull(state.selectedTemplateIndex)
+        val hasImageOrQr = selectedTemplate?.let { t ->
+            val elements = t.elements + (t.backElements ?: emptyList())
+            elements.any { el ->
+                when (el) {
+                    is dev.anonymous.cardsdesignerpro.data.model.TemplateElement.QrElement -> true
+                    is dev.anonymous.cardsdesignerpro.data.model.TemplateElement.ImageElement -> {
+                        val path = el.imagePath
+                        !path.startsWith("pack:") && !path.lowercase().endsWith(".svg")
+                    }
+                    else -> false
+                }
+            }
+        } ?: false
+
+        val qualityVisibility = if (hasImageOrQr) View.VISIBLE else View.GONE
+        binding.tvQualityLabel.visibility = qualityVisibility
+        binding.spinnerQuality.visibility = qualityVisibility
 
         val showDual = state.hasBackSide && !state.settings.exportFrontOnly
         val parse = state.combinedParseResult

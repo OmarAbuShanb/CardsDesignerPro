@@ -14,9 +14,24 @@ import dev.anonymous.cardsdesignerpro.databinding.FragmentPropTextBinding
 import dev.anonymous.cardsdesignerpro.data.model.TemplateElement
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorUiState
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel
+import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel.Companion.MAX_TEXT_SIZE_SP
+import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel.Companion.MIN_TEXT_SIZE_SP
 
-private val FONTS = listOf("Default" to "default", "Serif" to "serif",
-    "Sans-serif" to "sans-serif", "Monospace" to "monospace")
+val AVAILABLE_FONTS = listOf(
+    "افتراضي (بدون خط)" to "default",
+    "Abril Fatface" to "abril_fatface_regular",
+    "Almarai" to "almarai",
+    "Aref Ruqaa" to "aref_ruqaa",
+    "Cairo" to "cairo",
+    "Inter" to "inter_18pt",
+    "JetBrains Mono" to "jet_brains_mono",
+    "Lora" to "lora",
+    "Montserrat" to "montserrat",
+    "Oswald" to "oswald",
+    "Playfair Display" to "playfair_display",
+    "Prata" to "prata_regular",
+    "Special Elite" to "special_elite_regular"
+)
 
 class TextPropertiesFragment : Fragment(), PropertyFragment {
 
@@ -43,7 +58,7 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
         val adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
-            FONTS.map { it.first }
+            AVAILABLE_FONTS.map { it.first }
         ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
         binding.spinnerFont.adapter = adapter
     }
@@ -76,25 +91,28 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
         // Bold: guard to avoid spurious setOnCheckedChangeListener → requestLayout
         if (binding.cbBold.isChecked != el.isBold) binding.cbBold.isChecked = el.isBold
 
-        // Stepper: guard setValue (also fires listener which could loop)
-        val targetSize = el.textSizeSp.toInt()
-        if (binding.stepperFontSize.value != targetSize) {
-            binding.stepperFontSize.minValue = 6; binding.stepperFontSize.maxValue = 72
-            binding.stepperFontSize.value = targetSize
-        } else {
-            // Ensure min/max set at least once on first populate
-            binding.stepperFontSize.minValue = 6; binding.stepperFontSize.maxValue = 72
+        // Slider: guard setValue (also fires listener which could loop)
+        val targetSize = kotlin.math.round(el.textSizeSp).toFloat().coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP)
+        if (binding.sliderFontSize.value != targetSize) {
+            binding.sliderFontSize.value = targetSize
+        }
+        val targetStroke = el.textStrokeWidth.coerceIn(0f, 10f)
+        if (binding.sliderTextStroke.value != targetStroke) {
+            binding.sliderTextStroke.value = targetStroke
         }
 
         // Spinner: Spinner.setSelection() ALWAYS calls requestLayout() even for same pos.
         // Guard it so we only call setSelection when position truly changes → no scroll reset.
-        val fontIdx = FONTS.indexOfFirst { it.second == el.fontName }.coerceAtLeast(0)
+        val fontIdx = AVAILABLE_FONTS.indexOfFirst { it.second == el.fontName }.coerceAtLeast(0)
         if (binding.spinnerFont.selectedItemPosition != fontIdx) binding.spinnerFont.setSelection(fontIdx)
 
         updating = false
     }
 
     private fun setupListeners() {
+        binding.sliderFontSize.valueFrom = MIN_TEXT_SIZE_SP
+        binding.sliderFontSize.valueTo = MAX_TEXT_SIZE_SP
+
         binding.etText.doAfterTextChanged { text ->
             if (updating) return@doAfterTextChanged
             val el = viewModel.selectedElement as? TemplateElement.TextElement ?: return@doAfterTextChanged
@@ -122,18 +140,25 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
             if (el.isBold == isChecked) return@setOnCheckedChangeListener
             viewModel.updateElement(el.copy(isBold = isChecked))
         }
-        binding.stepperFontSize.onValueChanged = { size ->
+        binding.sliderFontSize.addOnChangeListener { _, size, _ ->
             if (!updating) {
                 val el = viewModel.selectedElement as? TemplateElement.TextElement
-                if (el != null && el.textSizeSp != size.toFloat())
-                    viewModel.updateElement(el.copy(textSizeSp = size.toFloat()))
+                if (el != null && el.textSizeSp != size)
+                    viewModel.updateElement(el.copy(textSizeSp = size))
+            }
+        }
+        binding.sliderTextStroke.addOnChangeListener { _, size, _ ->
+            if (!updating) {
+                val el = viewModel.selectedElement as? TemplateElement.TextElement
+                if (el != null && el.textStrokeWidth != size)
+                    viewModel.updateElement(el.copy(textStrokeWidth = size))
             }
         }
         binding.spinnerFont.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
                 if (updating) return
                 val el = viewModel.selectedElement as? TemplateElement.TextElement ?: return
-                val newFont = FONTS[pos].second
+                val newFont = AVAILABLE_FONTS[pos].second
                 if (el.fontName == newFont) return   // spurious fire from setSelection()
                 viewModel.updateElement(el.copy(fontName = newFont))
             }

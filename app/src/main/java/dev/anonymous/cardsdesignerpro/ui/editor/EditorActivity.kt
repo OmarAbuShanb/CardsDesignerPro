@@ -13,7 +13,6 @@ import com.google.android.material.snackbar.Snackbar
 import dev.anonymous.cardsdesignerpro.R
 import dev.anonymous.cardsdesignerpro.data.model.CardSide
 import dev.anonymous.cardsdesignerpro.databinding.ActivityEditorBinding
-import dev.anonymous.cardsdesignerpro.databinding.DialogTemplateNameBinding
 import dev.anonymous.cardsdesignerpro.ui.editor.canvas.CardCanvasView
 import kotlinx.coroutines.launch
 
@@ -58,20 +57,6 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
         viewModel.saveIfNeeded()
     }
 
-    override fun finish() {
-        // Ensure any unsaved changes are saved BEFORE we extract the metadata for the result
-        viewModel.saveIfNeeded()
-        val template = viewModel.uiState.value.template
-        if (template.id.isNotEmpty()) {
-            val resultIntent = android.content.Intent().apply {
-                putExtra(EXTRA_TEMPLATE_ID, template.id)
-                putExtra("extra_template_version", template.version)
-            }
-            setResult(RESULT_OK, resultIntent)
-        }
-        super.finish()
-    }
-
     // ── Setup ─────────────────────────────────────────────────────────────────
 
     private fun setupToolbar() {
@@ -82,8 +67,7 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
         binding.toolbar.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 R.id.action_save -> {
-                    viewModel.save()
-                    finish()
+                    viewModel.save { finish() }
                     true
                 }
                 R.id.action_restore -> {
@@ -113,6 +97,12 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
             // Sync only if state doesn't match (avoid feedback loop)
             if (viewModel.isBackSideEnabled != isChecked) {
                 viewModel.toggleBackSide()
+            }
+        }
+
+        binding.switchShortNumbers.setOnCheckedChangeListener { _, isChecked ->
+            if (viewModel.currentTemplate.isShortNumbersEnabled != isChecked) {
+                viewModel.toggleShortNumbers(isChecked)
             }
         }
 
@@ -223,13 +213,54 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
     }
 
     private var lastRenderedBackEnabled: Boolean? = null
+    private var lastRenderedShortEnabled: Boolean? = null
     private var lastRenderedSide: CardSide? = null
+
+    private var isFlipping = false
 
     private fun renderState(state: EditorUiState) {
         val template = state.template
         binding.tvTemplateName.text = template.name
 
-        binding.cardCanvas.bind(template, state.selectedElementId, template.activeSide)
+        if (state.sideSwitched && !isFlipping) {
+            isFlipping = true
+            val isRtl = binding.root.layoutDirection == View.LAYOUT_DIRECTION_RTL
+            val animOutRot = if (isRtl) -90f else 90f
+            val animInRot = if (isRtl) 90f else -90f
+            
+            // Slightly lift the card (Z translation) during flip for enhanced 3D effect
+            binding.cardCanvas.animate().translationZ(50f).setDuration(150).start()
+
+            android.animation.ObjectAnimator.ofFloat(binding.cardCanvas, View.ROTATION_Y, 0f, animOutRot).apply {
+                duration = 150
+                interpolator = android.view.animation.AccelerateInterpolator()
+                addListener(object : android.animation.AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: android.animation.Animator) {
+                        val current = viewModel.uiState.value
+                        binding.cardCanvas.bind(current.template, current.selectedElementId, current.template.activeSide)
+                        binding.cardCanvas.rotationY = animInRot
+                        
+                        android.animation.ObjectAnimator.ofFloat(binding.cardCanvas, View.ROTATION_Y, animInRot, 0f).apply {
+                            duration = 150
+                            interpolator = android.view.animation.DecelerateInterpolator()
+                            addListener(object : android.animation.AnimatorListenerAdapter() {
+                                override fun onAnimationEnd(animation: android.animation.Animator) {
+                                    isFlipping = false
+                                    binding.cardCanvas.animate().translationZ(0f).setDuration(150).start()
+                                    // Make sure we catch up on any state changes that happened during the flip
+                                    val finalState = viewModel.uiState.value
+                                    binding.cardCanvas.bind(finalState.template, finalState.selectedElementId, finalState.template.activeSide)
+                                }
+                            })
+                            start()
+                        }
+                    }
+                })
+                start()
+            }
+        } else if (!isFlipping) {
+            binding.cardCanvas.bind(template, state.selectedElementId, template.activeSide)
+        }
 
         // Side toggle visibility
         val backEnabled = template.isBackSideEnabled
@@ -260,6 +291,17 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
             binding.switchBackSide.jumpDrawablesToCurrentState()
             binding.switchBackSide.setOnCheckedChangeListener { _, isChecked ->
                 if (viewModel.isBackSideEnabled != isChecked) viewModel.toggleBackSide()
+            }
+        }
+
+        val shortEnabled = template.isShortNumbersEnabled
+        if (lastRenderedShortEnabled != shortEnabled) {
+            lastRenderedShortEnabled = shortEnabled
+            binding.switchShortNumbers.setOnCheckedChangeListener(null)
+            binding.switchShortNumbers.isChecked = shortEnabled
+            binding.switchShortNumbers.jumpDrawablesToCurrentState()
+            binding.switchShortNumbers.setOnCheckedChangeListener { _, isChecked ->
+                if (viewModel.currentTemplate.isShortNumbersEnabled != isChecked) viewModel.toggleShortNumbers(isChecked)
             }
         }
 
@@ -309,8 +351,8 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
     override fun onCardHeightDrag(deltaRatio: Float) {
         val current = viewModel.currentTemplate.card.heightRatio
         val target  = current + deltaRatio
-        // Haptic bump when hitting the 1.5× height ceiling
-        if (target >= 1.5f && current < 1.5f) {
+        // Haptic bump when hitting the 1.2× height ceiling
+        if (target >= 1.2f && current < 1.2f) {
             binding.cardCanvas.performHapticFeedback(
                 android.view.HapticFeedbackConstants.CLOCK_TICK
             )
@@ -333,18 +375,28 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
     // ── Dialogs ───────────────────────────────────────────────────────────────
 
     private fun showRenameDialog() {
-        val dialogBinding = DialogTemplateNameBinding.inflate(layoutInflater)
-        dialogBinding.etName.setText(viewModel.currentTemplate.name)
-        dialogBinding.etName.selectAll()
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.dialog_rename_template_title)
-            .setView(dialogBinding.root)
-            .setNegativeButton(R.string.btn_cancel, null)
-            .setPositiveButton(R.string.btn_save) { _, _ ->
-                val name = dialogBinding.etName.text?.toString()?.trim()
-                if (!name.isNullOrEmpty()) viewModel.renameTemplate(name)
-            }
-            .show()
+        val reqKey = "rename_template_editor"
+        supportFragmentManager.setFragmentResultListener(reqKey, this) { _, bundle ->
+            val name = bundle.getString("name")
+            if (!name.isNullOrEmpty()) viewModel.renameTemplate(name)
+        }
+        if (supportFragmentManager.findFragmentByTag(dev.anonymous.cardsdesignerpro.ui.common.TemplateNameDialogFragment.TAG) == null) {
+            dev.anonymous.cardsdesignerpro.ui.common.TemplateNameDialogFragment.newInstance(
+                titleRes = R.string.dialog_rename_template_title,
+                positiveBtnRes = R.string.btn_save,
+                initialName = viewModel.currentTemplate.name,
+                requestKey = reqKey
+            ).show(supportFragmentManager, dev.anonymous.cardsdesignerpro.ui.common.TemplateNameDialogFragment.TAG)
+        }
+    }
+
+    override fun finish() {
+        val intent = android.content.Intent().apply {
+            putExtra(EXTRA_TEMPLATE_ID, viewModel.currentTemplate.id)
+            putExtra("extra_template_version", viewModel.currentTemplate.version)
+        }
+        setResult(android.app.Activity.RESULT_OK, intent)
+        super.finish()
     }
 
     private fun handleBack() {
@@ -353,12 +405,10 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
                 .setTitle(R.string.editor_back_confirm_title)
                 .setMessage(R.string.editor_back_confirm_message)
                 .setNegativeButton(R.string.btn_discard) { _, _ ->
-                    viewModel.discardAndCleanup()
-                    finish()
+                    viewModel.discardAndCleanup { finish() }
                 }
                 .setPositiveButton(R.string.btn_save) { _, _ ->
-                    viewModel.save()
-                    finish()
+                    viewModel.save { finish() }
                 }
                 .show()
         } else {

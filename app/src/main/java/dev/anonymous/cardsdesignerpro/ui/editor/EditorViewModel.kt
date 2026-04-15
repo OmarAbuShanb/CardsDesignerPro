@@ -63,7 +63,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     // ── Save ─────────────────────────────────────────────────────────────────
 
     /** Explicit save (toolbar button / dialog). Clears the unsaved flag. */
-    fun save() {
+    fun save(onComplete: () -> Unit = {}) {
         // Bump version only if it hasn't been bumped yet relative to the original template
         val templateToSave = if (currentTemplate.version == originalTemplate?.version) {
             currentTemplate.copy(version = currentTemplate.version + 1)
@@ -74,6 +74,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
             repo.save(templateToSave)
             originalTemplate = templateToSave
             _uiState.value = uiState.value.copy(template = templateToSave, hasUnsavedChanges = false)
+            onComplete()
         }
     }
 
@@ -91,7 +92,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun discardAndCleanup() {
+    fun discardAndCleanup(onComplete: () -> Unit = {}) {
         _uiState.value = uiState.value.copy(hasUnsavedChanges = false)
         viewModelScope.launch {
             originalTemplate?.let { orig ->
@@ -99,6 +100,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 // Clean based on the ORIGINAL template so images it references are kept
                 repo.cleanOrphanImages(orig)
             }
+            onComplete()
         }
     }
 
@@ -166,6 +168,27 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
 
     fun renameTemplate(newName: String) = mutateTemplate { it.copy(name = newName) }
 
+    fun toggleShortNumbers(enabled: Boolean) {
+        mutateTemplate { t ->
+            val newFront = if (!enabled) t.elements.filterNot { 
+                (it is TemplateElement.UsernameElement && it.isShortVariant) || 
+                (it is TemplateElement.PasswordElement && it.isShortVariant) 
+            } else t.elements
+
+            val newBack = if (!enabled && t.backElements != null) t.backElements.filterNot {
+                (it is TemplateElement.UsernameElement && it.isShortVariant) || 
+                (it is TemplateElement.PasswordElement && it.isShortVariant) 
+            } else t.backElements
+
+            t.copy(isShortNumbersEnabled = enabled, elements = newFront, backElements = newBack)
+        }
+        // Deselect if active element was deleted
+        val currentActive = uiState.value.selectedElementId
+        if (currentActive != null && currentElements.none { it.id == currentActive }) {
+            selectElement(null)
+        }
+    }
+
     /** Returns the card style for the currently active side. */
     val activeCardStyle: CardStyle
         get() {
@@ -192,6 +215,9 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     fun updateCardBackgroundImage(path: String?) =
         mutateActiveCardStyle { it.copy(backgroundImagePath = path) }
 
+    fun updateCardBackgroundScale(scaleType: String) =
+        mutateActiveCardStyle { it.copy(backgroundImageScaleType = scaleType) }
+
     fun updatePatternEnabled(enabled: Boolean) =
         mutateActiveCardStyle { it.copy(patternEnabled = enabled) }
 
@@ -215,7 +241,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
      * Also resizes Frame and BackgroundDecoration to match the new card dimensions.
      */
     fun updateCardHeightRatio(ratio: Float) {
-        val clamped = ratio.coerceIn(0.2f, 1.5f)   // max = widthDp × 1.5 as per UX requirement
+        val clamped = ratio.coerceIn(0.2f, 1.2f)   // max = widthDp × 1.2 as per UX requirement
         mutateTemplate { template ->
             val newCard = template.card.copy(heightRatio = clamped)
             val newBackCard = template.backCard?.copy(heightRatio = clamped)
@@ -248,15 +274,19 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         )
     )
 
-    fun addUsernameElement() = addElement(
+    fun addUsernameElement(isShort: Boolean = false) = addElement(
         TemplateElement.UsernameElement(
-            id = newId(), x = centerX(160f), y = centerY(40f), width = 160f, height = 40f
+            id = newId(), x = centerX(160f), y = centerY(40f), width = 160f, height = 40f,
+            isShortVariant = isShort,
+            digitCount = if (isShort) 5 else 12
         )
     )
 
-    fun addPasswordElement() = addElement(
+    fun addPasswordElement(isShort: Boolean = false) = addElement(
         TemplateElement.PasswordElement(
-            id = newId(), x = centerX(160f), y = centerY(40f), width = 160f, height = 40f
+            id = newId(), x = centerX(160f), y = centerY(40f), width = 160f, height = 40f,
+            isShortVariant = isShort,
+            digitCount = if (isShort) 5 else 6
         )
     )
 
@@ -299,18 +329,27 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         val cardW = card.widthDp
         val cardH = card.widthDp * card.heightRatio
         
-        val maxW = cardW * 0.5f
-        val maxH = cardH * 0.5f
-        var elW = maxW
-        var elH = maxH
-        if (srcW > 0 && srcH > 0) {
-            val aspect = srcW.toFloat() / srcH.toFloat()
-            if (maxW / aspect <= maxH) {
-                elW = maxW
-                elH = maxW / aspect
+        val limitW = cardW * 0.5f
+        val limitH = cardH * 0.5f
+        var elW = srcW.toFloat()
+        var elH = srcH.toFloat()
+        
+        // If no src dimensions provided, fallback to half size
+        if (elW <= 0f || elH <= 0f) {
+            elW = limitW
+            elH = limitH
+        }
+        
+        // As requested: if the image intrinsic size is bigger than the card template size itself, 
+        // restrict it down to half the template size so it isn't overwhelmingly large.
+        if (elW > cardW || elH > cardH) {
+            val aspect = elW / elH
+            if (limitW / aspect <= limitH) {
+                elW = limitW
+                elH = limitW / aspect
             } else {
-                elH = maxH
-                elW = maxH * aspect
+                elH = limitH
+                elW = limitH * aspect
             }
         }
         
@@ -399,19 +438,19 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 is TemplateElement.TextElement ->
                     el.copy(x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
                         width = safeW, height = safeH,
-                        textSizeSp = (el.textSizeSp * scaleW).coerceIn(6f, 72f))
+                        textSizeSp = (el.textSizeSp * scaleW).coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP))
                 is TemplateElement.UsernameElement ->
                     el.copy(x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
                         width = safeW, height = safeH,
-                        textSizeSp = (el.textSizeSp * scaleW).coerceIn(6f, 72f))
+                        textSizeSp = (el.textSizeSp * scaleW).coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP))
                 is TemplateElement.PasswordElement ->
                     el.copy(x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
                         width = safeW, height = safeH,
-                        textSizeSp = (el.textSizeSp * scaleW).coerceIn(6f, 72f))
+                        textSizeSp = (el.textSizeSp * scaleW).coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP))
                 is TemplateElement.DateElement ->
                     el.copy(x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
                         width = safeW, height = safeH,
-                        textSizeSp = (el.textSizeSp * scaleW).coerceIn(6f, 72f))
+                        textSizeSp = (el.textSizeSp * scaleW).coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP))
                 is TemplateElement.ImageElement -> el.copy(width = safeW, height = safeH)
                 is TemplateElement.QrElement -> el.copy(width = safeW, height = safeH)
                 is TemplateElement.FrameElement -> el.copy(width = safeW, height = safeH)
@@ -483,8 +522,10 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     val activeSide: CardSide get() = currentTemplate.activeSide
 
     // Side-aware uniqueness checks (scoped to active side only)
-    fun hasUsernameElement()  = currentElements.any { it is TemplateElement.UsernameElement }
-    fun hasPasswordElement()  = currentElements.any { it is TemplateElement.PasswordElement }
+    fun hasNormalUsernameElement() = currentElements.any { it is TemplateElement.UsernameElement && !it.isShortVariant }
+    fun hasShortUsernameElement()  = currentElements.any { it is TemplateElement.UsernameElement && it.isShortVariant }
+    fun hasNormalPasswordElement() = currentElements.any { it is TemplateElement.PasswordElement && !it.isShortVariant }
+    fun hasShortPasswordElement()  = currentElements.any { it is TemplateElement.PasswordElement && it.isShortVariant }
     fun hasQrElement()        = currentElements.any { it is TemplateElement.QrElement }
     fun hasDateElement()      = currentElements.any { it is TemplateElement.DateElement }
     fun hasFrameElement()     = currentElements.any { it is TemplateElement.FrameElement }
@@ -585,5 +626,10 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 }
             }
         _uiState.value = uiState.value.copy(hasOutOfBoundsElements = outOfBounds)
+    }
+
+    companion object {
+        const val MIN_TEXT_SIZE_SP = 10f
+        const val MAX_TEXT_SIZE_SP = 100f
     }
 }

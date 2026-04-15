@@ -87,6 +87,29 @@
                 android:textColor="?attr/colorError" />
         </LinearLayout>
 
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/toggle_bg_scale"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:layout_gravity="center_horizontal"
+            app:singleSelection="true"
+            app:selectionRequired="true"
+            android:visibility="gone">
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_scale_fit"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/prop_bg_scale_fit" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_scale_crop"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/prop_bg_scale_crop" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
         <!-- ── Divider ──────────────────────────────────────────── -->
         <View
             android:layout_width="match_parent"

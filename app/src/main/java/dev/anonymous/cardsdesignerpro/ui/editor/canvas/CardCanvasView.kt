@@ -145,7 +145,7 @@ class CardCanvasView @JvmOverloads constructor(
         is TemplateElement.PasswordElement ->
             TextMeasureInfo(dummyDigits(el.digitCount.coerceAtLeast(1)), el.textSizeSp, el.fontName, el.isBold)
         is TemplateElement.DateElement ->
-            TextMeasureInfo("2026/01/01", el.textSizeSp, el.fontName, el.isBold)
+            TextMeasureInfo(renderer.formatDateNow(el), el.textSizeSp, el.fontName, el.isBold)
         else -> null
     }
 
@@ -175,7 +175,7 @@ class CardCanvasView @JvmOverloads constructor(
         ?.mutate()?.apply { setTint(Color.DKGRAY) }
 
     // ── Touch state ───────────────────────────────────────────────────────────
-    private enum class Mode { NONE, DRAG, RESIZE, ROTATE, HEIGHT_DRAG }
+    private enum class Mode { NONE, DRAG, RESIZE, ROTATE, HEIGHT_DRAG, CONSUMED }
     private var mode = Mode.NONE
     private var activePointerId = MotionEvent.INVALID_POINTER_ID
 
@@ -247,15 +247,15 @@ class CardCanvasView @JvmOverloads constructor(
                     previewRendering = true
                     val tCopy = t
                     
-                    // Cap the preview dimension drastically to resolve heavy landscape scrolling lag
-                    val maxDim = 800f
+                    // Cap the preview dimension to balance performance and sharpness
+                    val maxDim = 1600f
                     val scale = if (cardWidthPx > maxDim) maxDim / cardWidthPx else 1f
                     val reqW = (cardWidthPx * scale).toInt().coerceAtLeast(1)
                     val reqH = (cardHeightPx * scale).toInt().coerceAtLeast(1)
 
                     PREVIEW_EXECUTOR.execute {
                         try {
-                            val q = dev.anonymous.cardsdesignerpro.data.model.ExportQuality.LOW
+                            val q = dev.anonymous.cardsdesignerpro.data.model.ExportQuality.MEDIUM
                             renderer.maxImageDim = q.maxImageDim
                             renderer.maxPatternDim = q.maxPatternDim
                             renderer.maxQrDim = q.maxQrDim
@@ -373,7 +373,7 @@ class CardCanvasView @JvmOverloads constructor(
                 val idx = event.findPointerIndex(activePointerId)
                 val x = if (idx >= 0) event.getX(idx) else lastX
                 val y = if (idx >= 0) event.getY(idx) else lastY
-                if (hypot((x - downX).toDouble(), (y - downY).toDouble()) < TAP_SLOP)
+                if (mode != Mode.CONSUMED && hypot((x - downX).toDouble(), (y - downY).toDouble()) < TAP_SLOP)
                     handleTap(downX, downY)
                 endGesture()
             }
@@ -434,6 +434,7 @@ class CardCanvasView @JvmOverloads constructor(
         if (dist(lx, ly, cx - hw - HANDLE_OFF, cy - hh - HANDLE_OFF) < HR * 2f) {
             // Fire delete immediately, don't enter a drag mode
             listener?.onElementDeleteRequested(id)
+            mode = Mode.CONSUMED
             return
         }
         // Move handle (bottom-left, offset)
@@ -502,7 +503,7 @@ class CardCanvasView @JvmOverloads constructor(
             Mode.HEIGHT_DRAG -> {
                 listener?.onCardHeightDrag((y - lastY) / cardWidthPx)
             }
-            Mode.NONE -> {}
+            Mode.NONE, Mode.CONSUMED -> {}
         }
     }
 

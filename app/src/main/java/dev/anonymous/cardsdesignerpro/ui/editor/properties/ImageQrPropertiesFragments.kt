@@ -200,7 +200,7 @@ class QrPropertiesFragment : Fragment(), PropertyFragment {
             android.R.layout.simple_spinner_item, eyeLabels)
             .apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
 
-        val el = viewModel.selectedElement as? TemplateElement.QrElement ?: return
+        val el = viewModel.currentElements.firstOrNull { it.id == viewModel.uiState.value.selectedElementId } as? TemplateElement.QrElement ?: return
         populateFrom(el)
 
         // Host
@@ -208,6 +208,14 @@ class QrPropertiesFragment : Fragment(), PropertyFragment {
             val e = viewModel.selectedElement as? TemplateElement.QrElement ?: return@setOnEditorActionListener false
             viewModel.updateElement(e.copy(host = binding.etHost.text.toString()))
             false
+        }
+
+        // Short Numbers Switch Link
+        binding.switchQrShortNumbers.setOnCheckedChangeListener { _, isChecked ->
+            if (!updating) {
+                val e = viewModel.selectedElement as? TemplateElement.QrElement ?: return@setOnCheckedChangeListener
+                viewModel.updateElement(e.copy(linkToShortNumbers = isChecked))
+            }
         }
 
         // Colors
@@ -306,6 +314,13 @@ class QrPropertiesFragment : Fragment(), PropertyFragment {
         
         binding.cbTintLogo.isChecked = el.tintLogo
         
+        if (viewModel.currentTemplate.isShortNumbersEnabled) {
+            binding.switchQrShortNumbers.visibility = View.VISIBLE
+            binding.switchQrShortNumbers.isChecked = el.linkToShortNumbers
+        } else {
+            binding.switchQrShortNumbers.visibility = View.GONE
+        }
+        
         updating = false
     }
 
@@ -318,7 +333,7 @@ class QrPropertiesFragment : Fragment(), PropertyFragment {
 
     override fun onUiStateChanged(state: EditorUiState) {
         if (_binding == null) return
-        val el = state.template.elements.firstOrNull { it.id == state.selectedElementId }
+        val el = viewModel.currentElements.firstOrNull { it.id == state.selectedElementId }
             as? TemplateElement.QrElement ?: return
         populateFrom(el)
     }

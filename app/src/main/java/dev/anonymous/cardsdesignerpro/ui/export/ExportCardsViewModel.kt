@@ -35,6 +35,8 @@ data class ExportUiState(
     val selectedTemplateIndex: Int = 0,
     val selectedFiles: List<SelectedFile> = emptyList(),
     val combinedParseResult: ParseResult? = null,
+    val selectedShortFiles: List<SelectedFile> = emptyList(),
+    val combinedShortParseResult: ParseResult? = null,
     // keep legacy alias for renderState compat
     val settings: ExportSettings = ExportSettings(),
     val layout: PdfExporter.LayoutInfo? = null,
@@ -43,9 +45,11 @@ data class ExportUiState(
     val event: ExportEvent? = null,
     val hasBackSide: Boolean = false,
     val backLayout: PdfExporter.LayoutInfo? = null,
+    val isShortNumbersEnabled: Boolean = false,
 ) {
     /** Convenience: true when at least one file is still being parsed. */
     val isParsingFile: Boolean get() = selectedFiles.any { it.isParsing }
+    val isParsingShortFile: Boolean get() = selectedShortFiles.any { it.isParsing }
     /** Convenience accessor used by renderState. */
     val parseResult: ParseResult? get() = combinedParseResult
     val fileName: String? get() = selectedFiles.firstOrNull()?.displayName
@@ -92,12 +96,14 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
             val lastId = prefs.getString("last_template_id", null)
             val selectedIdx = if (lastId != null)
                 templates.indexOfFirst { it.id == lastId }.coerceAtLeast(0) else 0
-            val defaultSettings = templates.getOrNull(selectedIdx)?.exportSettings ?: ExportSettings()
+            val t = templates.getOrNull(selectedIdx)
+            val defaultSettings = t?.exportSettings ?: ExportSettings()
             _uiState.value = _uiState.value.copy(
                 templates = templates,
                 selectedTemplateIndex = selectedIdx,
                 settings = defaultSettings,
-                hasBackSide = templates.getOrNull(selectedIdx)?.isBackSideEnabled == true
+                hasBackSide = t?.isBackSideEnabled == true,
+                isShortNumbersEnabled = t?.isShortNumbersEnabled == true
             )
             recalcLayout()
         }
@@ -108,13 +114,14 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
         _uiState.value = _uiState.value.copy(
             selectedTemplateIndex = index,
             settings = t.exportSettings ?: ExportSettings(),
-            hasBackSide = t.isBackSideEnabled
+            hasBackSide = t.isBackSideEnabled,
+            isShortNumbersEnabled = t.isShortNumbersEnabled
         )
         recalcLayout()
     }
 
-    fun addFiles(uris: List<Uri>, displayNames: List<String>) {
-        val current = _uiState.value.selectedFiles.toMutableList()
+    fun addFiles(uris: List<Uri>, displayNames: List<String>, isShort: Boolean = false) {
+        val current = if (isShort) _uiState.value.selectedShortFiles.toMutableList() else _uiState.value.selectedFiles.toMutableList()
         val supported = setOf("csv", "xlsx", "xls")
         uris.forEachIndexed { i, uri ->
             val name = displayNames.getOrElse(i) { uri.lastPathSegment ?: "file" }
@@ -123,36 +130,51 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
             val entry = SelectedFile(uri, name, isSupported, isParsing = isSupported)
             current.add(entry)
         }
-        _uiState.value = _uiState.value.copy(selectedFiles = current)
+        _uiState.value = if (isShort) _uiState.value.copy(selectedShortFiles = current) else _uiState.value.copy(selectedFiles = current)
         parseNewFiles(uris.filterIndexed { i, _ ->
             val name = displayNames.getOrElse(i) { "" }
             name.substringAfterLast('.', "").lowercase() in supported
         }, displayNames.filterIndexed { i, name ->
             name.substringAfterLast('.', "").lowercase() in supported
-        })
+        }, isShort)
     }
 
-    fun removeFile(uri: Uri) {
-        val updated = _uiState.value.selectedFiles.filterNot { it.uri == uri }
-        _uiState.value = _uiState.value.copy(
-            selectedFiles = updated,
-            combinedParseResult = combineParseResults(updated)
-        )
+    fun removeFile(uri: Uri, isShort: Boolean = false) {
+        if (isShort) {
+            val updated = _uiState.value.selectedShortFiles.filterNot { it.uri == uri }
+            _uiState.value = _uiState.value.copy(
+                selectedShortFiles = updated,
+                combinedShortParseResult = combineParseResults(updated)
+            )
+        } else {
+            val updated = _uiState.value.selectedFiles.filterNot { it.uri == uri }
+            _uiState.value = _uiState.value.copy(
+                selectedFiles = updated,
+                combinedParseResult = combineParseResults(updated)
+            )
+        }
         recalcLayout()
     }
 
     /** Legacy single-file API kept for compatibility. */
     fun setFile(uri: Uri, displayName: String) = addFiles(listOf(uri), listOf(displayName))
 
-    fun setFilesOrder(files: List<SelectedFile>) {
-        _uiState.value = _uiState.value.copy(
-            selectedFiles = files,
-            combinedParseResult = combineParseResults(files)
-        )
+    fun setFilesOrder(files: List<SelectedFile>, isShort: Boolean = false) {
+        if (isShort) {
+            _uiState.value = _uiState.value.copy(
+                selectedShortFiles = files,
+                combinedShortParseResult = combineParseResults(files)
+            )
+        } else {
+            _uiState.value = _uiState.value.copy(
+                selectedFiles = files,
+                combinedParseResult = combineParseResults(files)
+            )
+        }
         recalcLayout()
     }
 
-    private fun parseNewFiles(uris: List<Uri>, names: List<String>) {
+    private fun parseNewFiles(uris: List<Uri>, names: List<String>, isShort: Boolean = false) {
         uris.forEachIndexed { i, uri ->
             val name = names.getOrElse(i) { "" }
             viewModelScope.launch {
@@ -163,13 +185,23 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
                     name.endsWith(".xls",  ignoreCase = true) -> ExcelParser.parse(ctx, uri, isXlsx = false)
                     else -> null
                 }
-                val updatedFiles = _uiState.value.selectedFiles.map { f ->
-                    if (f.uri == uri) f.copy(parseResult = result, isParsing = false) else f
+                if (isShort) {
+                    val updatedFiles = _uiState.value.selectedShortFiles.map { f ->
+                        if (f.uri == uri) f.copy(parseResult = result, isParsing = false) else f
+                    }
+                    _uiState.value = _uiState.value.copy(
+                        selectedShortFiles = updatedFiles,
+                        combinedShortParseResult = combineParseResults(updatedFiles)
+                    )
+                } else {
+                    val updatedFiles = _uiState.value.selectedFiles.map { f ->
+                        if (f.uri == uri) f.copy(parseResult = result, isParsing = false) else f
+                    }
+                    _uiState.value = _uiState.value.copy(
+                        selectedFiles = updatedFiles,
+                        combinedParseResult = combineParseResults(updatedFiles)
+                    )
                 }
-                _uiState.value = _uiState.value.copy(
-                    selectedFiles = updatedFiles,
-                    combinedParseResult = combineParseResults(updatedFiles)
-                )
                 recalcLayout()
             }
         }
@@ -208,6 +240,7 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
         ExportManager.currentRequest = ExportManager.ExportRequest(
             template = template,
             parseResult = parse,
+            shortParseResult = state.combinedShortParseResult,
             settings = state.settings,
             outputUri = outputUri,
             frontUri = null,
@@ -227,6 +260,7 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
         ExportManager.currentRequest = ExportManager.ExportRequest(
             template = template,
             parseResult = parse,
+            shortParseResult = state.combinedShortParseResult,
             settings = state.settings,
             outputUri = outputUri,
             frontUri = null,
@@ -246,6 +280,7 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
         ExportManager.currentRequest = ExportManager.ExportRequest(
             template = template,
             parseResult = parse,
+            shortParseResult = state.combinedShortParseResult,
             settings = state.settings,
             outputUri = null,
             frontUri = frontUri,

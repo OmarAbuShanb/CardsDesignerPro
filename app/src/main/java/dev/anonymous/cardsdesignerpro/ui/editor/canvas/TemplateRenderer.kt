@@ -65,6 +65,8 @@ class TemplateRenderer(private val context: Context) {
         cardHeightPx: Float,
         username: String? = null,
         password: String? = null,
+        shortUsername: String? = null,
+        shortPassword: String? = null,
         date: String? = null,
         renderScale: Float = 1f
     ) {
@@ -82,16 +84,23 @@ class TemplateRenderer(private val context: Context) {
                     drawFrame(canvas, el, cardLeft, cardTop, scaleX, scaleY)
                 is TemplateElement.TextElement ->
                     drawTextProps(canvas, textProps(el, el.text), cardLeft, cardTop, scaleX, scaleY)
-                is TemplateElement.UsernameElement ->
-                    drawTextProps(canvas, textProps(el, username ?: dummyDigits(el.digitCount)), cardLeft, cardTop, scaleX, scaleY)
-                is TemplateElement.PasswordElement ->
-                    drawTextProps(canvas, textProps(el, password ?: dummyDigits(el.digitCount)), cardLeft, cardTop, scaleX, scaleY)
+                is TemplateElement.UsernameElement -> {
+                    val u = if (el.isShortVariant) shortUsername ?: dummyDigits(el.digitCount.coerceAtLeast(1)) else username ?: dummyDigits(el.digitCount.coerceAtLeast(1))
+                    drawTextProps(canvas, textProps(el, u), cardLeft, cardTop, scaleX, scaleY)
+                }
+                is TemplateElement.PasswordElement -> {
+                    val p = if (el.isShortVariant) shortPassword ?: dummyDigits(el.digitCount.coerceAtLeast(1)) else password ?: dummyDigits(el.digitCount.coerceAtLeast(1))
+                    drawTextProps(canvas, textProps(el, p), cardLeft, cardTop, scaleX, scaleY)
+                }
                 is TemplateElement.DateElement ->
                     drawTextProps(canvas, textProps(el, date ?: formatDate(el)), cardLeft, cardTop, scaleX, scaleY)
                 is TemplateElement.ImageElement ->
                     drawImage(canvas, el, cardLeft, cardTop, scaleX, scaleY, renderScale)
-                is TemplateElement.QrElement ->
-                    drawQr(canvas, el, username, password, cardLeft, cardTop, scaleX, scaleY, renderScale)
+                is TemplateElement.QrElement -> {
+                    val qrUser = if (el.linkToShortNumbers) shortUsername else username
+                    val qrPass = if (el.linkToShortNumbers) shortPassword else password
+                    drawQr(canvas, el, qrUser, qrPass, cardLeft, cardTop, scaleX, scaleY, renderScale)
+                }
             }
         }
         canvas.restore()
@@ -104,21 +113,47 @@ class TemplateRenderer(private val context: Context) {
         paint.reset(); paint.color = parseColor(card.backgroundColor); paint.style = Paint.Style.FILL
         canvas.drawRect(left, top, left + w, top + h, paint)
         card.backgroundImagePath?.let { path ->
+            val isCenterCrop = card.backgroundImageScaleType == "CENTER_CROP"
             if (path.lowercase().endsWith(".svg")) {
                 loadSvg(path)?.let { svg ->
-                    canvas.save()
-                    canvas.translate(left, top)
                     val aspectW = if (svg.documentWidth > 0f) svg.documentWidth else w
                     val aspectH = if (svg.documentHeight > 0f) svg.documentHeight else h
-                    canvas.scale(w / aspectW, h / aspectH)
+                    
+                    canvas.save()
+                    if (isCenterCrop) {
+                        val scale = maxOf(w / aspectW, h / aspectH)
+                        val drawW = aspectW * scale
+                        val drawH = aspectH * scale
+                        val dx = left + (w - drawW) / 2f
+                        val dy = top + (h - drawH) / 2f
+                        canvas.translate(dx, dy)
+                        canvas.scale(scale, scale)
+                    } else {
+                        canvas.translate(left, top)
+                        canvas.scale(w / aspectW, h / aspectH)
+                    }
                     svg.renderToCanvas(canvas)
                     canvas.restore()
                 }
             } else {
                 val reqDim = (maxOf(w, h) * renderScale * 2f).toInt().coerceIn(64, maxImageDim)
                 loadBitmap(path, reqDim)?.let { bmp ->
-                    // FIT_XY: stretch to fill the card completely
-                    canvas.drawBitmap(bmp, null, RectF(left, top, left + w, top + h), null)
+                    if (isCenterCrop) {
+                        val scale = maxOf(w / bmp.width.toFloat(), h / bmp.height.toFloat())
+                        val drawW = bmp.width * scale
+                        val drawH = bmp.height * scale
+                        val dx = left + (w - drawW) / 2f
+                        val dy = top + (h - drawH) / 2f
+                        
+                        val matrix = android.graphics.Matrix().apply {
+                            postScale(scale, scale)
+                            postTranslate(dx, dy)
+                        }
+                        canvas.drawBitmap(bmp, matrix, null)
+                    } else {
+                        // FIT_XY: stretch to fill the card completely
+                        canvas.drawBitmap(bmp, null, RectF(left, top, left + w, top + h), null)
+                    }
                 }
             }
         }
@@ -133,15 +168,25 @@ class TemplateRenderer(private val context: Context) {
     private fun drawPattern(canvas: Canvas, card: CardStyle,
                             left: Float, top: Float, w: Float, h: Float, template: Template, renderScale: Float) {
         val frame = template.elements.filterIsInstance<TemplateElement.FrameElement>().firstOrNull()
-        val aL = if (frame != null) left + frame.paddingDp else left
-        val aT = if (frame != null) top  + frame.paddingDp else top
-        val aR = if (frame != null) left + w - frame.paddingDp else left + w
-        val aB = if (frame != null) top  + h - frame.paddingDp else top  + h
+        
+        // Distribution covers the whole card
+        val aL = left
+        val aT = top
+        val aR = left + w
+        val aB = top + h
         val aW = aR - aL; val aH = aB - aT
+        
+        val pad = if (frame != null) (frame.paddingDp + frame.strokeWidthDp / 2f + 12f) * renderScale else 0f
+        val safeL = left + pad
+        val safeT = top + pad
+        val safeR = left + w - pad
+        val safeB = top + h - pad
+        val safeCR = if (frame != null) frame.cornerRadiusDp * renderScale else 0f
+
         val color = parseColor(card.patternColor)
         if (card.patternShape == DecorationShape.CUSTOM_IMAGE && card.patternCustomImagePath != null) {
             val applyTint = card.patternCustomImageTintEnabled
-            drawPatternGrid(canvas, card.patternDensity, aL, aT, aW, aH, card.patternCustomImagePath, color, applyTint, renderScale); return
+            drawPatternGrid(canvas, card.patternDensity, aL, aT, aW, aH, card.patternCustomImagePath, color, applyTint, renderScale, safeL, safeT, safeR, safeB, safeCR); return
         }
         val cols = (4 + card.patternDensity * 8).toInt().coerceIn(2, 14)
         val rows = (cols * aH / aW).toInt().coerceAtLeast(2)
@@ -158,7 +203,9 @@ class TemplateRenderer(private val context: Context) {
         for (row in 0 until rows) for (col in 0 until cols) {
             val cx = aL + cellW * (col + 0.5f); val cy = aT + cellH * (row + 0.5f)
             val r = minOf(cellW, cellH) * rf
-            if (frame != null && frame.cornerRadiusDp > 0 && isCornerExclusion(cx, cy, aL, aT, aR, aB, frame.cornerRadiusDp)) continue
+            
+            // Skip rendering this pattern element if it overflows the inner safe boundaries
+            if (!isInsideRoundedRect(cx, cy, r, safeL, safeT, safeR, safeB, safeCR)) continue
 
             if (card.patternShape == DecorationShape.STARS_FOUR_POINT) {
                 val path = Path()
@@ -178,8 +225,10 @@ class TemplateRenderer(private val context: Context) {
         }
     }
 
+
     private fun drawPatternGrid(canvas: Canvas, density: Float,
-                             aL: Float, aT: Float, aW: Float, aH: Float, path: String, tint: Int, applyTint: Boolean, renderScale: Float) {
+                             aL: Float, aT: Float, aW: Float, aH: Float, path: String, tint: Int, applyTint: Boolean, renderScale: Float,
+                             safeL: Float, safeT: Float, safeR: Float, safeB: Float, safeCR: Float) {
         val cols = (4 + density * 8).toInt().coerceIn(2, 14)
         val rows = (cols * aH / aW).toInt().coerceAtLeast(2)
         val cellW = aW / cols; val cellH = aH / rows; val boundingSz = minOf(cellW, cellH) * 0.55f
@@ -207,8 +256,10 @@ class TemplateRenderer(private val context: Context) {
         } else {
             paint.colorFilter = null
         }
+        val maxR = maxOf(w, h) / 2f
         for (row in 0 until rows) for (col in 0 until cols) {
             val cx = aL + cellW * (col + 0.5f); val cy = aT + cellH * (row + 0.5f)
+            if (!isInsideRoundedRect(cx, cy, maxR, safeL, safeT, safeR, safeB, safeCR)) continue
             offCanvas.drawBitmap(originalBmp, null, RectF(cx - w/2, cy - h/2, cx + w/2, cy + h/2), paint)
         }
         paint.colorFilter = null
@@ -285,8 +336,19 @@ class TemplateRenderer(private val context: Context) {
         }
 
         // Translate so the layout is CENTERED at element-center cx.
-        // boxW ≥ singleLineMaxW, so StaticLayout never auto-wraps; \n creates explicit lines only.
         canvas.translate(cx - boxW / 2f, cy - actualTextH / 2f)
+
+        // Draw Stroke (if any)
+        if (p.textStrokeWidth > 0f) {
+            tp.style = Paint.Style.STROKE
+            tp.strokeWidth = p.textStrokeWidth * sX
+            tp.color = parseColor(p.textStrokeColor)
+            layout.draw(canvas)
+        }
+
+        // Draw Fill
+        tp.style = Paint.Style.FILL
+        tp.color = parseColor(p.textColor)
         layout.draw(canvas)
         canvas.restore()
     }
@@ -542,36 +604,45 @@ class TemplateRenderer(private val context: Context) {
 
     private fun resolveTypeface(fontName: String, isBold: Boolean): Typeface {
         val style = if (isBold) Typeface.BOLD else Typeface.NORMAL
-        return when (fontName.lowercase()) {
-            "serif"      -> Typeface.create(Typeface.SERIF, style)
-            "monospace"  -> Typeface.create(Typeface.MONOSPACE, style)
-            "sans-serif" -> Typeface.create(Typeface.SANS_SERIF, style)
-            else         -> Typeface.create(Typeface.DEFAULT, style)
-        }
-    }
-
-    private fun isCornerExclusion(cx: Float, cy: Float, l: Float, t: Float, r: Float, b: Float, cr: Float): Boolean {
-        listOf(l+cr to t+cr, r-cr to t+cr, l+cr to b-cr, r-cr to b-cr).forEach { (ox, oy) ->
-            if (cx in (ox-cr)..(ox+cr) && cy in (oy-cr)..(oy+cr)) {
-                val dx = cx - ox; val dy = cy - oy
-                if (dx*dx + dy*dy > cr*cr) return true
+        val baseTypeface = when (fontName.lowercase()) {
+            "default", "" -> Typeface.DEFAULT
+            "serif"       -> Typeface.SERIF
+            "monospace"   -> Typeface.MONOSPACE
+            "sans-serif"  -> Typeface.SANS_SERIF
+            else -> {
+                try {
+                    val resId = context.resources.getIdentifier(fontName, "font", context.packageName)
+                    if (resId != 0) androidx.core.content.res.ResourcesCompat.getFont(context, resId) ?: Typeface.DEFAULT
+                    else Typeface.DEFAULT
+                } catch (e: Exception) { Typeface.DEFAULT }
             }
         }
-        return false
+        return Typeface.create(baseTypeface, style)
+    }
+
+    private fun isInsideRoundedRect(cx: Float, cy: Float, r: Float, l: Float, t: Float, right: Float, bottom: Float, cr: Float): Boolean {
+        if (cx - r < l || cx + r > right || cy - r < t || cy + r > bottom) return false
+        val ox = if (cx < l + cr) l + cr else if (cx > right - cr) right - cr else return true
+        val oy = if (cy < t + cr) t + cr else if (cy > bottom - cr) bottom - cr else return true
+        if (cr < r) return false
+        val dx = cx - ox
+        val dy = cy - oy
+        return dx * dx + dy * dy <= (cr - r) * (cr - r)
     }
 
     // ── TextProps helpers ─────────────────────────────────────────────────────
 
     private data class TextProps(val x: Float, val y: Float, val width: Float, val height: Float,
                                  val rotation: Float, val text: String, val textColor: String,
-                                 val bgColor: String?, val isBold: Boolean, val fontName: String, val textSizeSp: Float)
+                                 val bgColor: String?, val isBold: Boolean, val fontName: String, val textSizeSp: Float,
+                                 val textStrokeWidth: Float, val textStrokeColor: String)
 
     private fun textProps(el: TemplateElement.TextElement, text: String) =
-        TextProps(el.x, el.y, el.width, el.height, el.rotation, text, el.textColor, el.bgColor, el.isBold, el.fontName, el.textSizeSp)
+        TextProps(el.x, el.y, el.width, el.height, el.rotation, text, el.textColor, el.bgColor, el.isBold, el.fontName, el.textSizeSp, el.textStrokeWidth, el.textStrokeColor)
     private fun textProps(el: TemplateElement.UsernameElement, text: String) =
-        TextProps(el.x, el.y, el.width, el.height, el.rotation, text, el.textColor, el.bgColor, el.isBold, el.fontName, el.textSizeSp)
+        TextProps(el.x, el.y, el.width, el.height, el.rotation, text, el.textColor, el.bgColor, el.isBold, el.fontName, el.textSizeSp, el.textStrokeWidth, el.textStrokeColor)
     private fun textProps(el: TemplateElement.PasswordElement, text: String) =
-        TextProps(el.x, el.y, el.width, el.height, el.rotation, text, el.textColor, el.bgColor, el.isBold, el.fontName, el.textSizeSp)
+        TextProps(el.x, el.y, el.width, el.height, el.rotation, text, el.textColor, el.bgColor, el.isBold, el.fontName, el.textSizeSp, el.textStrokeWidth, el.textStrokeColor)
     private fun textProps(el: TemplateElement.DateElement, text: String) =
-        TextProps(el.x, el.y, el.width, el.height, el.rotation, text, el.textColor, el.bgColor, el.isBold, el.fontName, el.textSizeSp)
+        TextProps(el.x, el.y, el.width, el.height, el.rotation, text, el.textColor, el.bgColor, el.isBold, el.fontName, el.textSizeSp, el.textStrokeWidth, el.textStrokeColor)
 }

@@ -16,6 +16,8 @@ import dev.anonymous.cardsdesignerpro.databinding.FragmentPropFrameBinding
 import dev.anonymous.cardsdesignerpro.databinding.FragmentPropNoSelectionBinding
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorUiState
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel
+import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel.Companion.MAX_TEXT_SIZE_SP
+import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel.Companion.MIN_TEXT_SIZE_SP
 
 // ── Date Properties ──────────────────────────────────────────────────────────
 
@@ -31,23 +33,21 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        b.sliderFontSize.valueFrom = MIN_TEXT_SIZE_SP
+        b.sliderFontSize.valueTo = MAX_TEXT_SIZE_SP
         val formats = DateFormat.values()
         b.spinnerDateFormat.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item, formats.map { it.displayName })
             .apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
 
-        val fontNames = listOf(
-            "Default" to "default", "Serif" to "serif",
-            "Sans-serif" to "sans-serif", "Monospace" to "monospace"
-        )
         b.spinnerFont.adapter = ArrayAdapter(
             requireContext(),
-            android.R.layout.simple_spinner_item, fontNames.map { it.first })
+            android.R.layout.simple_spinner_item, AVAILABLE_FONTS.map { it.first })
             .apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
 
         val el = viewModel.selectedElement as? TemplateElement.DateElement ?: return
-        populate(el, formats, fontNames)
+        populate(el, formats)
 
         b.spinnerDateFormat.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
@@ -83,18 +83,24 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
                 viewModel.updateElement(e.copy(isBold = checked))
             }
         }
-        b.stepperFontSize.onValueChanged = { v ->
+        b.sliderFontSize.addOnChangeListener { _, v, _ ->
             if (!updating) {
                 val e = viewModel.selectedElement as? TemplateElement.DateElement
-                if (e != null) viewModel.updateElement(e.copy(textSizeSp = v.toFloat()))
+                if (e != null && e.textSizeSp != v) viewModel.updateElement(e.copy(textSizeSp = v))
+            }
+        }
+        b.sliderTextStroke.addOnChangeListener { _, v, _ ->
+            if (!updating) {
+                val e = viewModel.selectedElement as? TemplateElement.DateElement
+                if (e != null && e.textStrokeWidth != v) viewModel.updateElement(e.copy(textStrokeWidth = v))
             }
         }
         b.spinnerFont.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
                 if (updating) return
                 val e = viewModel.selectedElement as? TemplateElement.DateElement ?: return
-                if (e.fontName == fontNames[pos].second) return   // spurious fire
-                viewModel.updateElement(e.copy(fontName = fontNames[pos].second))
+                if (e.fontName == AVAILABLE_FONTS[pos].second) return   // spurious fire
+                viewModel.updateElement(e.copy(fontName = AVAILABLE_FONTS[pos].second))
             }
 
             override fun onNothingSelected(p: AdapterView<*>?) {}
@@ -102,8 +108,7 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
     }
 
     private fun populate(
-        el: TemplateElement.DateElement, formats: Array<DateFormat>,
-        fontNames: List<Pair<String, String>>
+        el: TemplateElement.DateElement, formats: Array<DateFormat>
     ) {
         updating = true
         val fmtIdx = formats.indexOf(el.format).coerceAtLeast(0)
@@ -124,27 +129,25 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
             b.btnClearBgColor.visibility = View.GONE
         }
         if (b.cbBold.isChecked != el.isBold) b.cbBold.isChecked = el.isBold
-        val targetSize = el.textSizeSp.toInt()
-        if (b.stepperFontSize.value != targetSize) {
-            b.stepperFontSize.minValue = 6; b.stepperFontSize.maxValue = 72
-            b.stepperFontSize.value = targetSize
-        } else {
-            b.stepperFontSize.minValue = 6; b.stepperFontSize.maxValue = 72
+        val targetSize = kotlin.math.round(el.textSizeSp).toFloat().coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP)
+        if (b.sliderFontSize.value != targetSize) {
+            b.sliderFontSize.value = targetSize
         }
-        val fontIdx = fontNames.indexOfFirst { it.second == el.fontName }.coerceAtLeast(0)
+        val targetStroke = el.textStrokeWidth.coerceIn(0f, 10f)
+        if (b.sliderTextStroke.value != targetStroke) {
+            b.sliderTextStroke.value = targetStroke
+        }
+        val fontIdx = AVAILABLE_FONTS.indexOfFirst { it.second == el.fontName }.coerceAtLeast(0)
         if (b.spinnerFont.selectedItemPosition != fontIdx) b.spinnerFont.setSelection(fontIdx)
         updating = false
     }
 
     override fun onUiStateChanged(state: EditorUiState) {
         if (_b == null) return
-        val el = state.template.elements.firstOrNull { it.id == state.selectedElementId }
+        val el = viewModel.currentElements.firstOrNull { it.id == state.selectedElementId }
                 as? TemplateElement.DateElement ?: return
         populate(
-            el, DateFormat.values(), listOf(
-                "Default" to "default", "Serif" to "serif",
-                "Sans-serif" to "sans-serif", "Monospace" to "monospace"
-            )
+            el, DateFormat.values()
         )
     }
 

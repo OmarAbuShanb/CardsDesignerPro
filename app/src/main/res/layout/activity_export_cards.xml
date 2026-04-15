@@ -15,14 +15,15 @@
             android:layout_height="wrap_content"
             android:background="?attr/colorSurface"
             app:liftOnScrollColor="@android:color/transparent">
+
             <com.google.android.material.appbar.MaterialToolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                app:title="@string/export_cards_title"
                 app:layout_scrollFlags="scroll|enterAlways|snap"
                 app:navigationIcon="@drawable/ic_close_24"
                 app:navigationIconTint="?attr/colorOnSurface"
+                app:title="@string/export_cards_title"
                 app:titleTextColor="?attr/colorOnSurface" />
         </com.google.android.material.appbar.AppBarLayout>
 
@@ -43,8 +44,8 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="16dp">
+                    android:layout_marginBottom="16dp"
+                    android:orientation="horizontal">
 
                     <!-- 1: Cards per page (label changes in dual mode) -->
                     <LinearLayout
@@ -52,6 +53,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:orientation="vertical">
+
                         <TextView
                             android:id="@+id/tv_cards_per_page_label"
                             android:layout_width="wrap_content"
@@ -59,6 +61,7 @@
                             android:text="@string/label_cards_per_page"
                             android:textAppearance="?attr/textAppearanceLabelSmall"
                             android:textColor="?attr/colorOnSurfaceVariant" />
+
                         <TextView
                             android:id="@+id/tv_cards_per_page"
                             android:layout_width="wrap_content"
@@ -73,12 +76,14 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:orientation="vertical">
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/label_total_cards"
                             android:textAppearance="?attr/textAppearanceLabelSmall"
                             android:textColor="?attr/colorOnSurfaceVariant" />
+
                         <TextView
                             android:id="@+id/tv_total_cards"
                             android:layout_width="wrap_content"
@@ -93,6 +98,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:orientation="vertical">
+
                         <TextView
                             android:id="@+id/tv_total_pages_label"
                             android:layout_width="wrap_content"
@@ -100,6 +106,7 @@
                             android:text="@string/label_total_pages"
                             android:textAppearance="?attr/textAppearanceLabelSmall"
                             android:textColor="?attr/colorOnSurfaceVariant" />
+
                         <TextView
                             android:id="@+id/tv_total_pages"
                             android:layout_width="wrap_content"
@@ -116,12 +123,14 @@
                         android:layout_weight="1"
                         android:orientation="vertical"
                         android:visibility="gone">
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/label_total_pages_both"
                             android:textAppearance="?attr/textAppearanceLabelSmall"
                             android:textColor="?attr/colorOnSurfaceVariant" />
+
                         <TextView
                             android:id="@+id/tv_total_dual_pages"
                             android:layout_width="wrap_content"
@@ -136,9 +145,9 @@
                     android:id="@+id/tv_front_side_title"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
                     android:text="@string/label_front_side"
                     android:textAppearance="?attr/textAppearanceTitleMedium"
-                    android:layout_marginBottom="8dp"
                     android:visibility="gone" />
 
                 <!-- Front preview -->
@@ -159,15 +168,17 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
+                        android:layout_marginBottom="8dp"
                         android:gravity="center_vertical"
-                        android:layout_marginBottom="8dp">
+                        android:orientation="horizontal">
+
                         <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="@string/label_back_side"
                             android:textAppearance="?attr/textAppearanceTitleMedium" />
+
                         <TextView
                             android:id="@+id/tv_flip_hint"
                             android:layout_width="wrap_content"
@@ -242,10 +253,10 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/title_export_settings"
-                android:textAppearance="?attr/textAppearanceLabelMedium"
+                android:layout_marginBottom="8dp"
                 android:gravity="center"
-                android:layout_marginBottom="8dp" />
+                android:text="@string/title_export_settings"
+                android:textAppearance="?attr/textAppearanceLabelMedium" />
 
             <androidx.core.widget.NestedScrollView
                 android:layout_width="match_parent"
@@ -262,11 +273,12 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
+                        android:layout_marginBottom="4dp"
                         android:gravity="center_vertical"
-                        android:layout_marginBottom="4dp">
+                        android:orientation="horizontal">
 
                         <TextView
+                            android:id="@+id/tv_data_file_label"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
@@ -289,94 +301,154 @@
                         android:layout_marginBottom="16dp"
                         android:nestedScrollingEnabled="false" />
 
+                    <!-- ── Short File picker ── -->
+                    <LinearLayout
+                        android:id="@+id/layout_short_file_picker"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="4dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/tv_short_data_file_label"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/label_short_data_file"
+                                android:textAppearance="?attr/textAppearanceTitleSmall" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btn_choose_short_file"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/btn_choose_file" />
+                        </LinearLayout>
+
+                        <!-- Short Files list -->
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/rv_selected_short_files"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="8dp"
+                            android:nestedScrollingEnabled="false" />
+
+                        <!-- Count mismatch warning -->
+                        <TextView
+                            android:id="@+id/tv_short_records_warning"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="16dp"
+                            android:background="?attr/colorErrorContainer"
+                            android:padding="8dp"
+                            android:textAppearance="?attr/textAppearanceLabelMedium"
+                            android:textColor="?attr/colorError"
+                            android:visibility="gone" />
+
+                    </LinearLayout>
+
                     <!-- Template selector -->
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
                         android:text="@string/label_template"
-                        android:textAppearance="?attr/textAppearanceTitleSmall"
-                        android:layout_marginBottom="8dp" />
+                        android:textAppearance="?attr/textAppearanceTitleSmall" />
+
                     <Spinner
                         android:id="@+id/spinner_template"
                         android:layout_width="match_parent"
                         android:layout_height="52dp"
-                        android:background="@drawable/bg_spinner_outline"
-                        android:layout_marginBottom="20dp" />
+                        android:layout_marginBottom="20dp"
+                        android:background="@drawable/bg_spinner_outline" />
 
                     <!-- Card layout preset -->
                     <TextView
                         android:id="@+id/tv_card_layout_label"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
                         android:text="@string/label_card_layout"
-                        android:textAppearance="?attr/textAppearanceTitleSmall"
-                        android:layout_marginBottom="8dp" />
+                        android:textAppearance="?attr/textAppearanceTitleSmall" />
+
                     <Spinner
                         android:id="@+id/spinner_card_layout"
                         android:layout_width="match_parent"
                         android:layout_height="52dp"
-                        android:background="@drawable/bg_spinner_outline"
-                        android:layout_marginBottom="20dp" />
+                        android:layout_marginBottom="20dp"
+                        android:background="@drawable/bg_spinner_outline" />
 
                     <!-- H spacing -->
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
                         android:text="@string/label_horizontal_spacing"
-                        android:textAppearance="?attr/textAppearanceTitleSmall"
-                        android:layout_marginBottom="4dp" />
+                        android:textAppearance="?attr/textAppearanceTitleSmall" />
+
                     <com.google.android.material.slider.Slider
                         android:id="@+id/slider_h_spacing"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:valueFrom="0"
-                        android:valueTo="60"
+                        android:layout_marginBottom="16dp"
                         android:stepSize="1"
-                        android:layout_marginBottom="16dp" />
+                        android:valueFrom="0"
+                        android:valueTo="60" />
 
                     <!-- V spacing -->
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
                         android:text="@string/label_vertical_spacing"
-                        android:textAppearance="?attr/textAppearanceTitleSmall"
-                        android:layout_marginBottom="4dp" />
+                        android:textAppearance="?attr/textAppearanceTitleSmall" />
+
                     <com.google.android.material.slider.Slider
                         android:id="@+id/slider_v_spacing"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:valueFrom="0"
-                        android:valueTo="60"
+                        android:layout_marginBottom="16dp"
                         android:stepSize="1"
-                        android:layout_marginBottom="16dp" />
+                        android:valueFrom="0"
+                        android:valueTo="60" />
 
                     <!-- Page size -->
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
                         android:text="@string/label_page_size"
-                        android:textAppearance="?attr/textAppearanceTitleSmall"
-                        android:layout_marginBottom="8dp" />
+                        android:textAppearance="?attr/textAppearanceTitleSmall" />
+
                     <Spinner
                         android:id="@+id/spinner_page_size"
                         android:layout_width="match_parent"
                         android:layout_height="52dp"
-                        android:background="@drawable/bg_spinner_outline"
-                        android:layout_marginBottom="20dp" />
+                        android:layout_marginBottom="20dp"
+                        android:background="@drawable/bg_spinner_outline" />
 
                     <!-- Export quality -->
                     <TextView
+                        android:id="@+id/tv_quality_label"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
                         android:text="@string/label_export_quality"
-                        android:textAppearance="?attr/textAppearanceTitleSmall"
-                        android:layout_marginBottom="8dp" />
+                        android:textAppearance="?attr/textAppearanceTitleSmall" />
+
                     <Spinner
                         android:id="@+id/spinner_quality"
                         android:layout_width="match_parent"
                         android:layout_height="52dp"
-                        android:background="@drawable/bg_spinner_outline"
-                        android:layout_marginBottom="20dp" />
+                        android:layout_marginBottom="20dp"
+                        android:background="@drawable/bg_spinner_outline" />
 
                     <!-- ── Dual-side options (GONE when hasBackSide=false) ── -->
 
@@ -385,8 +457,8 @@
                         android:id="@+id/checkbox_front_only"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/label_export_front_only"
                         android:layout_marginBottom="12dp"
+                        android:text="@string/label_export_front_only"
                         android:visibility="gone" />
 
                     <!-- 2. Flip edge label + segmented — GONE when exportFrontOnly=true -->
@@ -394,10 +466,10 @@
                         android:id="@+id/tv_flip_edge_label"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
                         android:text="@string/label_flip_edge_hint"
                         android:textAppearance="?attr/textAppearanceLabelMedium"
                         android:textColor="?attr/colorOnSurfaceVariant"
-                        android:layout_marginBottom="8dp"
                         android:visibility="gone" />
 
                     <com.google.android.material.button.MaterialButtonToggleGroup
@@ -405,9 +477,9 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="16dp"
-                        app:singleSelection="true"
+                        android:visibility="gone"
                         app:selectionRequired="true"
-                        android:visibility="gone">
+                        app:singleSelection="true">
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btn_flip_long"

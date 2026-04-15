@@ -77,6 +77,12 @@ class CardPropertiesFragment : Fragment(), PropertyFragment {
             updateImageLabel(null)
         }
 
+        binding.toggleBgScale.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (updating || !isChecked) return@addOnButtonCheckedListener
+            val type = if (checkedId == binding.btnScaleFit.id) dev.anonymous.cardsdesignerpro.data.model.ImageScaleType.FIT_XY.name else dev.anonymous.cardsdesignerpro.data.model.ImageScaleType.CENTER_CROP.name
+            viewModel.updateCardBackgroundScale(type)
+        }
+
         // ── Pattern toggle ───────────────────────────────────────────────────
         binding.switchPattern.setOnCheckedChangeListener { _, checked ->
             if (!updating) {
@@ -146,6 +152,11 @@ class CardPropertiesFragment : Fragment(), PropertyFragment {
         binding.tvBgColorHex.text = card.backgroundColor
         updateImageLabel(card.backgroundImagePath)
 
+        val activeBtn = if (card.backgroundImageScaleType == dev.anonymous.cardsdesignerpro.data.model.ImageScaleType.CENTER_CROP.name) binding.btnScaleCrop.id else binding.btnScaleFit.id
+        if (binding.toggleBgScale.checkedButtonId != activeBtn) {
+            binding.toggleBgScale.check(activeBtn)
+        }
+
         // Pattern toggle
         if (binding.switchPattern.isChecked != card.patternEnabled) {
             binding.switchPattern.isChecked = card.patternEnabled
@@ -204,8 +215,10 @@ class CardPropertiesFragment : Fragment(), PropertyFragment {
         if (path != null) {
             binding.tvBgImagePath.text = File(path).name
             binding.layoutImageInfo.visibility = View.VISIBLE
+            binding.toggleBgScale.visibility = View.VISIBLE
         } else {
             binding.layoutImageInfo.visibility = View.GONE
+            binding.toggleBgScale.visibility = View.GONE
         }
     }
 

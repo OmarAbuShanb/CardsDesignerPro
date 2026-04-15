@@ -45,10 +45,16 @@ class AddElementFragment : Fragment() {
             pickImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
         binding.btnAddUsername.setOnClickListener {
-            if (!viewModel.hasUsernameElement()) viewModel.addUsernameElement()
+            if (!viewModel.hasNormalUsernameElement()) viewModel.addUsernameElement(isShort = false)
         }
         binding.btnAddPassword.setOnClickListener {
-            if (!viewModel.hasPasswordElement()) viewModel.addPasswordElement()
+            if (!viewModel.hasNormalPasswordElement()) viewModel.addPasswordElement(isShort = false)
+        }
+        binding.btnAddShortUsername.setOnClickListener {
+            if (!viewModel.hasShortUsernameElement()) viewModel.addUsernameElement(isShort = true)
+        }
+        binding.btnAddShortPassword.setOnClickListener {
+            if (!viewModel.hasShortPasswordElement()) viewModel.addPasswordElement(isShort = true)
         }
         binding.btnAddQr.setOnClickListener {
             if (!viewModel.hasQrElement()) viewModel.addQrElement()
@@ -93,8 +99,18 @@ class AddElementFragment : Fragment() {
 
     private fun updateButtonStates() {
         if (_binding == null) return
-        binding.btnAddUsername.isEnabled   = !viewModel.hasUsernameElement()
-        binding.btnAddPassword.isEnabled   = !viewModel.hasPasswordElement()
+        val isShortEnabled = viewModel.currentTemplate.isShortNumbersEnabled
+        binding.layoutShortCredentials.visibility = if (isShortEnabled) View.VISIBLE else View.GONE
+        
+        val hasAnyNormal = viewModel.hasNormalUsernameElement() || viewModel.hasNormalPasswordElement()
+        val hasAnyShort = viewModel.hasShortUsernameElement() || viewModel.hasShortPasswordElement()
+
+        binding.btnAddUsername.isEnabled   = !viewModel.hasNormalUsernameElement() && !hasAnyShort
+        binding.btnAddPassword.isEnabled   = !viewModel.hasNormalPasswordElement() && !hasAnyShort
+
+        binding.btnAddShortUsername.isEnabled = !viewModel.hasShortUsernameElement() && !hasAnyNormal
+        binding.btnAddShortPassword.isEnabled = !viewModel.hasShortPasswordElement() && !hasAnyNormal
+
         binding.btnAddQr.isEnabled         = !viewModel.hasQrElement()
         binding.btnAddFrame.isEnabled      = !viewModel.hasFrameElement()
 

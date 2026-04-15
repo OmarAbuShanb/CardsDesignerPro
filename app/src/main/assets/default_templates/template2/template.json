@@ -136,7 +136,8 @@
       "height": 30.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/pass_icon.svg"
+      "imagePath": "pack:packs/icons/pass_icon.svg",
+      "tintColor": "#FFFFFF"
     },
     {
       "type": "image",
@@ -147,7 +148,8 @@
       "height": 30.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/user_icon.svg"
+      "imagePath": "pack:packs/icons/user_icon.svg",
+      "tintColor": "#FFFFFF"
     },
     {
       "type": "image",

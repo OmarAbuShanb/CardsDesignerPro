@@ -40,6 +40,7 @@ object PdfExporter {
         context: Context,
         template: Template,
         records: ParseResult,
+        shortRecords: ParseResult?,
         settings: ExportSettings,
         outputStream: OutputStream,
         onProgress: (Int, Int) -> Unit = { _, _ -> }
@@ -48,7 +49,7 @@ object PdfExporter {
         try {
             val layout = calculateLayout(template, settings)
             writeFacePages(
-                renderer, layout, template, records, settings,
+                renderer, layout, template, records, shortRecords, settings,
                 outputStream, onProgress
             )
         } finally {
@@ -64,6 +65,7 @@ object PdfExporter {
         context: Context,
         template: Template,
         records: ParseResult,
+        shortRecords: ParseResult?,
         settings: ExportSettings,
         outputStream: OutputStream,
         onProgress: (Int, Int) -> Unit = { _, _ -> }
@@ -72,7 +74,7 @@ object PdfExporter {
         val backTemplate = backFaceTemplate(template) ?: run {
             // No back side configured — fall back to single export
             writeFacePages(renderer, calculateLayout(template, settings),
-                template, records, settings, outputStream, onProgress)
+                template, records, shortRecords, settings, outputStream, onProgress)
             renderer.clearBitmapCache()
             return@withContext
         }
@@ -106,6 +108,7 @@ object PdfExporter {
                     template = template,
                     renderer = renderer,
                     records = records,
+                    shortRecords = shortRecords,
                     startCardIndex = cardIndex,
                     cardsOnPage = cardsOnPage,
                     usernameCol = usernameCol,
@@ -126,6 +129,7 @@ object PdfExporter {
                     template = backTemplate,
                     renderer = renderer,
                     records = records,
+                    shortRecords = shortRecords,
                     startCardIndex = cardIndex,
                     cardsOnPage = cardsOnPage,
                     usernameCol = usernameCol,
@@ -155,15 +159,17 @@ object PdfExporter {
         context: Context,
         template: Template,
         records: ParseResult,
+        shortRecords: ParseResult?,
         settings: ExportSettings,
         frontStream: OutputStream,
         backStream: OutputStream,
         onProgress: (Int, Int) -> Unit = { _, _ -> }
     ) = withContext(Dispatchers.IO) {
         val renderer = TemplateRenderer(context)
+        // No back side configured — fall back to single export
         val backTemplate = backFaceTemplate(template) ?: run {
             writeFacePages(renderer, calculateLayout(template, settings),
-                template, records, settings, frontStream, onProgress)
+                template, records, shortRecords, settings, frontStream, onProgress)
             renderer.clearBitmapCache()
             return@withContext
         }
@@ -173,13 +179,13 @@ object PdfExporter {
             val halfProgress = total
 
             // Front PDF
-            writeFacePages(renderer, layout, template, records, settings,
+            writeFacePages(renderer, layout, template, records, shortRecords, settings,
                 frontStream) { done, _ -> onProgress(done, halfProgress * 2) }
 
             renderer.clearBitmapCache()
 
             // Back PDF (mirrored)
-            writeFacePagesMirrored(renderer, layout, backTemplate, records, settings,
+            writeFacePagesMirrored(renderer, layout, backTemplate, records, shortRecords, settings,
                 backStream, settings.flipEdge) { done, _ ->
                 onProgress(halfProgress + done, halfProgress * 2)
             }
@@ -245,6 +251,7 @@ object PdfExporter {
         layout: LayoutInfo,
         template: Template,
         records: ParseResult,
+        shortRecords: ParseResult?,
         settings: ExportSettings,
         outputStream: OutputStream,
         onProgress: (Int, Int) -> Unit
@@ -264,7 +271,7 @@ object PdfExporter {
             val cardsOnPage = minOf(layout.cardsPerPage, total - (pageNum - 1) * layout.cardsPerPage)
             val pageInfo = PdfDocument.PageInfo.Builder(pageW, pageH, pageNum).create()
             val page     = pdfDoc.startPage(pageInfo)
-            drawCards(page.canvas, layout, template, renderer, records,
+            drawCards(page.canvas, layout, template, renderer, records, shortRecords,
                 cardIndex, cardsOnPage, usernameCol, passwordCol, dateStr, mirrored = false)
             pdfDoc.finishPage(page)
             cardIndex += cardsOnPage
@@ -280,6 +287,7 @@ object PdfExporter {
         layout: LayoutInfo,
         template: Template,
         records: ParseResult,
+        shortRecords: ParseResult?,
         settings: ExportSettings,
         outputStream: OutputStream,
         flipEdge: FlipEdge,
@@ -300,7 +308,7 @@ object PdfExporter {
             val cardsOnPage = minOf(layout.cardsPerPage, total - (pageNum - 1) * layout.cardsPerPage)
             val pageInfo = PdfDocument.PageInfo.Builder(pageW, pageH, pageNum).create()
             val page     = pdfDoc.startPage(pageInfo)
-            drawCards(page.canvas, layout, template, renderer, records,
+            drawCards(page.canvas, layout, template, renderer, records, shortRecords,
                 cardIndex, cardsOnPage, usernameCol, passwordCol, dateStr,
                 mirrored = true, flipEdge = flipEdge)
             pdfDoc.finishPage(page)
@@ -323,6 +331,7 @@ object PdfExporter {
         template: Template,
         renderer: TemplateRenderer,
         records: ParseResult,
+        shortRecords: ParseResult?,
         startCardIndex: Int,
         cardsOnPage: Int,
         usernameCol: String?,
@@ -350,8 +359,11 @@ object PdfExporter {
 
             val recordIdx = startCardIndex + slot
             val record    = if (recordIdx < records.records.size) records.records[recordIdx] else emptyMap()
+            val shortRecord = if (shortRecords != null && recordIdx < shortRecords.records.size) shortRecords.records[recordIdx] else emptyMap()
             val username  = record[usernameCol ?: ""] ?: ""
             val password  = record[passwordCol ?: ""] ?: ""
+            val shortUsername = shortRecord[usernameCol ?: ""] ?: ""
+            val shortPassword = shortRecord[passwordCol ?: ""] ?: ""
 
             canvas.save()
             // Short-edge flip: the back card content is physically upside-down
@@ -371,6 +383,8 @@ object PdfExporter {
                 cardHeightPx= layout.cardHeightPt,
                 username    = username,
                 password    = password,
+                shortUsername = shortUsername,
+                shortPassword = shortPassword,
                 date        = dateStr,
                 renderScale = s.quality.renderScale
             )

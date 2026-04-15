@@ -49,7 +49,9 @@ sealed class TemplateElement {
         val bgColor: String? = null,
         val isBold: Boolean = false,
         val fontName: String = "default",
-        val textSizeSp: Float = 14f,
+        val textSizeSp: Float = 15f,
+        val textStrokeWidth: Float = 0f,
+        val textStrokeColor: String = "#000000",
     ) : TemplateElement()
 
     // ── Username ─────────────────────────────────────────────────────────────
@@ -65,12 +67,15 @@ sealed class TemplateElement {
         override val isVisible: Boolean = true,
         override val rotation: Float = 0f,
         /** Preview digit count, also used as placeholder length. */
-        val digitCount: Int = 6,
+        val digitCount: Int = 12,
         val textColor: String = "#000000",
         val bgColor: String? = null,
         val isBold: Boolean = false,
         val fontName: String = "default",
-        val textSizeSp: Float = 14f,
+        val textSizeSp: Float = 30f,
+        val isShortVariant: Boolean = false,
+        val textStrokeWidth: Float = 0f,
+        val textStrokeColor: String = "#000000",
     ) : TemplateElement()
 
     // ── Password ─────────────────────────────────────────────────────────────
@@ -90,7 +95,10 @@ sealed class TemplateElement {
         val bgColor: String? = null,
         val isBold: Boolean = false,
         val fontName: String = "default",
-        val textSizeSp: Float = 14f,
+        val textSizeSp: Float = 30f,
+        val isShortVariant: Boolean = false,
+        val textStrokeWidth: Float = 0f,
+        val textStrokeColor: String = "#000000",
     ) : TemplateElement()
 
     // ── Image ─────────────────────────────────────────────────────────────────
@@ -136,6 +144,7 @@ sealed class TemplateElement {
         val eyeShape: String = "square",
         /** Quiet zone padding fraction (0.0 – 0.25). */
         val qrPadding: Float = 0.05f,
+        val linkToShortNumbers: Boolean = false,
     ) : TemplateElement()
 
     // ── Date ─────────────────────────────────────────────────────────────────
@@ -155,7 +164,9 @@ sealed class TemplateElement {
         val bgColor: String? = null,
         val isBold: Boolean = false,
         val fontName: String = "default",
-        val textSizeSp: Float = 14f,
+        val textSizeSp: Float = 15f,
+        val textStrokeWidth: Float = 0f,
+        val textStrokeColor: String = "#000000",
     ) : TemplateElement()
 
     // ── Frame / Border ────────────────────────────────────────────────────────

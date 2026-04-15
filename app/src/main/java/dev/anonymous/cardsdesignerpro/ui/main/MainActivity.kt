@@ -14,6 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import dev.anonymous.cardsdesignerpro.ui.common.TemplateNameDialogFragment
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
@@ -152,68 +153,34 @@ class MainActivity : AppCompatActivity() {
     // ── Dialogs ───────────────────────────────────────────────────────────────
 
     private fun showNewTemplateDialog() {
-        val dialogBinding = DialogTemplateNameBinding.inflate(layoutInflater)
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.dialog_new_template_title)
-            .setView(dialogBinding.root)
-            .setCancelable(false)
-            .setNegativeButton(R.string.btn_cancel, null)
-            .setPositiveButton(R.string.btn_next) { _, _ ->
-                val name = dialogBinding.etName.text?.toString()?.trim()
-                if (!name.isNullOrEmpty()) {
-                    val id = viewModel.createTemplate(name)
-                    openEditor(id)
-                }
-            }
-            .create()
-            
-        dialog.show()
-        val btnPositive = dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
-        btnPositive.isEnabled = false // initially empty
-
-        dialogBinding.etName.doAfterTextChanged { editable ->
-            btnPositive.isEnabled = !editable?.toString()?.trim().isNullOrEmpty()
-        }
-
-        // Enable Done key on keyboard
-        dialogBinding.etName.setOnEditorActionListener { _, _, _ ->
-            val name = dialogBinding.etName.text?.toString()?.trim()
+        val reqKey = "new_template"
+        supportFragmentManager.setFragmentResultListener(reqKey, this) { _, bundle ->
+            val name = bundle.getString("name")
             if (!name.isNullOrEmpty()) {
                 val id = viewModel.createTemplate(name)
-                dialog.dismiss()
                 openEditor(id)
             }
-            true
+        }
+        if (supportFragmentManager.findFragmentByTag(TemplateNameDialogFragment.TAG) == null) {
+            TemplateNameDialogFragment.newInstance(R.string.dialog_new_template_title, R.string.btn_next, null, reqKey).show(supportFragmentManager, TemplateNameDialogFragment.TAG)
         }
     }
 
     private fun showRenameDialog(template: Template) {
-        val dialogBinding = DialogTemplateNameBinding.inflate(layoutInflater)
-        dialogBinding.etName.setText(template.name)
-        dialogBinding.etName.selectAll()
-        
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.dialog_rename_template_title)
-            .setView(dialogBinding.root)
-            .setCancelable(false)
-            .setNegativeButton(R.string.btn_cancel, null)
-            .setPositiveButton(R.string.btn_save) { _, _ ->
-                val name = dialogBinding.etName.text?.toString()?.trim()
-                if (!name.isNullOrEmpty()) viewModel.renameTemplate(template.id, name)
-            }
-            .create()
-            
-        dialog.show()
-        val btnPositive = dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
-        btnPositive.isEnabled = template.name.isNotEmpty()
-
-        dialogBinding.etName.doAfterTextChanged { editable ->
-            btnPositive.isEnabled = !editable?.toString()?.trim().isNullOrEmpty()
+        val reqKey = "rename_template_${template.id}"
+        supportFragmentManager.setFragmentResultListener(reqKey, this) { _, bundle ->
+            val name = bundle.getString("name")
+            if (!name.isNullOrEmpty()) viewModel.renameTemplate(template.id, name)
+        }
+        if (supportFragmentManager.findFragmentByTag(TemplateNameDialogFragment.TAG) == null) {
+            TemplateNameDialogFragment.newInstance(R.string.dialog_rename_template_title, R.string.btn_save, template.name, reqKey).show(supportFragmentManager, TemplateNameDialogFragment.TAG)
         }
     }
 
     private fun showNewDefaultTemplateDialog() {
-        DefaultTemplatesBottomSheet().show(supportFragmentManager, DefaultTemplatesBottomSheet.TAG)
+        if (supportFragmentManager.findFragmentByTag(DefaultTemplatesBottomSheet.TAG) == null) {
+            DefaultTemplatesBottomSheet().show(supportFragmentManager, DefaultTemplatesBottomSheet.TAG)
+        }
     }
 
     private fun showDeleteDialog(template: Template) {

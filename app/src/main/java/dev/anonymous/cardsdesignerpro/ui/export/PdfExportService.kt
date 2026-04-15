@@ -68,7 +68,7 @@ class PdfExportService : Service() {
                 when (request.mode) {
                     ExportManager.ExportRequest.Mode.SINGLE -> {
                         ctx.contentResolver.openOutputStream(request.outputUri!!)?.use { stream ->
-                            PdfExporter.export(ctx, request.template, request.parseResult, request.settings, stream) { done, total ->
+                            PdfExporter.export(ctx, request.template, request.parseResult, request.shortParseResult, request.settings, stream) { done, total ->
                                 updateProgressNotification(templateName, done, total)
                                 ExportManager.exportProgress.value = done.toFloat() / total
                             }
@@ -77,7 +77,7 @@ class PdfExportService : Service() {
                     }
                     ExportManager.ExportRequest.Mode.DUAL -> {
                         ctx.contentResolver.openOutputStream(request.outputUri!!)?.use { stream ->
-                            PdfExporter.exportDual(ctx, request.template, request.parseResult, request.settings, stream) { done, total ->
+                            PdfExporter.exportDual(ctx, request.template, request.parseResult, request.shortParseResult, request.settings, stream) { done, total ->
                                 updateProgressNotification(templateName, done, total)
                                 ExportManager.exportProgress.value = done.toFloat() / total
                             }
@@ -90,7 +90,7 @@ class PdfExportService : Service() {
                         if (fs != null && bs != null) {
                             fs.use { f ->
                                 bs.use { b ->
-                                    PdfExporter.exportSeparate(ctx, request.template, request.parseResult, request.settings, f, b) { done, total ->
+                                    PdfExporter.exportSeparate(ctx, request.template, request.parseResult, request.shortParseResult, request.settings, f, b) { done, total ->
                                         updateProgressNotification(templateName, done, total)
                                         ExportManager.exportProgress.value = done.toFloat() / total
                                     }

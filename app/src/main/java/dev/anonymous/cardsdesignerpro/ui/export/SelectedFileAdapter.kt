@@ -11,26 +11,45 @@ import dev.anonymous.cardsdesignerpro.databinding.ItemSelectedFileBinding
 
 class SelectedFileAdapter(
     private val onRemove: (Uri) -> Unit
-) : ListAdapter<SelectedFile, SelectedFileAdapter.VH>(DIFF) {
+) : RecyclerView.Adapter<SelectedFileAdapter.VH>() {
 
     var onStartDrag: ((RecyclerView.ViewHolder) -> Unit)? = null
     var onDropCommit: ((List<SelectedFile>) -> Unit)? = null
-    
-    private var dragList: MutableList<SelectedFile>? = null
+
+    private var items: List<SelectedFile> = emptyList()
+    private var isDragging = false
+
+    fun submitList(newList: List<SelectedFile>) {
+        if (isDragging) return // Do not interfere if a drag is active
+        val diffCallback = object : DiffUtil.Callback() {
+            override fun getOldListSize() = items.size
+            override fun getNewListSize() = newList.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                return items[oldItemPosition].uri == newList[newItemPosition].uri
+            }
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                return items[oldItemPosition] == newList[newItemPosition] // this includes ParseResult changes
+            }
+        }
+        val diffResult = DiffUtil.calculateDiff(diffCallback)
+        items = newList.toList()
+        diffResult.dispatchUpdatesTo(this)
+    }
 
     fun startDragSession() {
-        dragList = currentList.toMutableList()
+        isDragging = true
     }
 
     fun swapItems(from: Int, to: Int) {
-        val list = dragList ?: return
-        java.util.Collections.swap(list, from, to)
+        val mutable = items.toMutableList()
+        java.util.Collections.swap(mutable, from, to)
+        items = mutable.toList()
         notifyItemMoved(from, to)
     }
 
     fun commitDragSession() {
-        dragList?.let { onDropCommit?.invoke(it.toList()) }
-        dragList = null
+        isDragging = false
+        onDropCommit?.invoke(items)
     }
 
     inner class VH(private val b: ItemSelectedFileBinding) : RecyclerView.ViewHolder(b.root) {
@@ -56,20 +75,13 @@ class SelectedFileAdapter(
         }
     }
 
+    override fun getItemCount() = items.size
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = VH(
         ItemSelectedFileBinding.inflate(LayoutInflater.from(parent.context), parent, false)
     )
 
     override fun onBindViewHolder(holder: VH, position: Int) {
-        // If we are actively dragging, we read from the temporary dragList so the views bind correctly!
-        val item = if (dragList != null) dragList!![position] else getItem(position)
-        holder.bind(item)
-    }
-
-    companion object {
-        private val DIFF = object : DiffUtil.ItemCallback<SelectedFile>() {
-            override fun areItemsTheSame(a: SelectedFile, b: SelectedFile) = a.uri == b.uri
-            override fun areContentsTheSame(a: SelectedFile, b: SelectedFile) = a == b
-        }
+        holder.bind(items[position])
     }
 }

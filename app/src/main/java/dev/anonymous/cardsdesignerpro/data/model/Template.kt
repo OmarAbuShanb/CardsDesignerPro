@@ -26,10 +26,13 @@ data class Template(
     val isBackSideEnabled: Boolean = false,
     /** Last active side in the editor — persisted so reopening restores focus. */
     val activeSide: CardSide = CardSide.FRONT,
-    val exportSettings: ExportSettings? = null
+    val exportSettings: ExportSettings? = null,
+    val isShortNumbersEnabled: Boolean = false
 )
 
 enum class CardSide { FRONT, BACK }
+
+enum class ImageScaleType { FIT_XY, CENTER_CROP }
 
 
 @Serializable
@@ -41,6 +44,8 @@ data class CardStyle(
     val backgroundColor: String = "#FFFFFF",
     /** Absolute path inside filesDir, null = no background image. */
     val backgroundImagePath: String? = null,
+    /** "FIT_XY", "CENTER_CROP", "FIT_CENTER" etc (persisted as String for forward config safety). */
+    val backgroundImageScaleType: String = ImageScaleType.FIT_XY.name,
     // ── Pattern (formerly BackgroundDecorationElement) ────────────────────────
     val patternEnabled: Boolean = false,
     val patternShape: DecorationShape = DecorationShape.STARS_FOUR_POINT,
@@ -143,7 +148,7 @@ enum class PageSize(
  *   Front [r=0,c] ↔ Back [rows-1, c]
  */
 @Serializable
-enum class FlipEdge(@StringRes val labelRes: Int) {
+enum class FlipEdge(@param:StringRes val labelRes: Int) {
     LONG_EDGE(dev.anonymous.cardsdesignerpro.R.string.flip_long_edge_desc),
     SHORT_EDGE(dev.anonymous.cardsdesignerpro.R.string.flip_short_edge_desc);
 }

@@ -17,6 +17,7 @@ object ExportManager {
     data class ExportRequest(
         val template: Template,
         val parseResult: ParseResult,
+        val shortParseResult: ParseResult?,
         val settings: ExportSettings,
         val outputUri: Uri?,
         val frontUri: Uri?,

@@ -28,36 +28,27 @@ class DefaultTemplatesBottomSheet : BottomSheetDialogFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         val adapter = DefaultTemplateAdapter { dirName, template ->
-            val dialogBinding = dev.anonymous.cardsdesignerpro.databinding.DialogTemplateNameBinding.inflate(layoutInflater)
-            dialogBinding.etName.setText(getString(dev.anonymous.cardsdesignerpro.R.string.template_name_copy, template.name))
-            dialogBinding.etName.selectAll()
-            
-            val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
-                .setTitle(dev.anonymous.cardsdesignerpro.R.string.btn_edit_default_template)
-                .setView(dialogBinding.root)
-                .setCancelable(false)
-                .setNegativeButton(dev.anonymous.cardsdesignerpro.R.string.btn_cancel, null)
-                .setPositiveButton(dev.anonymous.cardsdesignerpro.R.string.btn_save) { _, _ ->
-                    val enteredName = dialogBinding.etName.text?.toString()?.trim()
-                    if (!enteredName.isNullOrEmpty()) {
-                        viewModel.extractDefaultTemplate(dirName, enteredName) { newId ->
-                            if (newId != null) {
-                                (activity as? MainActivity)?.openEditor(newId)
-                                dismiss()
-                            } else {
-                                (activity as? MainActivity)?.snack(getString(dev.anonymous.cardsdesignerpro.R.string.error_extracting_template))
-                            }
+            val reqKey = "extract_${dirName}_${template.id}"
+            childFragmentManager.setFragmentResultListener(reqKey, viewLifecycleOwner) { _, bundle ->
+                val enteredName = bundle.getString("name")
+                if (!enteredName.isNullOrEmpty()) {
+                    viewModel.extractDefaultTemplate(dirName, enteredName) { newId ->
+                        if (newId != null) {
+                            (activity as? MainActivity)?.openEditor(newId)
+                            dismiss()
+                        } else {
+                            (activity as? MainActivity)?.snack(getString(dev.anonymous.cardsdesignerpro.R.string.error_extracting_template))
                         }
                     }
                 }
-                .create()
-                
-            dialog.show()
-            val btnPositive = dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
-            btnPositive.isEnabled = !dialogBinding.etName.text.isNullOrEmpty()
-
-            dialogBinding.etName.doAfterTextChanged { editable ->
-                btnPositive.isEnabled = !editable?.toString()?.trim().isNullOrEmpty()
+            }
+            if (childFragmentManager.findFragmentByTag(dev.anonymous.cardsdesignerpro.ui.common.TemplateNameDialogFragment.TAG) == null) {
+                dev.anonymous.cardsdesignerpro.ui.common.TemplateNameDialogFragment.newInstance(
+                    titleRes = dev.anonymous.cardsdesignerpro.R.string.btn_edit_default_template,
+                    positiveBtnRes = dev.anonymous.cardsdesignerpro.R.string.btn_save,
+                    initialName = getString(dev.anonymous.cardsdesignerpro.R.string.template_name_copy, template.name),
+                    requestKey = reqKey
+                ).show(childFragmentManager, dev.anonymous.cardsdesignerpro.ui.common.TemplateNameDialogFragment.TAG)
             }
         }
         binding.rvDefaultTemplates.adapter = adapter
