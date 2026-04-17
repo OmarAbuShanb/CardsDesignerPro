@@ -19,7 +19,6 @@
       "text": "FastNet شبكة",
       "textColor": "#000000",
       "isBold": true,
-      "fontName": "sans-serif",
       "textSizeSp": 68.79815
     },
     {
@@ -49,7 +48,6 @@
       "digitCount": 12,
       "textColor": "#000000",
       "isBold": true,
-      "fontName": "monospace",
       "textSizeSp": 54.0
     },
     {
@@ -86,7 +84,6 @@
       "digitCount": 6,
       "textColor": "#000000",
       "isBold": true,
-      "fontName": "monospace",
       "textSizeSp": 54.0
     },
     {

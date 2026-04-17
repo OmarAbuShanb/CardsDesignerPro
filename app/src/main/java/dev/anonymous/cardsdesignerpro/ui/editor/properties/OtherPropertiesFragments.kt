@@ -26,6 +26,7 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
     private val b get() = _b!!
     val viewModel: EditorViewModel by activityViewModels()
     private var updating = false
+    private var fontAdapter: FontSpinnerAdapter? = null
 
     override fun onCreateView(i: LayoutInflater, c: ViewGroup?, s: Bundle?): View {
         _b = FragmentPropDateBinding.inflate(i, c, false); return b.root
@@ -41,10 +42,8 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
             android.R.layout.simple_spinner_item, formats.map { it.displayName })
             .apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
 
-        b.spinnerFont.adapter = ArrayAdapter(
-            requireContext(),
-            android.R.layout.simple_spinner_item, AVAILABLE_FONTS.map { it.first })
-            .apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        fontAdapter = FontSpinnerAdapter(requireContext(), getAvailableFonts(requireContext()))
+        b.spinnerFont.adapter = fontAdapter
 
         val el = viewModel.selectedElement as? TemplateElement.DateElement ?: return
         populate(el, formats)
@@ -89,8 +88,19 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
                 if (e != null && e.textSizeSp != v) viewModel.updateElement(e.copy(textSizeSp = v))
             }
         }
+        b.cbTextStroke.setOnCheckedChangeListener { _, isChecked ->
+            if (updating) return@setOnCheckedChangeListener
+            val e = viewModel.selectedElement as? TemplateElement.DateElement ?: return@setOnCheckedChangeListener
+            val newStroke = if (isChecked) b.sliderTextStroke.value else 0f
+            if (e.textStrokeWidth != newStroke) viewModel.updateElement(e.copy(textStrokeWidth = newStroke))
+        }
+        b.cpvStrokeColor.onColorSelected = { hex ->
+            b.tvStrokeColorHex.text = hex
+            val e = viewModel.selectedElement as? TemplateElement.DateElement
+            if (e != null && e.textStrokeColor != hex) viewModel.updateElement(e.copy(textStrokeColor = hex))
+        }
         b.sliderTextStroke.addOnChangeListener { _, v, _ ->
-            if (!updating) {
+            if (!updating && b.cbTextStroke.isChecked) {
                 val e = viewModel.selectedElement as? TemplateElement.DateElement
                 if (e != null && e.textStrokeWidth != v) viewModel.updateElement(e.copy(textStrokeWidth = v))
             }
@@ -99,45 +109,56 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
             override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
                 if (updating) return
                 val e = viewModel.selectedElement as? TemplateElement.DateElement ?: return
-                if (e.fontName == AVAILABLE_FONTS[pos].second) return   // spurious fire
-                viewModel.updateElement(e.copy(fontName = AVAILABLE_FONTS[pos].second))
+                val newFont = getAvailableFonts(requireContext())[pos].second
+                if (e.fontName == newFont) return   // spurious fire
+                viewModel.updateElement(e.copy(fontName = newFont))
             }
 
             override fun onNothingSelected(p: AdapterView<*>?) {}
         }
     }
 
-    private fun populate(
-        el: TemplateElement.DateElement, formats: Array<DateFormat>
-    ) {
+    private fun populate(e: TemplateElement.DateElement, formats: Array<DateFormat>) {
         updating = true
-        val fmtIdx = formats.indexOf(el.format).coerceAtLeast(0)
-        if (b.spinnerDateFormat.selectedItemPosition != fmtIdx) b.spinnerDateFormat.setSelection(
-            fmtIdx
-        )
-        if (b.cpvTextColor.colorHex != el.textColor) b.cpvTextColor.colorHex = el.textColor
-        b.tvColorHex.text = el.textColor
-        // Background color
-        val bg = el.bgColor
-        if (bg != null) {
-            if (b.cpvBgColor.colorHex != bg) b.cpvBgColor.colorHex = bg
-            b.tvBgColorHex.text = bg
+        val fIdx = formats.indexOf(e.format).coerceAtLeast(0)
+        if (b.spinnerDateFormat.selectedItemPosition != fIdx) b.spinnerDateFormat.setSelection(fIdx)
+        if (b.cpvTextColor.colorHex != e.textColor) b.cpvTextColor.colorHex = e.textColor
+        b.tvColorHex.text = e.textColor
+        if (e.bgColor != null) {
+            if (b.cpvBgColor.colorHex != e.bgColor) b.cpvBgColor.colorHex = e.bgColor
+            b.tvBgColorHex.text = e.bgColor
             b.btnClearBgColor.visibility = View.VISIBLE
         } else {
             b.cpvBgColor.colorHex = "#FFFFFFFF"
             b.tvBgColorHex.text = getString(R.string.prop_no_bg_color)
             b.btnClearBgColor.visibility = View.GONE
         }
-        if (b.cbBold.isChecked != el.isBold) b.cbBold.isChecked = el.isBold
-        val targetSize = kotlin.math.round(el.textSizeSp).toFloat().coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP)
-        if (b.sliderFontSize.value != targetSize) {
-            b.sliderFontSize.value = targetSize
+        if (b.cbBold.isChecked != e.isBold) b.cbBold.isChecked = e.isBold
+        val s = kotlin.math.round(e.textSizeSp).toFloat().coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP)
+        if (b.sliderFontSize.value != s) b.sliderFontSize.value = s
+        
+        // Text stroke
+        val hasStroke = e.textStrokeWidth > 0f
+        if (b.cbTextStroke.isChecked != hasStroke) b.cbTextStroke.isChecked = hasStroke
+        b.layoutTextStrokeOptions.visibility = if (hasStroke) View.VISIBLE else View.GONE
+        
+        val targetStroke = e.textStrokeWidth.coerceAtLeast(1f).coerceAtMost(10f)
+        if (b.sliderTextStroke.value != targetStroke) b.sliderTextStroke.value = targetStroke
+        if (b.cpvStrokeColor.colorHex != e.textStrokeColor) b.cpvStrokeColor.colorHex = e.textStrokeColor
+        b.tvStrokeColorHex.text = e.textStrokeColor
+
+        // Update Font Adapter preview
+        val previewStr = try {
+            java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern(e.format.pattern))
+        } catch (ex: Exception) {
+            "معاينة التاريخ"
         }
-        val targetStroke = el.textStrokeWidth.coerceIn(0f, 10f)
-        if (b.sliderTextStroke.value != targetStroke) {
-            b.sliderTextStroke.value = targetStroke
+        if (fontAdapter?.previewText != previewStr) {
+            fontAdapter?.previewText = previewStr
+            fontAdapter?.notifyDataSetChanged()
         }
-        val fontIdx = AVAILABLE_FONTS.indexOfFirst { it.second == el.fontName }.coerceAtLeast(0)
+
+        val fontIdx = getAvailableFonts(requireContext()).indexOfFirst { it.second == e.fontName }.coerceAtLeast(0)
         if (b.spinnerFont.selectedItemPosition != fontIdx) b.spinnerFont.setSelection(fontIdx)
         updating = false
     }

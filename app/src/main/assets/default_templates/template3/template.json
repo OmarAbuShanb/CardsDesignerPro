@@ -34,8 +34,7 @@
       "digitCount": 6,
       "textColor": "#4B90A5",
       "textSizeSp": 36.0,
-      "isBold": true,
-      "fontName": "monospace"
+      "isBold": true
     },
     {
       "type": "username",
@@ -49,8 +48,7 @@
       "digitCount": 12,
       "textColor": "#4B90A5",
       "textSizeSp": 36.0,
-      "isBold": true,
-      "fontName": "monospace"
+      "isBold": true
     },
     {
       "type": "text",

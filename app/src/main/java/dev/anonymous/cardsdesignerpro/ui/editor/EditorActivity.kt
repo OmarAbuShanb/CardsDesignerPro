@@ -267,9 +267,11 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
         val targetVis = if (backEnabled) View.VISIBLE else View.GONE
         
         if (binding.llActiveSideToggle.visibility != targetVis) {
-            val transition = android.transition.AutoTransition()
-            transition.duration = 250
-            android.transition.TransitionManager.beginDelayedTransition(binding.llActiveSideToggle.parent as android.view.ViewGroup, transition)
+            if (lastRenderedBackEnabled != null) {
+                val transition = android.transition.AutoTransition()
+                transition.duration = 250
+                android.transition.TransitionManager.beginDelayedTransition(binding.llActiveSideToggle.parent as android.view.ViewGroup, transition)
+            }
             binding.llActiveSideToggle.visibility = targetVis
         }
 

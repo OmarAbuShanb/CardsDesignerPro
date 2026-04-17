@@ -5,14 +5,12 @@
     android:orientation="horizontal"
     android:paddingHorizontal="16dp"
     android:paddingVertical="12dp"
-    android:gravity="center_vertical"
     android:layoutDirection="rtl">
 
     <TextView
         android:id="@+id/tv_font_name"
-        android:layout_width="0dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
         android:textAppearance="?attr/textAppearanceBodyMedium"
         android:text="Cairo"
         android:textColor="?attr/colorOnSurface" />
@@ -22,11 +20,12 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:layout_marginStart="16dp"
         android:textAppearance="?attr/textAppearanceBodyMedium"
         android:text="Preview Text"
-        android:ellipsize="end"
+        android:ellipsize="marquee"
         android:maxLines="1"
-        android:gravity="end"
+        android:textAlignment="viewEnd"
         android:textColor="?attr/colorOnSurfaceVariant" />
 
 </LinearLayout>

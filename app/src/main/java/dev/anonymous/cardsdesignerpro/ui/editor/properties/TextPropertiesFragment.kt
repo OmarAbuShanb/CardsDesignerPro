@@ -17,8 +17,8 @@ import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel.Companion.MAX_TEXT_SIZE_SP
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel.Companion.MIN_TEXT_SIZE_SP
 
-val AVAILABLE_FONTS = listOf(
-    "افتراضي (بدون خط)" to "default",
+fun getAvailableFonts(context: android.content.Context) = listOf(
+    context.getString(R.string.font_default) to "default",
     "Abril Fatface" to "abril_fatface_regular",
     "Almarai" to "almarai",
     "Aref Ruqaa" to "aref_ruqaa",
@@ -39,6 +39,7 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
     private val binding get() = _binding!!
     val viewModel: EditorViewModel by activityViewModels()
     private var updating = false
+    private var fontAdapter: FontSpinnerAdapter? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -55,12 +56,8 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
     }
 
     private fun setupFontSpinner() {
-        val adapter = ArrayAdapter(
-            requireContext(),
-            android.R.layout.simple_spinner_item,
-            AVAILABLE_FONTS.map { it.first }
-        ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
-        binding.spinnerFont.adapter = adapter
+        fontAdapter = FontSpinnerAdapter(requireContext(), getAvailableFonts(requireContext()))
+        binding.spinnerFont.adapter = fontAdapter
     }
 
     private fun populateFrom(el: TemplateElement.TextElement) {
@@ -96,14 +93,29 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
         if (binding.sliderFontSize.value != targetSize) {
             binding.sliderFontSize.value = targetSize
         }
-        val targetStroke = el.textStrokeWidth.coerceIn(0f, 10f)
+        
+        // Text stroke
+        val hasStroke = el.textStrokeWidth > 0f
+        if (binding.cbTextStroke.isChecked != hasStroke) binding.cbTextStroke.isChecked = hasStroke
+        binding.layoutTextStrokeOptions.visibility = if (hasStroke) View.VISIBLE else View.GONE
+        
+        val targetStroke = el.textStrokeWidth.coerceAtLeast(1f).coerceAtMost(10f)
         if (binding.sliderTextStroke.value != targetStroke) {
             binding.sliderTextStroke.value = targetStroke
+        }
+        if (binding.cpvStrokeColor.colorHex != el.textStrokeColor) binding.cpvStrokeColor.colorHex = el.textStrokeColor
+        binding.tvStrokeColorHex.text = el.textStrokeColor
+
+        // Update Font Adapter preview
+        val previewStr = if (showText.isBlank()) "نص تجريبي" else showText
+        if (fontAdapter?.previewText != previewStr) {
+            fontAdapter?.previewText = previewStr
+            fontAdapter?.notifyDataSetChanged()
         }
 
         // Spinner: Spinner.setSelection() ALWAYS calls requestLayout() even for same pos.
         // Guard it so we only call setSelection when position truly changes → no scroll reset.
-        val fontIdx = AVAILABLE_FONTS.indexOfFirst { it.second == el.fontName }.coerceAtLeast(0)
+        val fontIdx = getAvailableFonts(requireContext()).indexOfFirst { it.second == el.fontName }.coerceAtLeast(0)
         if (binding.spinnerFont.selectedItemPosition != fontIdx) binding.spinnerFont.setSelection(fontIdx)
 
         updating = false
@@ -147,8 +159,21 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
                     viewModel.updateElement(el.copy(textSizeSp = size))
             }
         }
+        binding.cbTextStroke.setOnCheckedChangeListener { _, isChecked ->
+            if (updating) return@setOnCheckedChangeListener
+            val el = viewModel.selectedElement as? TemplateElement.TextElement ?: return@setOnCheckedChangeListener
+            val newStroke = if (isChecked) binding.sliderTextStroke.value else 0f
+            if (el.textStrokeWidth != newStroke) {
+                viewModel.updateElement(el.copy(textStrokeWidth = newStroke))
+            }
+        }
+        binding.cpvStrokeColor.onColorSelected = { hex ->
+            binding.tvStrokeColorHex.text = hex
+            val el = viewModel.selectedElement as? TemplateElement.TextElement
+            if (el != null && el.textStrokeColor != hex) viewModel.updateElement(el.copy(textStrokeColor = hex))
+        }
         binding.sliderTextStroke.addOnChangeListener { _, size, _ ->
-            if (!updating) {
+            if (!updating && binding.cbTextStroke.isChecked) {
                 val el = viewModel.selectedElement as? TemplateElement.TextElement
                 if (el != null && el.textStrokeWidth != size)
                     viewModel.updateElement(el.copy(textStrokeWidth = size))
@@ -158,7 +183,7 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
                 if (updating) return
                 val el = viewModel.selectedElement as? TemplateElement.TextElement ?: return
-                val newFont = AVAILABLE_FONTS[pos].second
+                val newFont = getAvailableFonts(requireContext())[pos].second
                 if (el.fontName == newFont) return   // spurious fire from setSelection()
                 viewModel.updateElement(el.copy(fontName = newFont))
             }

@@ -44,7 +44,7 @@ sealed class TemplateElement {
         override val height: Float,
         override val isVisible: Boolean = true,
         override val rotation: Float = 0f,
-        val text: String = "نص افتراضي",
+        val text: String = "",
         val textColor: String = "#000000",
         val bgColor: String? = null,
         val isBold: Boolean = false,

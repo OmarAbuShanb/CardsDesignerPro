@@ -135,6 +135,7 @@
     <string name="pack_tab_fields">حقول</string>
     <string name="pack_tab_dividers">قواسم</string>
     <string name="pack_tab_logos">شعارات</string>
+    <string name="pack_tab_patterns">أنماط</string>
     <string name="pack_tab_misc">متنوع</string>
 
     <!-- Editor – Properties -->
@@ -189,16 +190,12 @@
     <string name="elem_field">حقل</string>
     <string name="elem_divider">قاسم</string>
     <string name="elem_logo">شعار</string>
+    <string name="elem_pattern">نمط خلفية</string>
     <string name="elem_misc">عنصر جاهز</string>
     <string name="elem_qr">رمز QR</string>
     <string name="elem_date">تاريخ</string>
     <string name="elem_frame">إطار البطاقة</string>
     <string name="elem_decoration">نمط الخلفية</string>
-
-    <!-- Pack Browser -->
-    <string name="pack_dividers">فواصل</string>
-    <string name="pack_fields">حقول نص</string>
-    <string name="pack_decorations">جماليات</string>
 
     <!-- General -->
     <string name="btn_close">إغلاق</string>
@@ -272,5 +269,7 @@
     <string name="label_short_data_file">ملف أو ملفات البيانات المختصرة</string>
     <string name="label_original_data_file">ملف أو ملفات البيانات الأصلية</string>
     <string name="short_numbers_warning_format">عدد البيانات الأصلية %1$d بينما عدد البيانات المختصرة %2$d</string>
+
+    <string name="font_default">افتراضي (بدون خط)</string>
 
 </resources>

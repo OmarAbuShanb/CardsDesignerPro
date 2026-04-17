@@ -153,13 +153,26 @@ class CardCanvasView @JvmOverloads constructor(
     private fun dummyDigits(count: Int): String =
         (1..count).joinToString("") { (it % 10).toString() }
 
+    private val typefaceCache = mutableMapOf<String, Typeface>()
+
     private fun resolveTypeface(fontName: String, isBold: Boolean): Typeface {
-        val style = if (isBold) Typeface.BOLD else Typeface.NORMAL
-        return when (fontName.lowercase()) {
-            "serif"      -> Typeface.create(Typeface.SERIF, style)
-            "monospace"  -> Typeface.create(Typeface.MONOSPACE, style)
-            "sans-serif" -> Typeface.create(Typeface.SANS_SERIF, style)
-            else         -> Typeface.create(Typeface.DEFAULT, style)
+        val key = "$fontName|$isBold"
+        return typefaceCache.getOrPut(key) {
+            val style = if (isBold) Typeface.BOLD else Typeface.NORMAL
+            val baseTypeface = when (fontName.lowercase()) {
+                "default", "" -> Typeface.DEFAULT
+                "serif"       -> Typeface.SERIF
+                "monospace"   -> Typeface.MONOSPACE
+                "sans-serif"  -> Typeface.SANS_SERIF
+                else -> {
+                    try {
+                        val resId = context.resources.getIdentifier(fontName, "font", context.packageName)
+                        if (resId != 0) androidx.core.content.res.ResourcesCompat.getFont(context, resId) ?: Typeface.DEFAULT
+                        else Typeface.DEFAULT
+                    } catch (_: Exception) { Typeface.DEFAULT }
+                }
+            }
+            Typeface.create(baseTypeface, style)
         }
     }
 

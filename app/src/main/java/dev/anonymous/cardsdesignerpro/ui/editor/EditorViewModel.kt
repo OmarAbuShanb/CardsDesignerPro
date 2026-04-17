@@ -21,7 +21,6 @@ data class EditorUiState(
     val template: Template,
     val selectedElementId: String? = null,
     val hasUnsavedChanges: Boolean = false,
-    val hasOutOfBoundsElements: Boolean = false,
     /** Set to true momentarily when the active side switches — triggers full list refresh. */
     val sideSwitched: Boolean = false,
 )
@@ -259,7 +258,6 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 backElements = template.backElements?.let { resizeElements(it) }
             )
         }
-        checkOutOfBounds()
     }
 
     // ── Element additions ─────────────────────────────────────────────────────
@@ -270,7 +268,8 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
 
     fun addTextElement() = addElement(
         TemplateElement.TextElement(
-            id = newId(), x = centerX(160f), y = centerY(40f), width = 160f, height = 40f
+            id = newId(), x = centerX(160f), y = centerY(40f), width = 160f, height = 40f,
+            text = getApplication<Application>().getString(dev.anonymous.cardsdesignerpro.R.string.default_text_placeholder)
         )
     )
 
@@ -375,7 +374,6 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
             selectedElementId = newSelected,
             hasUnsavedChanges = true
         ))
-        checkOutOfBounds()
     }
 
     fun toggleVisibility(id: String) {
@@ -406,7 +404,6 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
             template = setSideElements(prev.template, newList),
             hasUnsavedChanges = true
         ))
-        checkOutOfBounds()
     }
 
     fun moveElement(id: String, dx: Float, dy: Float) {
@@ -457,7 +454,6 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 is TemplateElement.CardBackground -> el
             }
         }
-        checkOutOfBounds()
     }
 
     fun rotateElement(id: String, angleDelta: Float) {
@@ -559,7 +555,6 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
             hasUnsavedChanges = true
         ))
         enforceLayerOrder()
-        checkOutOfBounds()
     }
 
     private fun mutateElement(id: String, transform: (TemplateElement) -> TemplateElement) {
@@ -607,25 +602,6 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         if (frame != null) ordered.add(frame)
         if (bg    != null) ordered.add(bg)
         return ordered
-    }
-
-    private fun checkOutOfBounds() {
-        val template = currentTemplate
-        val cardH = template.card.widthDp * template.card.heightRatio
-        val outOfBounds = currentElements
-            .filter { it !is TemplateElement.CardBackground
-                    && it !is TemplateElement.FrameElement }
-            .any { el ->
-                if (el is TemplateElement.TextElement || el is TemplateElement.UsernameElement
-                    || el is TemplateElement.PasswordElement || el is TemplateElement.DateElement) {
-                    val cx = el.x + el.width / 2
-                    val cy = el.y + el.height / 2
-                    cx < 0 || cx > template.card.widthDp || cy < 0 || cy > cardH
-                } else {
-                    el.y + el.height > cardH || el.x + el.width > template.card.widthDp
-                }
-            }
-        _uiState.value = uiState.value.copy(hasOutOfBoundsElements = outOfBounds)
     }
 
     companion object {

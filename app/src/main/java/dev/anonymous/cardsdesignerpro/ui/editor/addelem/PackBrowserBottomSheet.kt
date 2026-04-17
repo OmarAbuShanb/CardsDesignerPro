@@ -29,6 +29,7 @@ class PackBrowserBottomSheet : BottomSheetDialogFragment() {
             Category("packs/fields",   R.string.pack_tab_fields),
             Category("packs/dividers", R.string.pack_tab_dividers),
             Category("packs/logos",    R.string.pack_tab_logos),
+            Category("packs/patterns",    R.string.pack_tab_patterns),
             Category("packs/misc",    R.string.pack_tab_misc),
         )
     }

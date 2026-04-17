@@ -22,6 +22,7 @@ abstract class CredentialPropertiesFragment : Fragment(), PropertyFragment {
     protected val binding get() = _binding!!
     val viewModel: EditorViewModel by activityViewModels()
     protected var updating = false
+    private var fontAdapter: FontSpinnerAdapter? = null
 
     abstract fun getElement(): TemplateElement?
     abstract fun copyWithDigitCount(el: TemplateElement, count: Int): TemplateElement
@@ -31,6 +32,7 @@ abstract class CredentialPropertiesFragment : Fragment(), PropertyFragment {
     abstract fun copyWithFont(el: TemplateElement, font: String): TemplateElement
     abstract fun copyWithSize(el: TemplateElement, size: Float): TemplateElement
     abstract fun copyWithTextStroke(el: TemplateElement, stroke: Float): TemplateElement
+    abstract fun copyWithTextStrokeColor(el: TemplateElement, hex: String): TemplateElement
     abstract fun digitCount(el: TemplateElement): Int
     abstract fun textColor(el: TemplateElement): String
     abstract fun bgColor(el: TemplateElement): String?
@@ -38,6 +40,7 @@ abstract class CredentialPropertiesFragment : Fragment(), PropertyFragment {
     abstract fun fontName(el: TemplateElement): String
     abstract fun textSize(el: TemplateElement): Float
     abstract fun textStroke(el: TemplateElement): Float
+    abstract fun textStrokeColor(el: TemplateElement): String
     abstract fun isShortVariant(el: TemplateElement): Boolean
 
     override fun onCreateView(
@@ -57,10 +60,8 @@ abstract class CredentialPropertiesFragment : Fragment(), PropertyFragment {
     }
 
     private fun setupFontSpinner() {
-        binding.spinnerFont.adapter = ArrayAdapter(
-            requireContext(), android.R.layout.simple_spinner_item,
-            AVAILABLE_FONTS.map { it.first }
-        ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        fontAdapter = FontSpinnerAdapter(requireContext(), getAvailableFonts(requireContext()))
+        binding.spinnerFont.adapter = fontAdapter
     }
 
     fun populateFrom(el: TemplateElement) {
@@ -102,11 +103,27 @@ abstract class CredentialPropertiesFragment : Fragment(), PropertyFragment {
         if (binding.sliderFontSize.value != targetSize) {
             binding.sliderFontSize.value = targetSize
         }
-        val targetStroke = textStroke(el).coerceIn(0f, 10f)
+        
+        // Text stroke
+        val hasStroke = textStroke(el) > 0f
+        if (binding.cbTextStroke.isChecked != hasStroke) binding.cbTextStroke.isChecked = hasStroke
+        binding.layoutTextStrokeOptions.visibility = if (hasStroke) View.VISIBLE else View.GONE
+        
+        val targetStroke = textStroke(el).coerceAtLeast(1f).coerceAtMost(10f)
         if (binding.sliderTextStroke.value != targetStroke) {
             binding.sliderTextStroke.value = targetStroke
         }
-        val fontIdx = AVAILABLE_FONTS.indexOfFirst { it.second == fontName(el) }.coerceAtLeast(0)
+        if (binding.cpvStrokeColor.colorHex != textStrokeColor(el)) binding.cpvStrokeColor.colorHex = textStrokeColor(el)
+        binding.tvStrokeColorHex.text = textStrokeColor(el)
+
+        // Update Font Adapter preview (Show actual dummy digits like in canvas)
+        val previewStr = (1..dc).joinToString("") { (it % 10).toString() }
+        if (fontAdapter?.previewText != previewStr) {
+            fontAdapter?.previewText = previewStr
+            fontAdapter?.notifyDataSetChanged()
+        }
+
+        val fontIdx = getAvailableFonts(requireContext()).indexOfFirst { it.second == fontName(el) }.coerceAtLeast(0)
         if (binding.spinnerFont.selectedItemPosition != fontIdx) binding.spinnerFont.setSelection(fontIdx)
         updating = false
     }
@@ -134,13 +151,25 @@ abstract class CredentialPropertiesFragment : Fragment(), PropertyFragment {
         binding.sliderFontSize.addOnChangeListener { _, size, _ ->
             if (!updating) getElement()?.let { el -> viewModel.updateElement(copyWithSize(el, size)) }
         }
+        binding.cbTextStroke.setOnCheckedChangeListener { _, isChecked ->
+            if (!updating) {
+                getElement()?.let { el ->
+                    val newStroke = if (isChecked) binding.sliderTextStroke.value else 0f
+                    if (textStroke(el) != newStroke) viewModel.updateElement(copyWithTextStroke(el, newStroke))
+                }
+            }
+        }
+        binding.cpvStrokeColor.onColorSelected = { hex ->
+            binding.tvStrokeColorHex.text = hex
+            getElement()?.let { el -> viewModel.updateElement(copyWithTextStrokeColor(el, hex)) }
+        }
         binding.sliderTextStroke.addOnChangeListener { _, size, _ ->
-            if (!updating) getElement()?.let { el -> viewModel.updateElement(copyWithTextStroke(el, size)) }
+            if (!updating && binding.cbTextStroke.isChecked) getElement()?.let { el -> viewModel.updateElement(copyWithTextStroke(el, size)) }
         }
         binding.spinnerFont.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
                 if (!updating) {
-                    val newFont = AVAILABLE_FONTS[pos].second
+                    val newFont = getAvailableFonts(requireContext())[pos].second
                     getElement()?.let { el ->
                         if (fontName(el) == newFont) return   // spurious fire from setSelection()
                         viewModel.updateElement(copyWithFont(el, newFont))
@@ -171,6 +200,7 @@ class UsernamePropertiesFragment : CredentialPropertiesFragment() {
     override fun copyWithFont(el: TemplateElement, font: String) = (el as TemplateElement.UsernameElement).copy(fontName = font)
     override fun copyWithSize(el: TemplateElement, size: Float) = (el as TemplateElement.UsernameElement).copy(textSizeSp = size)
     override fun copyWithTextStroke(el: TemplateElement, stroke: Float) = (el as TemplateElement.UsernameElement).copy(textStrokeWidth = stroke)
+    override fun copyWithTextStrokeColor(el: TemplateElement, hex: String) = (el as TemplateElement.UsernameElement).copy(textStrokeColor = hex)
     override fun digitCount(el: TemplateElement) = (el as TemplateElement.UsernameElement).digitCount
     override fun textColor(el: TemplateElement) = (el as TemplateElement.UsernameElement).textColor
     override fun bgColor(el: TemplateElement) = (el as TemplateElement.UsernameElement).bgColor
@@ -178,6 +208,7 @@ class UsernamePropertiesFragment : CredentialPropertiesFragment() {
     override fun fontName(el: TemplateElement) = (el as TemplateElement.UsernameElement).fontName
     override fun textSize(el: TemplateElement) = (el as TemplateElement.UsernameElement).textSizeSp
     override fun textStroke(el: TemplateElement) = (el as TemplateElement.UsernameElement).textStrokeWidth
+    override fun textStrokeColor(el: TemplateElement) = (el as TemplateElement.UsernameElement).textStrokeColor
     override fun isShortVariant(el: TemplateElement) = (el as TemplateElement.UsernameElement).isShortVariant
 }
 
@@ -190,6 +221,7 @@ class PasswordPropertiesFragment : CredentialPropertiesFragment() {
     override fun copyWithFont(el: TemplateElement, font: String) = (el as TemplateElement.PasswordElement).copy(fontName = font)
     override fun copyWithSize(el: TemplateElement, size: Float) = (el as TemplateElement.PasswordElement).copy(textSizeSp = size)
     override fun copyWithTextStroke(el: TemplateElement, stroke: Float) = (el as TemplateElement.PasswordElement).copy(textStrokeWidth = stroke)
+    override fun copyWithTextStrokeColor(el: TemplateElement, hex: String) = (el as TemplateElement.PasswordElement).copy(textStrokeColor = hex)
     override fun digitCount(el: TemplateElement) = (el as TemplateElement.PasswordElement).digitCount
     override fun textColor(el: TemplateElement) = (el as TemplateElement.PasswordElement).textColor
     override fun bgColor(el: TemplateElement) = (el as TemplateElement.PasswordElement).bgColor
@@ -197,5 +229,6 @@ class PasswordPropertiesFragment : CredentialPropertiesFragment() {
     override fun fontName(el: TemplateElement) = (el as TemplateElement.PasswordElement).fontName
     override fun textSize(el: TemplateElement) = (el as TemplateElement.PasswordElement).textSizeSp
     override fun textStroke(el: TemplateElement) = (el as TemplateElement.PasswordElement).textStrokeWidth
+    override fun textStrokeColor(el: TemplateElement) = (el as TemplateElement.PasswordElement).textStrokeColor
     override fun isShortVariant(el: TemplateElement) = (el as TemplateElement.PasswordElement).isShortVariant
 }

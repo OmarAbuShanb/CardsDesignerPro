@@ -168,7 +168,16 @@ class ExportCardsActivity : AppCompatActivity() {
     private fun setupBottomSheetDrag() {
         var initialDragY = 0f;
         var initialHeight = 0
-        binding.dragHandleArea.setOnTouchListener { _, event ->
+        
+        // Adjust initial height in landscape to prevent obscuring the whole screen
+        if (resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
+            binding.dragHeaderArea.post {
+                binding.bottomSheetHost.layoutParams.height = binding.dragHeaderArea.height
+                binding.bottomSheetHost.requestLayout()
+            }
+        }
+
+        binding.dragHeaderArea.setOnTouchListener { _, event ->
             when (event.action) {
                 android.view.MotionEvent.ACTION_DOWN -> {
                     initialDragY = event.rawY; initialHeight = binding.bottomSheetHost.height; true
@@ -176,7 +185,7 @@ class ExportCardsActivity : AppCompatActivity() {
 
                 android.view.MotionEvent.ACTION_MOVE -> {
                     val minH =
-                        binding.dragHandleArea.height + (48 * resources.displayMetrics.density).toInt()
+                        binding.dragHeaderArea.height
                     val maxH = binding.root.height
                     val newH =
                         (initialHeight + (initialDragY - event.rawY)).toInt().coerceIn(minH, maxH)

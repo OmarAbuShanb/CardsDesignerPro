@@ -65,17 +65,44 @@
             android:layout_marginBottom="14dp" />
 
         <!-- Text stroke -->
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="@string/prop_text_stroke" android:textAppearance="?attr/textAppearanceLabelMedium"
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:id="@+id/cb_text_stroke"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/prop_enable_stroke"
             android:layout_marginBottom="6dp" />
-        <com.google.android.material.slider.Slider
-            android:id="@+id/slider_text_stroke"
+
+        <LinearLayout
+            android:id="@+id/layout_text_stroke_options"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:labelBehavior="withinBounds"
-            android:valueFrom="0.0"
-            android:valueTo="10.0"
-            android:stepSize="0.5"
-            android:layout_marginBottom="14dp" />
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="@string/prop_stroke_color" android:textAppearance="?attr/textAppearanceLabelMedium"
+                android:layout_marginBottom="6dp" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="14dp">
+                <dev.anonymous.cardsdesignerpro.common.widget.ColorPreviewView
+                    android:id="@+id/cpv_stroke_color"
+                    android:layout_width="40dp" android:layout_height="40dp" android:layout_marginEnd="12dp" />
+                <TextView android:id="@+id/tv_stroke_color_hex" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:fontFamily="monospace"
+                    android:textAppearance="?attr/textAppearanceBodyMedium" android:text="#000000" />
+            </LinearLayout>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="@string/prop_text_stroke" android:textAppearance="?attr/textAppearanceLabelMedium"
+                android:layout_marginBottom="6dp" />
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slider_text_stroke"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:labelBehavior="withinBounds"
+                android:valueFrom="1.0"
+                android:valueTo="10.0"
+                android:stepSize="0.5"
+                android:layout_marginBottom="14dp" />
+        </LinearLayout>
     </LinearLayout>
 </ScrollView>

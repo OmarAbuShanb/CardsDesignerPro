@@ -90,6 +90,7 @@ private fun TemplateElement.labelRes(ctx: android.content.Context): String {
             imagePath.contains("packs/fields/")   -> R.string.elem_field
             imagePath.contains("packs/dividers/") -> R.string.elem_divider
             imagePath.contains("packs/logos/")    -> R.string.elem_logo
+            imagePath.contains("packs/patterns/") -> R.string.elem_pattern
             imagePath.contains("packs/misc/")     -> R.string.elem_misc
             else -> R.string.elem_image
         })

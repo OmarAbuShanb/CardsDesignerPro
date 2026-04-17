@@ -19,7 +19,6 @@
       "text": "Fly Net",
       "textColor": "#000000",
       "isBold": true,
-      "fontName": "sans-serif",
       "textSizeSp": 64.83804
     },
     {
@@ -34,7 +33,6 @@
       "format": "YEAR_MONTH_DAY_DASH",
       "textColor": "#000000",
       "isBold": true,
-      "fontName": "monospace",
       "textSizeSp": 38.70353
     },
     {
@@ -49,7 +47,6 @@
       "digitCount": 12,
       "textColor": "#000000",
       "isBold": true,
-      "fontName": "monospace",
       "textSizeSp": 57.0
     },
     {
@@ -64,7 +61,6 @@
       "digitCount": 6,
       "textColor": "#000000",
       "isBold": true,
-      "fontName": "monospace",
       "textSizeSp": 57.61124
     },
     {

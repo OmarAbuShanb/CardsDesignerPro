@@ -43,6 +43,10 @@ class TemplateRenderer(private val context: Context) {
     /** Separate cache for expensive QR bitmaps: key = content+style hash. */
     private val qrCache = mutableMapOf<String, Bitmap?>()
     private val svgCache = mutableMapOf<String, com.caverock.androidsvg.SVG?>()
+    /** Cache for resolved Typefaces to avoid repeated resource lookups. */
+    private val typefaceCache = mutableMapOf<String, Typeface>()
+    /** Cache for pattern offscreen bitmaps to avoid re-allocation every draw. */
+    private val patternBitmapCache = mutableMapOf<String, Bitmap>()
 
     /**
      * Maximum bitmap dimensions for each content type.
@@ -55,6 +59,10 @@ class TemplateRenderer(private val context: Context) {
 
     /** Padding around text background (dp in template coordinate space). Must match CardCanvasView.TEXT_PAD_DP. */
     private val TEXT_PAD_DP = 6f
+
+    // ── Reusable objects to reduce GC pressure during draw ────────────────────
+    private val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG)
+    private val tempRect  = RectF()
 
     fun draw(
         canvas: Canvas,
@@ -241,31 +249,35 @@ class TemplateRenderer(private val context: Context) {
         val w = if (aspect > 1f) boundingSz else boundingSz * aspect
         val h = if (aspect > 1f) boundingSz / aspect else boundingSz
 
-        // Offscreen pre-render for PDF efficiency
+        // Offscreen pre-render for PDF efficiency — cached to avoid re-allocation
         val offScale = renderScale * 3f
         val offW = (aW * offScale).toInt().coerceIn(1, maxPatternDim)
         val offH = (aH * offScale).toInt().coerceIn(1, maxPatternDim)
-        val offBmp = Bitmap.createBitmap(offW, offH, Bitmap.Config.ARGB_8888)
-        val offCanvas = Canvas(offBmp)
-        offCanvas.translate(-aL * offScale, -aT * offScale)
-        offCanvas.scale(offScale, offScale)
+        val patternKey = "$path|$density|$offW|$offH|$tint|$applyTint|$safeL|$safeT|$safeR|$safeB|$safeCR"
 
-        paint.reset(); paint.isAntiAlias = true
-        if (applyTint) {
-            paint.colorFilter = PorterDuffColorFilter(tint, PorterDuff.Mode.SRC_IN)
-        } else {
+        val offBmp = patternBitmapCache.getOrPut(patternKey) {
+            val bmp = Bitmap.createBitmap(offW, offH, Bitmap.Config.ARGB_8888)
+            val offCanvas = Canvas(bmp)
+            offCanvas.translate(-aL * offScale, -aT * offScale)
+            offCanvas.scale(offScale, offScale)
+
+            paint.reset(); paint.isAntiAlias = true
+            if (applyTint) {
+                paint.colorFilter = PorterDuffColorFilter(tint, PorterDuff.Mode.SRC_IN)
+            } else {
+                paint.colorFilter = null
+            }
+            val maxR = maxOf(w, h) / 2f
+            for (row in 0 until rows) for (col in 0 until cols) {
+                val cx = aL + cellW * (col + 0.5f); val cy = aT + cellH * (row + 0.5f)
+                if (!isInsideRoundedRect(cx, cy, maxR, safeL, safeT, safeR, safeB, safeCR)) continue
+                offCanvas.drawBitmap(originalBmp, null, RectF(cx - w/2, cy - h/2, cx + w/2, cy + h/2), paint)
+            }
             paint.colorFilter = null
+            bmp
         }
-        val maxR = maxOf(w, h) / 2f
-        for (row in 0 until rows) for (col in 0 until cols) {
-            val cx = aL + cellW * (col + 0.5f); val cy = aT + cellH * (row + 0.5f)
-            if (!isInsideRoundedRect(cx, cy, maxR, safeL, safeT, safeR, safeB, safeCR)) continue
-            offCanvas.drawBitmap(originalBmp, null, RectF(cx - w/2, cy - h/2, cx + w/2, cy + h/2), paint)
-        }
-        paint.colorFilter = null
 
         canvas.drawBitmap(offBmp, null, RectF(aL, aT, aL + aW, aT + aH), null)
-        offBmp.recycle()
     }
 
     // ── Frame ─────────────────────────────────────────────────────────────────
@@ -297,22 +309,23 @@ class TemplateRenderer(private val context: Context) {
         val l = left + p.x * sX; val t = top + p.y * sY; val r = l + p.width * sX; val b = t + p.height * sY
         val cx = (l + r) / 2f; val cy = (t + b) / 2f
 
-        val tp = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = parseColor(p.textColor)
-            textSize = p.textSizeSp * sX
-            typeface = resolveTypeface(p.fontName, p.isBold)
-            letterSpacing = 0f
-            isLinearText = true   // disables size-hinting → consistent metrics on screen vs PDF
-        }
+        // Reuse the shared TextPaint instead of allocating a new one each draw
+        textPaint.reset()
+        textPaint.isAntiAlias = true
+        textPaint.color = parseColor(p.textColor)
+        textPaint.textSize = p.textSizeSp * sX
+        textPaint.typeface = resolveTypeface(p.fontName, p.isBold)
+        textPaint.letterSpacing = 0f
+        textPaint.isLinearText = true   // disables size-hinting → consistent metrics on screen vs PDF
 
         // Measure each explicit line independently (never auto-wrap)
-        val singleLineMaxW = p.text.split('\n').maxOf { tp.measureText(it) }
+        val singleLineMaxW = p.text.split('\n').maxOf { textPaint.measureText(it) }
         // boxW must be at least the longest line to prevent StaticLayout from wrapping;
         // if shorter than element width, element width wins (so ALIGN_CENTER fills the box).
         val boxW = maxOf(singleLineMaxW.toInt() + 2, (r - l).toInt()).coerceAtLeast(1)
 
         val layout = StaticLayout.Builder
-            .obtain(p.text, 0, p.text.length, tp, boxW)
+            .obtain(p.text, 0, p.text.length, textPaint, boxW)
             .setAlignment(Layout.Alignment.ALIGN_CENTER)
             .setLineSpacing(0f, 1f)
             .setIncludePad(false)
@@ -329,10 +342,10 @@ class TemplateRenderer(private val context: Context) {
             val maxRenderedW = (0 until layout.lineCount)
                 .maxOfOrNull { layout.getLineWidth(it) } ?: singleLineMaxW
             paint.reset(); paint.color = parseColor(bg); paint.style = Paint.Style.FILL
-            val bgRect = android.graphics.RectF(
+            tempRect.set(
                 cx - maxRenderedW / 2 - padPx, cy - actualTextH / 2 - padPx,
                 cx + maxRenderedW / 2 + padPx, cy + actualTextH / 2 + padPx)
-            canvas.drawRoundRect(bgRect, padPx / 2, padPx / 2, paint)
+            canvas.drawRoundRect(tempRect, padPx / 2, padPx / 2, paint)
         }
 
         // Translate so the layout is CENTERED at element-center cx.
@@ -340,15 +353,15 @@ class TemplateRenderer(private val context: Context) {
 
         // Draw Stroke (if any)
         if (p.textStrokeWidth > 0f) {
-            tp.style = Paint.Style.STROKE
-            tp.strokeWidth = p.textStrokeWidth * sX
-            tp.color = parseColor(p.textStrokeColor)
+            textPaint.style = Paint.Style.STROKE
+            textPaint.strokeWidth = p.textStrokeWidth * sX
+            textPaint.color = parseColor(p.textStrokeColor)
             layout.draw(canvas)
         }
 
         // Draw Fill
-        tp.style = Paint.Style.FILL
-        tp.color = parseColor(p.textColor)
+        textPaint.style = Paint.Style.FILL
+        textPaint.color = parseColor(p.textColor)
         layout.draw(canvas)
         canvas.restore()
     }
@@ -598,26 +611,32 @@ class TemplateRenderer(private val context: Context) {
         qrCache.values.forEach { it?.recycle() }
         qrCache.clear()
         svgCache.clear()
+        patternBitmapCache.values.forEach { it.recycle() }
+        patternBitmapCache.clear()
+        // Note: typefaceCache is NOT cleared — typefaces are lightweight and reusable across renders
     }
 
     private fun parseColor(hex: String) = runCatching { Color.parseColor(hex) }.getOrElse { Color.BLACK }
 
     private fun resolveTypeface(fontName: String, isBold: Boolean): Typeface {
-        val style = if (isBold) Typeface.BOLD else Typeface.NORMAL
-        val baseTypeface = when (fontName.lowercase()) {
-            "default", "" -> Typeface.DEFAULT
-            "serif"       -> Typeface.SERIF
-            "monospace"   -> Typeface.MONOSPACE
-            "sans-serif"  -> Typeface.SANS_SERIF
-            else -> {
-                try {
-                    val resId = context.resources.getIdentifier(fontName, "font", context.packageName)
-                    if (resId != 0) androidx.core.content.res.ResourcesCompat.getFont(context, resId) ?: Typeface.DEFAULT
-                    else Typeface.DEFAULT
-                } catch (e: Exception) { Typeface.DEFAULT }
+        val key = "$fontName|$isBold"
+        return typefaceCache.getOrPut(key) {
+            val style = if (isBold) Typeface.BOLD else Typeface.NORMAL
+            val baseTypeface = when (fontName.lowercase()) {
+                "default", "" -> Typeface.DEFAULT
+                "serif"       -> Typeface.SERIF
+                "monospace"   -> Typeface.MONOSPACE
+                "sans-serif"  -> Typeface.SANS_SERIF
+                else -> {
+                    try {
+                        val resId = context.resources.getIdentifier(fontName, "font", context.packageName)
+                        if (resId != 0) androidx.core.content.res.ResourcesCompat.getFont(context, resId) ?: Typeface.DEFAULT
+                        else Typeface.DEFAULT
+                    } catch (e: Exception) { Typeface.DEFAULT }
+                }
             }
+            Typeface.create(baseTypeface, style)
         }
-        return Typeface.create(baseTypeface, style)
     }
 
     private fun isInsideRoundedRect(cx: Float, cy: Float, r: Float, l: Float, t: Float, right: Float, bottom: Float, cr: Float): Boolean {
