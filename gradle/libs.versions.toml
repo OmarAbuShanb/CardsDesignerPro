@@ -1,5 +1,5 @@
 [versions]
-agp = "9.1.0"
+agp = "9.1.1"
 androidsvgAar = "1.4"
 kotlin = "2.1.0"
 kotlinxSerialization = "1.10.0"

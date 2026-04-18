@@ -87,10 +87,10 @@ class TemplateRepository(private val context: Context) {
 
         fun rewrite(path: String?): String? = path?.let { pathMap[it] ?: it }
 
-        val newCard = original.card.copy(backgroundImagePath = rewrite(original.card.backgroundImagePath),
-            patternCustomImagePath = rewrite(original.card.patternCustomImagePath))
-        val newBackCard = original.backCard?.copy(backgroundImagePath = rewrite(original.backCard.backgroundImagePath),
-            patternCustomImagePath = rewrite(original.backCard.patternCustomImagePath))
+        val newCard = original.card.copy(
+            backgroundImagePath = rewrite(original.card.backgroundImagePath))
+        val newBackCard = original.backCard?.copy(
+            backgroundImagePath = rewrite(original.backCard.backgroundImagePath))
 
         fun rewriteElements(elements: List<TemplateElement>) = elements.map { el ->
             when (el) {
@@ -180,11 +180,9 @@ class TemplateRepository(private val context: Context) {
         }
         
         val extractedCard = defaultTemplate.card.copy(
-            backgroundImagePath = rewrite(defaultTemplate.card.backgroundImagePath),
-            patternCustomImagePath = rewrite(defaultTemplate.card.patternCustomImagePath))
+            backgroundImagePath = rewrite(defaultTemplate.card.backgroundImagePath))
         val extractedBackCard = defaultTemplate.backCard?.copy(
-            backgroundImagePath = rewrite(defaultTemplate.backCard.backgroundImagePath),
-            patternCustomImagePath = rewrite(defaultTemplate.backCard.patternCustomImagePath))
+            backgroundImagePath = rewrite(defaultTemplate.backCard.backgroundImagePath))
 
         val extracted = defaultTemplate.copy(
             id = newId,
@@ -222,9 +220,7 @@ class TemplateRepository(private val context: Context) {
     private fun collectAllLocalPaths(template: Template): Set<String> {
         val paths = mutableSetOf<String>()
         template.card.backgroundImagePath?.let { if (!it.startsWith("pack:")) paths.add(it) }
-        template.card.patternCustomImagePath?.let { if (!it.startsWith("pack:")) paths.add(it) }
         template.backCard?.backgroundImagePath?.let { if (!it.startsWith("pack:")) paths.add(it) }
-        template.backCard?.patternCustomImagePath?.let { if (!it.startsWith("pack:")) paths.add(it) }
         fun collectFromElements(elements: List<TemplateElement>) {
             elements.forEach { el ->
                 when (el) {

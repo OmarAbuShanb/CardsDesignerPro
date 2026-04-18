@@ -66,6 +66,10 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
         binding.toolbar.inflateMenu(R.menu.menu_editor)
         binding.toolbar.setOnMenuItemClickListener { item ->
             when (item.itemId) {
+                R.id.action_undo -> {
+                    viewModel.undo()
+                    true
+                }
                 R.id.action_save -> {
                     viewModel.save { finish() }
                     true
@@ -215,8 +219,13 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
     private var lastRenderedBackEnabled: Boolean? = null
     private var lastRenderedShortEnabled: Boolean? = null
     private var lastRenderedSide: CardSide? = null
-
     private var isFlipping = false
+    /**
+     * Becomes true after the first completed layout frame.
+     * Set via post{} so that back-to-back renderState calls during startup
+     * (e.g. immediate StateFlow emission + async template load) all see false.
+     */
+    private var hasRenderedOnce = false
 
     private fun renderState(state: EditorUiState) {
         val template = state.template
@@ -227,7 +236,7 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
             val isRtl = binding.root.layoutDirection == View.LAYOUT_DIRECTION_RTL
             val animOutRot = if (isRtl) -90f else 90f
             val animInRot = if (isRtl) 90f else -90f
-            
+
             // Slightly lift the card (Z translation) during flip for enhanced 3D effect
             binding.cardCanvas.animate().translationZ(50f).setDuration(150).start()
 
@@ -239,7 +248,7 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
                         val current = viewModel.uiState.value
                         binding.cardCanvas.bind(current.template, current.selectedElementId, current.template.activeSide)
                         binding.cardCanvas.rotationY = animInRot
-                        
+
                         android.animation.ObjectAnimator.ofFloat(binding.cardCanvas, View.ROTATION_Y, animInRot, 0f).apply {
                             duration = 150
                             interpolator = android.view.animation.DecelerateInterpolator()
@@ -247,7 +256,6 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
                                 override fun onAnimationEnd(animation: android.animation.Animator) {
                                     isFlipping = false
                                     binding.cardCanvas.animate().translationZ(0f).setDuration(150).start()
-                                    // Make sure we catch up on any state changes that happened during the flip
                                     val finalState = viewModel.uiState.value
                                     binding.cardCanvas.bind(finalState.template, finalState.selectedElementId, finalState.template.activeSide)
                                 }
@@ -262,18 +270,23 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
             binding.cardCanvas.bind(template, state.selectedElementId, template.activeSide)
         }
 
-        // Side toggle visibility
+        // Side toggle visibility — animate only after the first render (not on screen entry)
         val backEnabled = template.isBackSideEnabled
         val targetVis = if (backEnabled) View.VISIBLE else View.GONE
-        
+
         if (binding.llActiveSideToggle.visibility != targetVis) {
-            if (lastRenderedBackEnabled != null) {
-                val transition = android.transition.AutoTransition()
-                transition.duration = 250
-                android.transition.TransitionManager.beginDelayedTransition(binding.llActiveSideToggle.parent as android.view.ViewGroup, transition)
+            if (hasRenderedOnce) {
+                val transition = android.transition.AutoTransition().apply { duration = 250 }
+                android.transition.TransitionManager.beginDelayedTransition(
+                    binding.llActiveSideToggle.parent as android.view.ViewGroup, transition
+                )
             }
             binding.llActiveSideToggle.visibility = targetVis
         }
+
+        // Schedule the "settled" flag for the NEXT frame — any same-frame state
+        // updates during startup will still see hasRenderedOnce=false.
+        if (!hasRenderedOnce) binding.root.post { hasRenderedOnce = true }
 
         if (backEnabled && template.activeSide != lastRenderedSide) {
             val isFront = template.activeSide == CardSide.FRONT
@@ -281,9 +294,6 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
             binding.tvSideSubtitle.text = if (isFront) getString(R.string.editor_front_side_subtitle) else getString(R.string.editor_back_side_subtitle)
             lastRenderedSide = template.activeSide
         }
-
-        binding.tvOutOfBounds.visibility =
-            if (state.hasOutOfBoundsElements) View.VISIBLE else View.GONE
 
         // Back-side switch — only touch the widget when the value actually changed
         if (lastRenderedBackEnabled != backEnabled) {
@@ -317,6 +327,11 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
 
         // Enable/disable toolbar actions based on unsaved changes
         val hasChanges = state.hasUnsavedChanges
+        val canUndo = state.canUndo
+        binding.toolbar.menu.findItem(R.id.action_undo)?.let { item ->
+            item.isEnabled = canUndo
+            item.icon?.alpha = if (canUndo) 255 else 80
+        }
         binding.toolbar.menu.findItem(R.id.action_save)?.let { item ->
             item.isEnabled = hasChanges
             item.icon?.alpha = if (hasChanges) 255 else 80
@@ -362,6 +377,12 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
         viewModel.updateCardHeightRatio(target)
     }
 
+    override fun onShapeWidthResized(id: String, newWidth: Float) =
+        viewModel.resizeShapeWidth(id, newWidth)
+
+    override fun onShapeHeightResized(id: String, newY: Float, newHeight: Float) =
+        viewModel.resizeShapeHeight(id, newY, newHeight)
+
     override fun onElementDeleteRequested(id: String) {
         val el = viewModel.currentElements.firstOrNull { it.id == id } ?: return
         MaterialAlertDialogBuilder(this)
@@ -406,6 +427,7 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
             MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.editor_back_confirm_title)
                 .setMessage(R.string.editor_back_confirm_message)
+                .setNeutralButton(R.string.btn_cancel, null)          // Cancel: stay in editor
                 .setNegativeButton(R.string.btn_discard) { _, _ ->
                     viewModel.discardAndCleanup { finish() }
                 }

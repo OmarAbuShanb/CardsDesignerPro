@@ -25,16 +25,18 @@
 
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
             android:text="@string/prop_frame_corner_radius" android:textAppearance="?attr/textAppearanceLabelMedium"
-            android:layout_marginBottom="6dp" />
+            android:layout_marginBottom="0dp" />
         <com.google.android.material.slider.Slider android:id="@+id/slider_corner_radius"
             android:layout_width="match_parent" android:layout_height="wrap_content"
+            app:labelBehavior="floating"
             android:valueFrom="0" android:valueTo="100" android:stepSize="1" android:layout_marginBottom="14dp" />
 
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
             android:text="@string/prop_frame_padding" android:textAppearance="?attr/textAppearanceLabelMedium"
-            android:layout_marginBottom="6dp" />
+            android:layout_marginBottom="0dp" />
         <com.google.android.material.slider.Slider android:id="@+id/slider_padding"
             android:layout_width="match_parent" android:layout_height="wrap_content"
+            app:labelBehavior="floating"
             android:valueFrom="0" android:valueTo="60" android:stepSize="1" android:layout_marginBottom="14dp" />
 
         <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/cb_dashed"
@@ -45,15 +47,17 @@
             android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:text="@string/prop_frame_dash_length" android:textAppearance="?attr/textAppearanceLabelMedium"
-                android:layout_marginBottom="6dp" />
+                android:layout_marginBottom="0dp" />
             <com.google.android.material.slider.Slider android:id="@+id/slider_dash_length"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
+                app:labelBehavior="floating"
                 android:valueFrom="2" android:valueTo="60" android:stepSize="1" android:layout_marginBottom="8dp" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:text="@string/prop_frame_dash_gap" android:textAppearance="?attr/textAppearanceLabelMedium"
-                android:layout_marginBottom="6dp" />
+                android:layout_marginBottom="0dp" />
             <com.google.android.material.slider.Slider android:id="@+id/slider_dash_gap"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
+                app:labelBehavior="floating"
                 android:valueFrom="0" android:valueTo="40" android:stepSize="1" android:layout_marginBottom="8dp" />
             <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/cb_dash_rounded"
                 android:layout_width="match_parent" android:layout_height="wrap_content"

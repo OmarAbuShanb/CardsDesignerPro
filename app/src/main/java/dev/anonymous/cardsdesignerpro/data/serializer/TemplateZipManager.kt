@@ -155,9 +155,7 @@ object TemplateZipManager {
     private fun collectLocalPaths(template: Template): Set<String> {
         val paths = mutableSetOf<String>()
         template.card.backgroundImagePath?.let { if (!it.startsWith("pack:")) paths.add(it) }
-        template.card.patternCustomImagePath?.let { if (!it.startsWith("pack:")) paths.add(it) }
         template.backCard?.backgroundImagePath?.let { if (!it.startsWith("pack:")) paths.add(it) }
-        template.backCard?.patternCustomImagePath?.let { if (!it.startsWith("pack:")) paths.add(it) }
         fun collect(elements: List<dev.anonymous.cardsdesignerpro.data.model.TemplateElement>) {
             elements.forEach { el ->
                 when (el) {
@@ -180,12 +178,10 @@ object TemplateZipManager {
             else "$imageDir/${java.io.File(path).name}"
 
         val newCard = template.card.copy(
-            backgroundImagePath = rewrite(template.card.backgroundImagePath),
-            patternCustomImagePath = rewrite(template.card.patternCustomImagePath)
+            backgroundImagePath = rewrite(template.card.backgroundImagePath)
         )
         val newBackCard = template.backCard?.copy(
-            backgroundImagePath = rewrite(template.backCard.backgroundImagePath),
-            patternCustomImagePath = rewrite(template.backCard.patternCustomImagePath)
+            backgroundImagePath = rewrite(template.backCard.backgroundImagePath)
         )
 
         fun rewriteElements(elements: List<dev.anonymous.cardsdesignerpro.data.model.TemplateElement>) =

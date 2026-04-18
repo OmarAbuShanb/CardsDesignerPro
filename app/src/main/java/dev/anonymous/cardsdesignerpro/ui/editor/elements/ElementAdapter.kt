@@ -37,7 +37,7 @@ class ElementAdapter(
             val isCardBg  = el is TemplateElement.CardBackground
             val isLocked  = isCardBg || el is TemplateElement.FrameElement
             binding.ivDragHandle.visibility = if (isLocked) View.INVISIBLE else View.VISIBLE
-            binding.btnDelete.visibility = if (isCardBg) View.INVISIBLE else View.VISIBLE
+            binding.btnDelete.visibility    = if (isCardBg) View.INVISIBLE else View.VISIBLE
             binding.btnVisibility.visibility = if (isCardBg) View.INVISIBLE else View.VISIBLE
 
             // Selection highlight
@@ -97,12 +97,13 @@ private fun TemplateElement.labelRes(ctx: android.content.Context): String {
     }
     return ctx.getString(when (this) {
         is TemplateElement.CardBackground -> R.string.elem_card_background
-        is TemplateElement.TextElement -> R.string.elem_text
-        is TemplateElement.UsernameElement -> R.string.elem_username
-        is TemplateElement.PasswordElement -> R.string.elem_password
-        is TemplateElement.QrElement -> R.string.elem_qr
-        is TemplateElement.DateElement -> R.string.elem_date
-        is TemplateElement.FrameElement -> R.string.elem_frame
-        else -> R.string.elem_image
+        is TemplateElement.TextElement    -> R.string.elem_text
+        is TemplateElement.UsernameElement-> R.string.elem_username
+        is TemplateElement.PasswordElement-> R.string.elem_password
+        is TemplateElement.QrElement      -> R.string.elem_qr
+        is TemplateElement.DateElement    -> R.string.elem_date
+        is TemplateElement.FrameElement   -> R.string.elem_frame
+        is TemplateElement.ShapeElement   -> R.string.elem_shape
+        else                              -> R.string.elem_image
     })
 }

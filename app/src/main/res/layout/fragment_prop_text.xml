@@ -83,14 +83,14 @@
             android:layout_height="48dp" android:layout_marginBottom="14dp" />
 
         <!-- Font size -->
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+        <TextView android:id="@+id/tv_font_size_label" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:text="@string/prop_font_size" android:textAppearance="?attr/textAppearanceLabelMedium"
-            android:layout_marginBottom="6dp" />
+            android:layout_marginBottom="0dp" />
         <com.google.android.material.slider.Slider
             android:id="@+id/slider_font_size"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:labelBehavior="withinBounds"
+            app:labelBehavior="floating"
             android:valueFrom="10.0"
             android:valueTo="100.0"
             android:stepSize="1.0"
@@ -123,14 +123,14 @@
                     android:textAppearance="?attr/textAppearanceBodyMedium" android:text="#000000" />
             </LinearLayout>
 
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            <TextView android:id="@+id/tv_stroke_size_label" android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:text="@string/prop_text_stroke" android:textAppearance="?attr/textAppearanceLabelMedium"
-                android:layout_marginBottom="6dp" />
+                android:layout_marginBottom="0dp" />
             <com.google.android.material.slider.Slider
                 android:id="@+id/slider_text_stroke"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:labelBehavior="withinBounds"
+                app:labelBehavior="floating"
                 android:valueFrom="1.0"
                 android:valueTo="10.0"
                 android:stepSize="0.5"

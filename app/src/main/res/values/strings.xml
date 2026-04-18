@@ -111,6 +111,7 @@
     <string name="btn_discard">تجاهل</string>
     <string name="editor_save_success">تم الحفظ</string>
     <string name="out_of_bounds_warning">بعض العناصر أصبحت خارج حدود البطاقة</string>
+    <string name="editor_undo_title">تراجع</string>
     <string name="editor_restore_title">إعادة ضبط</string>
     <string name="editor_restore_message">سيتم التراجع عن جميع التغييرات التي أجريتها في هذه الجلسة. هل تريد المتابعة؟</string>
     <string name="btn_restore">إعادة ضبط</string>
@@ -126,6 +127,7 @@
     <string name="btn_add_qr">رمز QR</string>
     <string name="btn_add_date">تاريخ</string>
     <string name="btn_add_frame">إطار البطاقة</string>
+    <string name="btn_add_shape">شكل هندسي</string>
     <string name="btn_add_decoration">نمط الخلفية</string>
     <string name="btn_add_pack">عناصر جاهزة</string>
 
@@ -180,6 +182,12 @@
     <string name="prop_qr_eye_shape">شكل عيون QR</string>
     <string name="prop_qr_padding">هامش QR</string>
 
+    <!-- Shape element properties -->
+    <string name="prop_shape_fill_color">لون التعبئة</string>
+    <string name="prop_shape_stroke_color">لون الحدود</string>
+    <string name="prop_shape_stroke_width">سُمك الحدود</string>
+    <string name="prop_shape_corner_radius">استدارة الزوايا</string>
+
     <!-- Elements list -->
     <string name="elem_card_background">الخلفية</string>
     <string name="elem_text">نص</string>
@@ -196,6 +204,7 @@
     <string name="elem_date">تاريخ</string>
     <string name="elem_frame">إطار البطاقة</string>
     <string name="elem_decoration">نمط الخلفية</string>
+    <string name="elem_shape">شكل هندسي</string>
 
     <!-- General -->
     <string name="btn_close">إغلاق</string>

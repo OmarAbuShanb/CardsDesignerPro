@@ -123,14 +123,31 @@
         </LinearLayout>
 
         <!-- Row 4 -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_add_frame"
-            style="@style/Widget.Material3.Button.OutlinedButton"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginBottom="12dp"
-            android:text="@string/btn_add_frame"
-            android:textSize="13sp" />
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_add_frame"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:text="@string/btn_add_frame"
+                android:textSize="13sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_add_shape"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_weight="1"
+                android:text="@string/btn_add_shape"
+                android:textSize="13sp" />
+        </LinearLayout>
 
         <!-- Row 5 - Full width packs button -->
         <com.google.android.material.button.MaterialButton

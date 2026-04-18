@@ -341,9 +341,8 @@ object PdfExporter {
         flipEdge: FlipEdge = FlipEdge.LONG_EDGE
     ) {
         val s = layout.settings
-        renderer.maxImageDim   = s.quality.maxImageDim
-        renderer.maxPatternDim = s.quality.maxPatternDim
-        renderer.maxQrDim      = s.quality.maxQrDim
+        renderer.maxImageDim = s.quality.maxImageDim
+        renderer.maxQrDim    = s.quality.maxQrDim
         for (slot in 0 until cardsOnPage) {
             val srcCol = slot % layout.columns
             val srcRow = slot / layout.columns

@@ -2,6 +2,11 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
+        android:id="@+id/action_undo"
+        android:title="@string/editor_undo_title"
+        app:showAsAction="always"
+        android:icon="@drawable/ic_undo_24" />
+    <item
         android:id="@+id/action_restore"
         android:title="@string/editor_restore_title"
         app:showAsAction="always"

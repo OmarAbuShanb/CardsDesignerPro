@@ -51,6 +51,8 @@ class CardCanvasView @JvmOverloads constructor(
         fun onElementDeleteRequested(id: String)
         fun onCardBackgroundSelected()
         fun onCardHeightDrag(deltaRatio: Float)
+        fun onShapeWidthResized(id: String, newWidth: Float)
+        fun onShapeHeightResized(id: String, newY: Float, newHeight: Float)
     }
 
     var listener: Listener? = null
@@ -58,9 +60,8 @@ class CardCanvasView @JvmOverloads constructor(
     private val renderer = TemplateRenderer(context).apply {
         // WYSIWYG: editor shows FULL quality so the design matches the best possible export
         val q = dev.anonymous.cardsdesignerpro.data.model.ExportQuality.FULL
-        maxImageDim   = q.maxImageDim
-        maxPatternDim = q.maxPatternDim
-        maxQrDim      = q.maxQrDim
+        maxImageDim = q.maxImageDim
+        maxQrDim    = q.maxQrDim
     }
     private var template: Template? = null
     private var selectedId: String? = null
@@ -91,6 +92,8 @@ class CardCanvasView @JvmOverloads constructor(
     private val HANDLE_OFF  = 8f  * dp    // offset distance from element corner
     private val TAP_SLOP    = 8f  * dp    // px threshold for tap vs drag
     private val TEXT_PAD_DP = 6f          // padding around text in template-dp units (matches renderer)
+    /** Snap-to-square threshold for ShapeElement pill handles (template-dp units). */
+    private val SHAPE_SQUARE_SNAP = 8f
 
     // ── Paint ─────────────────────────────────────────────────────────────────
     private val handleFill   = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE;  style = Paint.Style.FILL }
@@ -102,6 +105,25 @@ class CardCanvasView @JvmOverloads constructor(
     private val selBorderLight = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE; style = Paint.Style.STROKE; strokeWidth = 2f
     }
+    // Connector line from bottom-center to move handle
+    private val connectorDark  = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xCC000000.toInt(); style = Paint.Style.STROKE; strokeWidth = 3f
+    }
+    private val connectorLight = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.WHITE; style = Paint.Style.STROKE; strokeWidth = 2f
+    }
+    // Snap guidelines (drawn during DRAG)
+    private val snapPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFF18C8FF.toInt()   // bright cyan
+        style = Paint.Style.STROKE
+        strokeWidth = 1.5f
+    }
+    // Pill handle fill (for shape width / height handles)
+    private val pillFill = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+    /** Vertical snap lines: X values in template-dp where alignment was detected. */
+    private val snapLinesX = mutableListOf<Float>()
+    /** Horizontal snap lines: Y values in template-dp where alignment was detected. */
+    private val snapLinesY = mutableListOf<Float>()
 
     // ── Text measurement (for overlay bounds) ────────────────────────────────
     private val overlayTextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG)
@@ -184,11 +206,15 @@ class CardCanvasView @JvmOverloads constructor(
     private val iconDelete: Drawable? by lazy { loadIcon(R.drawable.ic_handle_delete) }
     private val iconMove:   Drawable? by lazy { loadIcon(R.drawable.ic_handle_move)   }
     private val iconHeight: Drawable? by lazy { loadIcon(R.drawable.ic_handle_height) }
+    private val iconWidth:  Drawable? by lazy { loadIcon(R.drawable.ic_handle_width)  }
+    // Visibility toggle (eye) icon — loaded dynamically based on el.isVisible state
+    private val iconVisOn:  Drawable? by lazy { loadIcon(R.drawable.ic_visibility_24)     }
+    private val iconVisOff: Drawable? by lazy { loadIcon(R.drawable.ic_visibility_off_24) }
     private fun loadIcon(res: Int) = AppCompatResources.getDrawable(context, res)
         ?.mutate()?.apply { setTint(Color.DKGRAY) }
 
-    // ── Touch state ───────────────────────────────────────────────────────────
-    private enum class Mode { NONE, DRAG, RESIZE, ROTATE, HEIGHT_DRAG, CONSUMED }
+    // ── Touch state ─────────────────────────────────────────────────────
+    private enum class Mode { NONE, DRAG, RESIZE, RESIZE_W, RESIZE_H, ROTATE, HEIGHT_DRAG, CONSUMED }
     private var mode = Mode.NONE
     private var activePointerId = MotionEvent.INVALID_POINTER_ID
 
@@ -198,7 +224,19 @@ class CardCanvasView @JvmOverloads constructor(
     private var resizeStartW = 0f; private var resizeStartH = 0f
     private var resizeStartX = 0f; private var resizeStartY = 0f
     private var resizeStartVisualW = 0f
-    private var resizeStartAspect = 0f   // height/width ratio at drag start (0 = free resize)
+    private var resizeStartAspect = 0f     // height/width ratio at drag start (0 = free resize)
+    private var resizeStartRotation = 0f   // element rotation (degrees) at drag start
+    private var resizeShapeStartElY = 0f   // el.y at RESIZE_H drag start (to keep bottom fixed)
+    // Drag (MOVE) start tracking — used for absolute-position snap calculation
+    private var dragStartElX    = 0f      // el.x at the moment DRAG mode was entered
+    private var dragStartElY    = 0f      // el.y at the moment DRAG mode was entered
+    private var dragStartTouchX = 0f      // view-pixel x of the finger at DRAG start
+    private var dragStartTouchY = 0f      // view-pixel y of the finger at DRAG start
+    /** Tracks whether the shape's W/H snap-to-square is currently active (for haptic de-dup). */
+    private var shapeSquareSnapped = false
+    /** When false: the dashed selection border is hidden so the user can preview
+     *  the element's own border/stroke. Handles remain visible. Resets on re-selection. */
+    private var showSelectionOverlay = true
 
     // ── Public API ────────────────────────────────────────────────────────────
 
@@ -206,6 +244,8 @@ class CardCanvasView @JvmOverloads constructor(
         val needsLayout = this.template == null
             || this.template!!.card.heightRatio != template.card.heightRatio
             || this.template!!.card.widthDp != template.card.widthDp
+        // Reset overlay visibility whenever the selected element changes
+        if (selectedId != this.selectedId) showSelectionOverlay = true
         this.template = template
         this.selectedId = selectedId
         this.activeSide = activeSide
@@ -270,8 +310,7 @@ class CardCanvasView @JvmOverloads constructor(
                         try {
                             val q = dev.anonymous.cardsdesignerpro.data.model.ExportQuality.MEDIUM
                             renderer.maxImageDim = q.maxImageDim
-                            renderer.maxPatternDim = q.maxPatternDim
-                            renderer.maxQrDim = q.maxQrDim
+                            renderer.maxQrDim    = q.maxQrDim
 
                             val bmp = android.graphics.Bitmap.createBitmap(reqW, reqH, android.graphics.Bitmap.Config.ARGB_8888)
                             renderer.draw(Canvas(bmp), tCopy, 0f, 0f, reqW.toFloat(), reqH.toFloat())
@@ -296,6 +335,7 @@ class CardCanvasView @JvmOverloads constructor(
             t.copy(elements = t.backElements ?: emptyList(), card = activeCard)
         else t
         renderer.draw(canvas, renderTemplate, 0f, 0f, cardWidthPx, cardHeightPx)
+        drawSnapLines(canvas)
         drawElementOverlay(canvas, renderTemplate)
         drawHeightHandleIcon(canvas)
     }
@@ -306,6 +346,18 @@ class CardCanvasView @JvmOverloads constructor(
         val el = t.elements.firstOrNull { it.id == id } ?: return
         // Frame fills the entire card — no handles needed
         if (el is TemplateElement.FrameElement) return
+        // Preview mode (ShapeElement eye-button): hide dashes + handles,
+        // but keep the eye icon visible so user can toggle back.
+        if (!showSelectionOverlay) {
+            val cx = (el.x + el.width  / 2) * scaleX
+            val cy = (el.y + el.height / 2) * scaleY
+            val (hw, hh) = elementHalfSizes(el)
+            canvas.save()
+            canvas.rotate(el.rotation, cx, cy)
+            drawHandle(canvas, cx - hw - HANDLE_OFF, cy + hh + HANDLE_OFF, iconVisOff)
+            canvas.restore()
+            return
+        }
 
         val cx = (el.x + el.width  / 2) * scaleX
         val cy = (el.y + el.height / 2) * scaleY
@@ -314,19 +366,43 @@ class CardCanvasView @JvmOverloads constructor(
 
         canvas.save()
         canvas.rotate(el.rotation, cx, cy)
-        // Two-stripe dashed border: dark first (offset), then white — readable on any background
-        val dashOn = 10f; val dashOff = 6f
-        selBorderDark.pathEffect  = DashPathEffect(floatArrayOf(dashOn, dashOff), 0f)
-        selBorderLight.pathEffect = DashPathEffect(floatArrayOf(dashOn, dashOff), (dashOn + dashOff) / 2)
-        val rect = RectF(cx - hw, cy - hh, cx + hw, cy + hh)
-        canvas.drawRect(rect, selBorderDark)
-        canvas.drawRect(rect, selBorderLight)
-        selBorderDark.pathEffect = null; selBorderLight.pathEffect = null
-        // Handles — offset away from the element corners (4 handles)
-        drawHandle(canvas, cx + hw + HANDLE_OFF, cy + hh + HANDLE_OFF, iconResize)  // bottom-right → resize
-        drawHandle(canvas, cx + hw + HANDLE_OFF, cy - hh - HANDLE_OFF, iconRotate)  // top-right    → rotate
-        drawHandle(canvas, cx - hw - HANDLE_OFF, cy - hh - HANDLE_OFF, iconDelete)  // top-left     → delete
-        drawHandle(canvas, cx - hw - HANDLE_OFF, cy + hh + HANDLE_OFF, iconMove)    // bottom-left  → move
+        // Two-stripe dashed border: hidden when user toggles the eye-handle for preview
+        if (showSelectionOverlay) {
+            val dashOn = 10f; val dashOff = 6f
+            selBorderDark.pathEffect  = DashPathEffect(floatArrayOf(dashOn, dashOff), 0f)
+            selBorderLight.pathEffect = DashPathEffect(floatArrayOf(dashOn, dashOff), (dashOn + dashOff) / 2)
+            val rect = RectF(cx - hw, cy - hh, cx + hw, cy + hh)
+            canvas.drawRect(rect, selBorderDark)
+            canvas.drawRect(rect, selBorderLight)
+            selBorderDark.pathEffect = null; selBorderLight.pathEffect = null
+        }
+        // Handles:
+        //  top-left      → delete
+        //  top-right     → rotate
+        //  bottom-right  → resize (proportional for ShapeElement)
+        //  bottom-left   → overlay toggle (eye): hides/shows the dashed selection border
+        //  bottom-center → move
+        //  right edge    → width  (ShapeElement only, pill style)
+        //  top edge      → height (ShapeElement only, pill style)
+        drawHandle(canvas, cx + hw + HANDLE_OFF, cy + hh + HANDLE_OFF, iconResize)
+        drawHandle(canvas, cx + hw + HANDLE_OFF, cy - hh - HANDLE_OFF, iconRotate)
+        drawHandle(canvas, cx - hw - HANDLE_OFF, cy - hh - HANDLE_OFF, iconDelete)
+        // ShapeElement-only: pill handles on right/top edges + eye toggle at bottom-left
+        if (el is TemplateElement.ShapeElement) {
+            // Pass the full edge length so the pill scales with the element size
+            drawPillHandle(canvas, cx + hw, cy,     isVertical = true,  edgePx = hh * 2f)  // right edge → width
+            drawPillHandle(canvas, cx,     cy - hh, isVertical = false, edgePx = hw * 2f)  // top edge  → height
+            drawHandle(canvas, cx - hw - HANDLE_OFF, cy + hh + HANDLE_OFF,                  // bottom-left → eye
+                if (showSelectionOverlay) iconVisOn else iconVisOff)
+        }
+        // Connector line: bottom-center of rect → move handle
+        val connDash = DashPathEffect(floatArrayOf(6f, 5f), 0f)
+        connectorDark.pathEffect  = connDash
+        connectorLight.pathEffect = DashPathEffect(floatArrayOf(6f, 5f), 5.5f)
+        canvas.drawLine(cx, cy + hh, cx, cy + hh + HANDLE_OFF * 2 - HR, connectorDark)
+        canvas.drawLine(cx, cy + hh, cx, cy + hh + HANDLE_OFF * 2 - HR, connectorLight)
+        connectorDark.pathEffect = null; connectorLight.pathEffect = null
+        drawHandle(canvas, cx, cy + hh + HANDLE_OFF * 2, iconMove) // bottom-center → move
         canvas.restore()
     }
 
@@ -354,6 +430,50 @@ class CardCanvasView @JvmOverloads constructor(
             )
             it.draw(canvas)
         }
+    }
+
+    /**
+     * Draws a bottom-sheet-style drag pill handle centered at (cx, cy) and positioned
+     * ON the element edge (half inside / half outside — same as the card height handle).
+     *
+     * [isVertical] = true  → tall thin pill on the right edge  (width resize)
+     * [isVertical] = false → wide thin pill on the top edge    (height resize)
+     * [edgePx]             → length of the edge in view-pixels; the pill's long
+     *                        dimension scales to ~35% of it, clamped to [10dp, 40dp]
+     *
+     * Appearance: light rounded-rect shell + smaller lighter inner bar.
+     */
+    private fun drawPillHandle(
+        canvas: Canvas, cx: Float, cy: Float,
+        isVertical: Boolean, edgePx: Float
+    ) {
+        // Long dimension scales with the element edge, clamped to a tasteful range
+        val maxLong  = 40f * dp
+        val minLong  = 10f * dp
+        val dynLong  = (edgePx * 0.35f).coerceIn(minLong, maxLong)
+
+        val outerLong  = dynLong
+        val outerShort =  7f * dp   // thin slab
+        val innerLong  = outerLong * 0.55f
+        val innerShort =  3.5f * dp
+        val r          =  4f * dp
+
+        val outerW = if (isVertical) outerShort else outerLong
+        val outerH = if (isVertical) outerLong  else outerShort
+        val innerW = if (isVertical) innerShort else innerLong
+        val innerH = if (isVertical) innerLong  else innerShort
+
+        val outer = RectF(cx - outerW / 2f, cy - outerH / 2f, cx + outerW / 2f, cy + outerH / 2f)
+        val inner = RectF(cx - innerW / 2f, cy - innerH / 2f, cx + innerW / 2f, cy + innerH / 2f)
+
+        // Outer shell: very light gray with a subtle border
+        pillFill.color = 0xFFEBEBEB.toInt()
+        canvas.drawRoundRect(outer, r, r, pillFill)
+        canvas.drawRoundRect(outer, r, r, handleStroke)
+
+        // Inner bar: medium gray
+        pillFill.color = 0xFF999999.toInt()
+        canvas.drawRoundRect(inner, r, r, pillFill)
     }
 
     var isInteractive: Boolean = true
@@ -409,6 +529,9 @@ class CardCanvasView @JvmOverloads constructor(
     private fun endGesture() {
         mode = Mode.NONE
         activePointerId = MotionEvent.INVALID_POINTER_ID
+        snapLinesX.clear()
+        snapLinesY.clear()
+        shapeSquareSnapped = false   // reset square-snap state for next drag
         parent?.requestDisallowInterceptTouchEvent(false)
     }
 
@@ -443,16 +566,45 @@ class CardCanvasView @JvmOverloads constructor(
         val lx = cx + dx * cosR + dy * sinR
         val ly = cy - dx * sinR + dy * cosR
 
+        // Preview mode: only allow eye-tap (restore overlay) and body drag
+        if (!showSelectionOverlay) {
+            if (el is TemplateElement.ShapeElement &&
+                dist(lx, ly, cx - hw - HANDLE_OFF, cy + hh + HANDLE_OFF) < HR * 2f) {
+                showSelectionOverlay = true   // restore overlay
+                invalidate()
+                mode = Mode.CONSUMED
+                return
+            }
+            // Allow body drag without restoring overlay
+            val elRect = RectF(cx - hw, cy - hh, cx + hw, cy + hh)
+            if (elRect.contains(lx, ly)) {
+                mode = Mode.DRAG
+                dragStartElX = el.x; dragStartElY = el.y
+                dragStartTouchX = x; dragStartTouchY = y
+            }
+            return
+        }
+
         // Delete handle (top-left, offset)
         if (dist(lx, ly, cx - hw - HANDLE_OFF, cy - hh - HANDLE_OFF) < HR * 2f) {
-            // Fire delete immediately, don't enter a drag mode
             listener?.onElementDeleteRequested(id)
             mode = Mode.CONSUMED
             return
         }
-        // Move handle (bottom-left, offset)
-        if (dist(lx, ly, cx - hw - HANDLE_OFF, cy + hh + HANDLE_OFF) < HR * 2f) {
-            mode = Mode.DRAG; return
+        // Eye handle (bottom-left) — ShapeElement only: hides ALL overlay for preview
+        if (el is TemplateElement.ShapeElement &&
+            dist(lx, ly, cx - hw - HANDLE_OFF, cy + hh + HANDLE_OFF) < HR * 2f) {
+            showSelectionOverlay = false   // hides dashes + ALL handles → full preview
+            invalidate()
+            mode = Mode.CONSUMED
+            return
+        }
+        // Move handle — bottom-center (further out for clear separation from frame)
+        if (dist(lx, ly, cx, cy + hh + HANDLE_OFF * 2) < HR * 2f) {
+            mode = Mode.DRAG
+            dragStartElX = el.x; dragStartElY = el.y
+            dragStartTouchX = x; dragStartTouchY = y
+            return
         }
         if (dist(lx, ly, cx + hw + HANDLE_OFF, cy - hh - HANDLE_OFF) < HR * 2f) {   // rotate (top-right)
             mode = Mode.ROTATE
@@ -460,20 +612,50 @@ class CardCanvasView @JvmOverloads constructor(
         }
         if (dist(lx, ly, cx + hw + HANDLE_OFF, cy + hh + HANDLE_OFF) < HR * 2f) {   // resize (bottom-right)
             mode = Mode.RESIZE
-            resizeStartW = el.width; resizeStartH = el.height
-            resizeStartX = x; resizeStartY = y
-            resizeStartVisualW = hw * 2f / scaleX
-            // Proportional resize for Image, QR, and all text elements
+            resizeStartW        = el.width
+            resizeStartH        = el.height
+            resizeStartX        = x
+            resizeStartY        = y
+            resizeStartVisualW  = hw * 2f / scaleX
+            resizeStartRotation = el.rotation
+            // Proportional resize for Image, QR, Shape, and all text elements
             resizeStartAspect = when {
                 el is TemplateElement.ImageElement || el is TemplateElement.QrElement ||
+                el is TemplateElement.ShapeElement ||
                 isTextEl(el) -> if (el.width > 0f) el.height / el.width else 1f
                 else -> 0f
             }
             return
         }
+        // Shape-only pill handles: use a NARROW RECTANGULAR hit zone along each edge
+        // (much tighter than HR*3f circle, prevents false triggers from body drags)
+        if (el is TemplateElement.ShapeElement) {
+            val pillHitShort = 16f * dp   // how far perpendicular to edge counts as a hit
+            val pillHitLong  = hh * 0.6f  // how far along the edge (capped at 60% of half-height)
+            // Right edge: touch must be within pillHitShort of cx+hw and within pillHitLong of cy
+            if (kotlin.math.abs(lx - (cx + hw)) < pillHitShort &&
+                kotlin.math.abs(ly - cy)        < pillHitLong) {
+                mode = Mode.RESIZE_W
+                resizeStartW = el.width
+                resizeStartX = x
+                return
+            }
+            val pillHitLong2 = hw * 0.6f  // how far along the top edge
+            // Top edge: touch must be within pillHitShort of cy-hh and within pillHitLong of cx
+            if (kotlin.math.abs(ly - (cy - hh)) < pillHitShort &&
+                kotlin.math.abs(lx - cx)        < pillHitLong2) {
+                mode = Mode.RESIZE_H
+                resizeStartH        = el.height
+                resizeStartY        = y
+                resizeShapeStartElY = el.y
+                return
+            }
+        }
         val elRect = RectF(cx - hw, cy - hh, cx + hw, cy + hh)
         if (elRect.contains(lx, ly)) {
-            mode = Mode.DRAG                                     // move
+            mode = Mode.DRAG
+            dragStartElX = el.x; dragStartElY = el.y
+            dragStartTouchX = x; dragStartTouchY = y
         }
     }
 
@@ -483,24 +665,39 @@ class CardCanvasView @JvmOverloads constructor(
         val id = selectedId ?: return
         when (mode) {
             Mode.DRAG -> {
-                listener?.onElementMoved(id, (x - lastX) / scaleX, (y - lastY) / scaleY)
+                // Pass absolute touch position — computeSnap uses dragStart to compute total displacement
+                val (adjDx, adjDy) = computeSnap(id, x, y)
+                listener?.onElementMoved(id, adjDx, adjDy)
             }
             Mode.RESIZE -> {
                 val el = activeElements.firstOrNull { it.id == id } ?: return
+                // Project the screen-space drag vector onto the element's local axes.
+                // This makes resize behave correctly regardless of element rotation.
+                val rad    = Math.toRadians(resizeStartRotation.toDouble())
+                val cosR   = kotlin.math.cos(rad).toFloat()
+                val sinR   = kotlin.math.sin(rad).toFloat()
+                val screenDx = (x - resizeStartX) / scaleX
+                val screenDy = (y - resizeStartY) / scaleY
+                // Local X component = how much we moved along the element's width axis
+                val localDx = screenDx * cosR + screenDy * sinR
+                // Local Y component = how much we moved along the element's height axis
+                val localDy = -screenDx * sinR + screenDy * cosR
+
                 if (isTextEl(el)) {
-                    val distDelta = (x - resizeStartX) / scaleX
-                    val visualScale = ((resizeStartVisualW + distDelta) / resizeStartVisualW).coerceAtLeast(0.1f)
+                    // Text: uniform scale driven by X-axis movement
+                    val visualScale = ((resizeStartVisualW + localDx) / resizeStartVisualW).coerceAtLeast(0.1f)
                     val newW = (resizeStartW * visualScale).coerceAtLeast(10f)
                     val newH = (resizeStartH * visualScale).coerceAtLeast(10f)
                     listener?.onElementResized(id, newW, newH)
                 } else if (resizeStartAspect > 0f) {
-                    val rawW = resizeStartW + (x - resizeStartX) / scaleX
+                    // Aspect-locked: Image, QR — use X-axis movement
                     val minW = if (resizeStartAspect > 1f) 20f / resizeStartAspect else 20f
-                    val newW = rawW.coerceAtLeast(minW)
+                    val newW = (resizeStartW + localDx).coerceAtLeast(minW)
                     listener?.onElementResized(id, newW, newW * resizeStartAspect)
                 } else {
-                    val newW = (resizeStartW + (x - resizeStartX) / scaleX).coerceAtLeast(20f)
-                    val newH = (resizeStartH + (y - resizeStartY) / scaleY).coerceAtLeast(20f)
+                    // Free resize (e.g. Frame, Line) — independent W and H
+                    val newW = (resizeStartW + localDx).coerceAtLeast(20f)
+                    val newH = (resizeStartH + localDy).coerceAtLeast(20f)
                     listener?.onElementResized(id, newW, newH)
                 }
             }
@@ -509,12 +706,58 @@ class CardCanvasView @JvmOverloads constructor(
                 val cx = (el.x + el.width  / 2) * scaleX
                 val cy = (el.y + el.height / 2) * scaleY
                 val angle = atan2((y - cy).toDouble(), (x - cx).toDouble()).toFloat()
-                val delta = Math.toDegrees((angle - lastAngle).toDouble()).toFloat()
-                listener?.onElementRotated(id, delta)
-                lastAngle = angle
+                // Snap to integer degrees — eliminates sub-degree jitter from small finger movement
+                val rawDelta = Math.toDegrees((angle - lastAngle).toDouble()).toFloat()
+                val snappedDelta = rawDelta.toInt().toFloat()  // truncate to whole degrees
+                if (snappedDelta != 0f) {
+                    // Haptic bump at 0 / 90 / 180 / 270 degrees
+                    val newAngle = ((el.rotation + snappedDelta) % 360f + 360f) % 360f
+                    if (isNearCardinalAngle(newAngle) && !isNearCardinalAngle(((el.rotation) % 360f + 360f) % 360f)) {
+                        performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK)
+                    }
+                    listener?.onElementRotated(id, snappedDelta)
+                    lastAngle = angle
+                }
             }
             Mode.HEIGHT_DRAG -> {
                 listener?.onCardHeightDrag((y - lastY) / cardWidthPx)
+            }
+            Mode.RESIZE_W -> {
+                // Drag right-center handle: changes width only, left edge stays fixed
+                val el = activeElements.firstOrNull { it.id == id } ?: return
+                val rawW = (resizeStartW + (x - resizeStartX) / scaleX).coerceAtLeast(10f)
+                // Snap to square: if width ≈ height, lock them equal
+                val newW = if (kotlin.math.abs(rawW - el.height) < SHAPE_SQUARE_SNAP) {
+                    if (!shapeSquareSnapped) {
+                        performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK)
+                        shapeSquareSnapped = true
+                    }
+                    el.height
+                } else {
+                    shapeSquareSnapped = false
+                    rawW
+                }
+                listener?.onShapeWidthResized(id, newW)
+            }
+            Mode.RESIZE_H -> {
+                // Drag top-center handle: top edge moves, bottom edge stays fixed
+                val el = activeElements.firstOrNull { it.id == id } ?: return
+                val deltaY     = (y - resizeStartY) / scaleY
+                val bottomEdge = resizeShapeStartElY + resizeStartH
+                val rawH = (resizeStartH - deltaY).coerceAtLeast(10f)
+                // Snap to square: if height ≈ width, lock them equal
+                val newH = if (kotlin.math.abs(rawH - el.width) < SHAPE_SQUARE_SNAP) {
+                    if (!shapeSquareSnapped) {
+                        performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK)
+                        shapeSquareSnapped = true
+                    }
+                    el.width
+                } else {
+                    shapeSquareSnapped = false
+                    rawH
+                }
+                val newY = bottomEdge - newH
+                listener?.onShapeHeightResized(id, newY, newH)
             }
             Mode.NONE, Mode.CONSUMED -> {}
         }
@@ -541,18 +784,93 @@ class CardCanvasView @JvmOverloads constructor(
         listener?.onCardBackgroundSelected()
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
     private fun dist(x1: Float, y1: Float, x2: Float, y2: Float) =
         hypot((x1 - x2).toDouble(), (y1 - y2).toDouble()).toFloat()
+
+    /** Returns true when [angle] (0-360°) is within 1° of a cardinal angle (0, 90, 180, 270). */
+    private fun isNearCardinalAngle(angle: Float): Boolean {
+        val cardinals = floatArrayOf(0f, 90f, 180f, 270f, 360f)
+        return cardinals.any { kotlin.math.abs(angle - it) <= 1f }
+    }
 
     fun clearCache() = renderer.clearBitmapCache()
 
     private fun parseColorSafe(hex: String) =
         runCatching { Color.parseColor(hex) }.getOrElse { Color.WHITE }
 
+    // ── Snap Guidelines ───────────────────────────────────────────────────────
+
+    /**
+     * Center-only snap: snaps the dragged element's CENTER to:
+     *  - the card's horizontal/vertical center axis
+     *  - any other visible element's center X or center Y
+     *
+     * Uses total displacement from drag-start (not per-frame delta) so the element
+     * never locks onto a snap line — it escapes as soon as the finger moves
+     * more than SNAP_THRESHOLD_PX away on screen.
+     */
+    private fun computeSnap(id: String, touchX: Float, touchY: Float): Pair<Float, Float> {
+        snapLinesX.clear(); snapLinesY.clear()
+        val el = activeElements.firstOrNull { it.id == id } ?: return 0f to 0f
+        val t  = template ?: return 0f to 0f
+        val card  = if (activeSide == CardSide.BACK && t.isBackSideEnabled) t.backCard ?: t.card else t.card
+
+        // Total finger movement since drag started → proposed top-left
+        val targetX = dragStartElX + (touchX - dragStartTouchX) / scaleX
+        val targetY = dragStartElY + (touchY - dragStartTouchY) / scaleY
+        val w = el.width; val h = el.height
+
+        // Proposed center of the dragged element
+        val propCX = targetX + w / 2f
+        val propCY = targetY + h / 2f
+
+        // Snap targets: card center + other elements' centers ONLY
+        val cardW   = card.widthDp
+        val cardH   = card.widthDp * card.heightRatio
+        val xTargets = mutableListOf(cardW / 2f)
+        val yTargets = mutableListOf(cardH / 2f)
+        for (other in activeElements) {
+            if (other.id == id || !other.isVisible
+                || other is TemplateElement.CardBackground
+                || other is TemplateElement.FrameElement) continue
+            xTargets += other.x + other.width  / 2f
+            yTargets += other.y + other.height / 2f
+        }
+
+        val thrX = SNAP_THRESHOLD_PX / scaleX
+        val thrY = SNAP_THRESHOLD_PX / scaleY
+
+        // Snap element center-X to nearest target-X
+        var adjX = targetX; var snapX: Float? = null; var minDx = thrX
+        for (tgt in xTargets) {
+            val d = kotlin.math.abs(propCX - tgt)
+            if (d < minDx) { minDx = d; adjX = tgt - w / 2f; snapX = tgt }
+        }
+
+        // Snap element center-Y to nearest target-Y
+        var adjY = targetY; var snapY: Float? = null; var minDy = thrY
+        for (tgt in yTargets) {
+            val d = kotlin.math.abs(propCY - tgt)
+            if (d < minDy) { minDy = d; adjY = tgt - h / 2f; snapY = tgt }
+        }
+
+        snapX?.let { snapLinesX.add(it) }
+        snapY?.let { snapLinesY.add(it) }
+
+        // Delta from current element position to snapped target
+        return (adjX - el.x) to (adjY - el.y)
+    }
+
+    /** Draws cyan snap guidelines over the card. */
+    private fun drawSnapLines(canvas: Canvas) {
+        for (xDp in snapLinesX) canvas.drawLine(xDp * scaleX, 0f, xDp * scaleX, cardHeightPx, snapPaint)
+        for (yDp in snapLinesY) canvas.drawLine(0f, yDp * scaleY, cardWidthPx, yDp * scaleY, snapPaint)
+    }
+
     companion object {
         /** Single background thread shared by all preview instances to avoid thread explosion. */
         private val PREVIEW_EXECUTOR = java.util.concurrent.Executors.newSingleThreadExecutor()
+        /** Snap threshold in screen pixels — keeps snap zone consistent at ~2mm regardless of zoom. */
+        private const val SNAP_THRESHOLD_PX = 12f
     }
 }

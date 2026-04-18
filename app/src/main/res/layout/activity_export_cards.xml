@@ -232,6 +232,7 @@
         android:id="@+id/bottom_sheet_host"
         android:layout_width="match_parent"
         android:layout_height="420dp"
+        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.TopRounded"
         android:layout_alignParentBottom="true"
         app:cardBackgroundColor="?attr/colorSurface"
         app:cardCornerRadius="20dp"

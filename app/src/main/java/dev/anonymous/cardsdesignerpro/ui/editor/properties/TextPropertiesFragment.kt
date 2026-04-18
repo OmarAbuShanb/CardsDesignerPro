@@ -93,6 +93,7 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
         if (binding.sliderFontSize.value != targetSize) {
             binding.sliderFontSize.value = targetSize
         }
+        binding.tvFontSizeLabel.text = getString(R.string.prop_font_size) + ": ${targetSize.toInt()}"
         
         // Text stroke
         val hasStroke = el.textStrokeWidth > 0f
@@ -103,6 +104,7 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
         if (binding.sliderTextStroke.value != targetStroke) {
             binding.sliderTextStroke.value = targetStroke
         }
+        binding.tvStrokeSizeLabel.text = getString(R.string.prop_text_stroke) + ": ${targetStroke.toInt()}"
         if (binding.cpvStrokeColor.colorHex != el.textStrokeColor) binding.cpvStrokeColor.colorHex = el.textStrokeColor
         binding.tvStrokeColorHex.text = el.textStrokeColor
 
@@ -153,6 +155,7 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
             viewModel.updateElement(el.copy(isBold = isChecked))
         }
         binding.sliderFontSize.addOnChangeListener { _, size, _ ->
+            binding.tvFontSizeLabel.text = getString(R.string.prop_font_size) + ": ${size.toInt()}"
             if (!updating) {
                 val el = viewModel.selectedElement as? TemplateElement.TextElement
                 if (el != null && el.textSizeSp != size)
@@ -173,6 +176,7 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
             if (el != null && el.textStrokeColor != hex) viewModel.updateElement(el.copy(textStrokeColor = hex))
         }
         binding.sliderTextStroke.addOnChangeListener { _, size, _ ->
+            binding.tvStrokeSizeLabel.text = getString(R.string.prop_text_stroke) + ": ${size.toInt()}"
             if (!updating && binding.cbTextStroke.isChecked) {
                 val el = viewModel.selectedElement as? TemplateElement.TextElement
                 if (el != null && el.textStrokeWidth != size)

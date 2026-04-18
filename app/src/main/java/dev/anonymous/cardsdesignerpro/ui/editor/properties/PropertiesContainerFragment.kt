@@ -49,13 +49,14 @@ class PropertiesContainerFragment : Fragment(), PropertyFragment {
             selectedId == "card_background" -> CardPropertiesFragment()
             else -> {
                 when (viewModel.currentElements.firstOrNull { it.id == selectedId }) {
-                    is TemplateElement.TextElement -> TextPropertiesFragment()
+                    is TemplateElement.TextElement     -> TextPropertiesFragment()
                     is TemplateElement.UsernameElement -> UsernamePropertiesFragment()
                     is TemplateElement.PasswordElement -> PasswordPropertiesFragment()
-                    is TemplateElement.ImageElement -> ImagePropertiesFragment()
-                    is TemplateElement.QrElement -> QrPropertiesFragment()
-                    is TemplateElement.DateElement -> DatePropertiesFragment()
-                    is TemplateElement.FrameElement -> FramePropertiesFragment()
+                    is TemplateElement.ImageElement    -> ImagePropertiesFragment()
+                    is TemplateElement.QrElement       -> QrPropertiesFragment()
+                    is TemplateElement.DateElement     -> DatePropertiesFragment()
+                    is TemplateElement.FrameElement    -> FramePropertiesFragment()
+                    is TemplateElement.ShapeElement    -> ShapePropertiesFragment()
                     else -> NoSelectionFragment()
                 }
             }

@@ -62,7 +62,33 @@ class ColorPreviewView @JvmOverloads constructor(
         if (isPickerShowing) return
         isPickerShowing = true
 
-        var trackedHex: String = colorHex
+        // ── Resolve visual initial color ──────────────────────────────────────
+        // For pure black (#000000): brightness slider would be at 0, making every
+        // hue appear black. We instead open with full brightness so the user can
+        // pick any colour, then optionally drag brightness down to get black.
+        val initialColor: Int
+        try {
+            val parsed = Color.parseColor(colorHex)
+            val hsv = FloatArray(3)
+            Color.colorToHSV(parsed, hsv)
+            initialColor = if (hsv[2] < 0.01f) {
+                hsv[2] = 1.0f
+                Color.HSVToColor(Color.alpha(parsed), hsv)
+            } else {
+                parsed
+            }
+        } catch (_: Exception) {
+            isPickerShowing = false
+            return
+        }
+
+        // trackedHex starts as the VISUAL initial color (what the user sees when the
+        // dialog opens). This way pressing OK without touching anything correctly
+        // returns the displayed color, not the internal hex (which could differ for black).
+        var trackedHex: String = if (enableAlpha)
+            "#%08X".format(initialColor)
+        else
+            "#%06X".format(initialColor and 0xFFFFFF)
 
         val builder = ColorPickerDialog.Builder(context)
             .setTitle("اختيار اللون")
@@ -78,24 +104,18 @@ class ColorPreviewView @JvmOverloads constructor(
             .attachAlphaSlideBar(enableAlpha)
             .attachBrightnessSlideBar(true)
 
-        // ── Initial picker color ──────────────────────────────────────────────
-        // Show the actual color as-is without any HSV manipulation
-        try {
-            val parsed = Color.parseColor(colorHex)
-            builder.colorPickerView.setInitialColor(parsed)
-        } catch (_: Exception) {}
+        builder.colorPickerView.setInitialColor(initialColor)
 
         builder.colorPickerView.setColorListener(
-            ColorEnvelopeListener { envelope, fromUser ->
-                if (fromUser) {
-                    trackedHex = if (enableAlpha) "#${envelope.hexCode}"
-                                 else "#${envelope.hexCode.substring(2)}"
-                }
+            ColorEnvelopeListener { envelope, _ ->
+                // Track every change (fromUser or not) so the picker's displayed
+                // color is always what gets returned on OK.
+                trackedHex = if (enableAlpha) "#${envelope.hexCode}"
+                             else "#${envelope.hexCode.substring(2)}"
             }
         )
 
         val dialog = builder.show()
-        // Reset lock when user taps outside the dialog (dismiss without OK/Cancel)
         dialog.setOnDismissListener { isPickerShowing = false }
     }
 }

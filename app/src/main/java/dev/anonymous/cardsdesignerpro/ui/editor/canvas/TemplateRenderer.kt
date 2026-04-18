@@ -21,11 +21,8 @@ import com.github.alexzhirkevich.customqrgenerator.vector.style.QrVectorLogo
 import com.github.alexzhirkevich.customqrgenerator.vector.style.QrVectorLogoPadding
 import com.github.alexzhirkevich.customqrgenerator.vector.style.QrVectorPixelShape
 import com.github.alexzhirkevich.customqrgenerator.vector.style.QrVectorShapes
-import dev.anonymous.cardsdesignerpro.data.model.CardStyle
-import dev.anonymous.cardsdesignerpro.data.model.DecorationShape
 import dev.anonymous.cardsdesignerpro.data.model.Template
 import dev.anonymous.cardsdesignerpro.data.model.TemplateElement
-import java.io.File
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -45,8 +42,7 @@ class TemplateRenderer(private val context: Context) {
     private val svgCache = mutableMapOf<String, com.caverock.androidsvg.SVG?>()
     /** Cache for resolved Typefaces to avoid repeated resource lookups. */
     private val typefaceCache = mutableMapOf<String, Typeface>()
-    /** Cache for pattern offscreen bitmaps to avoid re-allocation every draw. */
-    private val patternBitmapCache = mutableMapOf<String, Bitmap>()
+
 
     /**
      * Maximum bitmap dimensions for each content type.
@@ -54,7 +50,6 @@ class TemplateRenderer(private val context: Context) {
      * Screen rendering uses the defaults; PDF export overrides via [ExportQuality].
      */
     var maxImageDim: Int = 2048
-    var maxPatternDim: Int = 2048
     var maxQrDim: Int = 1024
 
     /** Padding around text background (dp in template coordinate space). Must match CardCanvasView.TEXT_PAD_DP. */
@@ -109,6 +104,8 @@ class TemplateRenderer(private val context: Context) {
                     val qrPass = if (el.linkToShortNumbers) shortPassword else password
                     drawQr(canvas, el, qrUser, qrPass, cardLeft, cardTop, scaleX, scaleY, renderScale)
                 }
+                is TemplateElement.ShapeElement ->
+                    drawShape(canvas, el, cardLeft, cardTop, scaleX, scaleY)
             }
         }
         canvas.restore()
@@ -165,119 +162,6 @@ class TemplateRenderer(private val context: Context) {
                 }
             }
         }
-        // Draw pattern from CardStyle (replaces the old BackgroundDecorationElement)
-        if (card.patternEnabled) {
-            drawPattern(canvas, card, left, top, w, h, template, renderScale)
-        }
-    }
-
-    // ── Pattern (from CardStyle) ──────────────────────────────────────────────
-
-    private fun drawPattern(canvas: Canvas, card: CardStyle,
-                            left: Float, top: Float, w: Float, h: Float, template: Template, renderScale: Float) {
-        val frame = template.elements.filterIsInstance<TemplateElement.FrameElement>().firstOrNull()
-        
-        // Distribution covers the whole card
-        val aL = left
-        val aT = top
-        val aR = left + w
-        val aB = top + h
-        val aW = aR - aL; val aH = aB - aT
-        
-        val pad = if (frame != null) (frame.paddingDp + frame.strokeWidthDp / 2f + 12f) * renderScale else 0f
-        val safeL = left + pad
-        val safeT = top + pad
-        val safeR = left + w - pad
-        val safeB = top + h - pad
-        val safeCR = if (frame != null) frame.cornerRadiusDp * renderScale else 0f
-
-        val color = parseColor(card.patternColor)
-        if (card.patternShape == DecorationShape.CUSTOM_IMAGE && card.patternCustomImagePath != null) {
-            val applyTint = card.patternCustomImageTintEnabled
-            drawPatternGrid(canvas, card.patternDensity, aL, aT, aW, aH, card.patternCustomImagePath, color, applyTint, renderScale, safeL, safeT, safeR, safeB, safeCR); return
-        }
-        val cols = (4 + card.patternDensity * 8).toInt().coerceIn(2, 14)
-        val rows = (cols * aH / aW).toInt().coerceAtLeast(2)
-        val cellW = aW / cols; val cellH = aH / rows
-        val rf = when (card.patternShape) {
-            DecorationShape.DOTS_SMALL -> 0.08f
-            DecorationShape.CIRCLES_HOLLOW -> 0.15f
-            DecorationShape.STARS_FOUR_POINT -> 0.14f
-            else -> 0.10f
-        }
-        paint.reset(); paint.color = color; paint.isAntiAlias = true
-        paint.style = if (card.patternShape == DecorationShape.CIRCLES_HOLLOW) Paint.Style.STROKE else Paint.Style.FILL
-        paint.strokeWidth = cellW * 0.05f
-        for (row in 0 until rows) for (col in 0 until cols) {
-            val cx = aL + cellW * (col + 0.5f); val cy = aT + cellH * (row + 0.5f)
-            val r = minOf(cellW, cellH) * rf
-            
-            // Skip rendering this pattern element if it overflows the inner safe boundaries
-            if (!isInsideRoundedRect(cx, cy, r, safeL, safeT, safeR, safeB, safeCR)) continue
-
-            if (card.patternShape == DecorationShape.STARS_FOUR_POINT) {
-                val path = Path()
-                path.moveTo(cx, cy - r)
-                path.lineTo(cx + r * 0.3f, cy - r * 0.3f)
-                path.lineTo(cx + r, cy)
-                path.lineTo(cx + r * 0.3f, cy + r * 0.3f)
-                path.lineTo(cx, cy + r)
-                path.lineTo(cx - r * 0.3f, cy + r * 0.3f)
-                path.lineTo(cx - r, cy)
-                path.lineTo(cx - r * 0.3f, cy - r * 0.3f)
-                path.close()
-                canvas.drawPath(path, paint)
-            } else {
-                canvas.drawCircle(cx, cy, r, paint)
-            }
-        }
-    }
-
-
-    private fun drawPatternGrid(canvas: Canvas, density: Float,
-                             aL: Float, aT: Float, aW: Float, aH: Float, path: String, tint: Int, applyTint: Boolean, renderScale: Float,
-                             safeL: Float, safeT: Float, safeR: Float, safeB: Float, safeCR: Float) {
-        val cols = (4 + density * 8).toInt().coerceIn(2, 14)
-        val rows = (cols * aH / aW).toInt().coerceAtLeast(2)
-        val cellW = aW / cols; val cellH = aH / rows; val boundingSz = minOf(cellW, cellH) * 0.55f
-
-        // Use 4x scale for sharpness
-        val reqDim = (boundingSz * renderScale * 4f).toInt().coerceIn(48, maxPatternDim)
-        val originalBmp = loadBitmap(path, reqDim) ?: return
-
-        val aspect = originalBmp.width.toFloat() / originalBmp.height.toFloat()
-        val w = if (aspect > 1f) boundingSz else boundingSz * aspect
-        val h = if (aspect > 1f) boundingSz / aspect else boundingSz
-
-        // Offscreen pre-render for PDF efficiency — cached to avoid re-allocation
-        val offScale = renderScale * 3f
-        val offW = (aW * offScale).toInt().coerceIn(1, maxPatternDim)
-        val offH = (aH * offScale).toInt().coerceIn(1, maxPatternDim)
-        val patternKey = "$path|$density|$offW|$offH|$tint|$applyTint|$safeL|$safeT|$safeR|$safeB|$safeCR"
-
-        val offBmp = patternBitmapCache.getOrPut(patternKey) {
-            val bmp = Bitmap.createBitmap(offW, offH, Bitmap.Config.ARGB_8888)
-            val offCanvas = Canvas(bmp)
-            offCanvas.translate(-aL * offScale, -aT * offScale)
-            offCanvas.scale(offScale, offScale)
-
-            paint.reset(); paint.isAntiAlias = true
-            if (applyTint) {
-                paint.colorFilter = PorterDuffColorFilter(tint, PorterDuff.Mode.SRC_IN)
-            } else {
-                paint.colorFilter = null
-            }
-            val maxR = maxOf(w, h) / 2f
-            for (row in 0 until rows) for (col in 0 until cols) {
-                val cx = aL + cellW * (col + 0.5f); val cy = aT + cellH * (row + 0.5f)
-                if (!isInsideRoundedRect(cx, cy, maxR, safeL, safeT, safeR, safeB, safeCR)) continue
-                offCanvas.drawBitmap(originalBmp, null, RectF(cx - w/2, cy - h/2, cx + w/2, cy + h/2), paint)
-            }
-            paint.colorFilter = null
-            bmp
-        }
-
-        canvas.drawBitmap(offBmp, null, RectF(aL, aT, aL + aW, aT + aH), null)
     }
 
     // ── Frame ─────────────────────────────────────────────────────────────────
@@ -297,6 +181,41 @@ class TemplateRenderer(private val context: Context) {
         }
         val cr = el.cornerRadiusDp * sX
         canvas.drawRoundRect(RectF(l, t, r, b), cr, cr, paint)
+    }
+
+    // ── Shape ─────────────────────────────────────────────────────────────────
+
+    private fun drawShape(canvas: Canvas, el: TemplateElement.ShapeElement, left: Float, top: Float, sX: Float, sY: Float) {
+        val l = left + el.x * sX
+        val t = top  + el.y * sY
+        val r = l    + el.width  * sX
+        val b = t    + el.height * sY
+        val cx = (l + r) / 2f
+        val cy = (t + b) / 2f
+        val cr = el.cornerRadiusDp * sX
+        val rect = RectF(l, t, r, b)
+
+        canvas.save()
+        canvas.rotate(el.rotation, cx, cy)
+
+        // Fill
+        if (el.fillColor.isNotEmpty()) {
+            paint.reset(); paint.isAntiAlias = true
+            paint.style = Paint.Style.FILL
+            paint.color = parseColor(el.fillColor)
+            canvas.drawRoundRect(rect, cr, cr, paint)
+        }
+
+        // Stroke
+        if (el.strokeWidthDp > 0f) {
+            paint.reset(); paint.isAntiAlias = true
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = el.strokeWidthDp * sX
+            paint.color = parseColor(el.strokeColor)
+            canvas.drawRoundRect(rect, cr, cr, paint)
+        }
+
+        canvas.restore()
     }
 
     // ── Text (StaticLayout — handles Arabic ligatures & BiDi correctly) ───────
@@ -611,8 +530,6 @@ class TemplateRenderer(private val context: Context) {
         qrCache.values.forEach { it?.recycle() }
         qrCache.clear()
         svgCache.clear()
-        patternBitmapCache.values.forEach { it.recycle() }
-        patternBitmapCache.clear()
         // Note: typefaceCache is NOT cleared — typefaces are lightweight and reusable across renders
     }
 
@@ -639,17 +556,7 @@ class TemplateRenderer(private val context: Context) {
         }
     }
 
-    private fun isInsideRoundedRect(cx: Float, cy: Float, r: Float, l: Float, t: Float, right: Float, bottom: Float, cr: Float): Boolean {
-        if (cx - r < l || cx + r > right || cy - r < t || cy + r > bottom) return false
-        val ox = if (cx < l + cr) l + cr else if (cx > right - cr) right - cr else return true
-        val oy = if (cy < t + cr) t + cr else if (cy > bottom - cr) bottom - cr else return true
-        if (cr < r) return false
-        val dx = cx - ox
-        val dy = cy - oy
-        return dx * dx + dy * dy <= (cr - r) * (cr - r)
-    }
 
-    // ── TextProps helpers ─────────────────────────────────────────────────────
 
     private data class TextProps(val x: Float, val y: Float, val width: Float, val height: Float,
                                  val rotation: Float, val text: String, val textColor: String,

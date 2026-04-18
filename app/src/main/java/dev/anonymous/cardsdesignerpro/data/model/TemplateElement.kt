@@ -190,6 +190,27 @@ sealed class TemplateElement {
         val dashGapDp: Float = 4f,
         val isDashRounded: Boolean = false,
     ) : TemplateElement()
+    // ── Geometric Shape ───────────────────────────────────────────────────────
+
+    @Serializable
+    @SerialName("shape")
+    data class ShapeElement(
+        override val id: String,
+        override val x: Float,
+        override val y: Float,
+        override val width: Float,
+        override val height: Float,
+        override val isVisible: Boolean = true,
+        override val rotation: Float = 0f,
+        /** Fill color ARGB hex. */
+        val fillColor: String = "#FFCC0000",
+        /** Stroke/border color. */
+        val strokeColor: String = "#FF000000",
+        /** Stroke width in template dp (0 = no stroke). */
+        val strokeWidthDp: Float = 0f,
+        /** Corner radius in template dp (0 = sharp corners). */
+        val cornerRadiusDp: Float = 0f,
+    ) : TemplateElement()
 }
 
 // ── Supporting enums ──────────────────────────────────────────────────────────
@@ -201,9 +222,4 @@ enum class DateFormat(val pattern: String, val displayName: String) {
     MONTH_DAY_DASH("MM-dd", "الشهر-اليوم");
 }
 
-enum class DecorationShape(val displayName: String) {
-    STARS_FOUR_POINT("نجوم"),
-    DOTS_SMALL("نقاط صغيرة"),
-    CIRCLES_HOLLOW("دوائر مفرغة"),
-    CUSTOM_IMAGE("تخصيص (إختيار شعار مُفرّغ من المعرض)");
-}
+

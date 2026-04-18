@@ -62,6 +62,9 @@ class AddElementFragment : Fragment() {
         binding.btnAddFrame.setOnClickListener {
             if (!viewModel.hasFrameElement()) viewModel.addFrameElement()
         }
+        binding.btnAddShape.setOnClickListener {
+            viewModel.addShapeElement()
+        }
 
         binding.btnAddPack.setOnClickListener {
             PackBrowserBottomSheet().show(parentFragmentManager, "pack_browser")

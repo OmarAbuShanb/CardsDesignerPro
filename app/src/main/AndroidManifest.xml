@@ -38,8 +38,30 @@
 
         <activity
             android:name=".ui.export.ExportCardsActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
+
+            <!-- فتح من مدير الملفات — يتطابق مع كل أنواع CSV و Excel -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" android:mimeType="text/csv" />
+                <data android:scheme="content" android:mimeType="text/comma-separated-values" />
+                <data android:scheme="content" android:mimeType="application/vnd.ms-excel" />
+                <data android:scheme="content"
+                    android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+            </intent-filter>
+
+            <!-- مشاركة من تطبيق آخر — بدون تحديد scheme -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/csv" />
+                <data android:mimeType="text/comma-separated-values" />
+                <data android:mimeType="application/vnd.ms-excel" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".ui.viewer.PdfViewerActivity"

@@ -78,16 +78,17 @@
                     android:id="@+id/ll_active_side_toggle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:background="?attr/selectableItemBackground"
                     android:clickable="true"
                     android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="24dp"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="8dp"
                     android:visibility="gone"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintWidth_max="600dp">
 
                     <TextView
@@ -96,8 +97,8 @@
                         android:layout_height="wrap_content"
                         android:text="@string/editor_front_side_title"
                         android:textAppearance="?attr/textAppearanceTitleLarge"
-                        android:textStyle="bold"
-                        android:textColor="?attr/colorPrimary" />
+                        android:textColor="?attr/colorPrimary"
+                        android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/tv_side_subtitle"
@@ -114,30 +115,12 @@
                     android:id="@+id/card_canvas"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="4dp"
                     android:background="?attr/colorSurfaceVariant"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/ll_active_side_toggle"
                     app:layout_constraintWidth_max="600dp" />
-
-                <!-- Out-of-bounds warning -->
-                <TextView
-                    android:id="@+id/tv_out_of_bounds"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:background="?attr/colorErrorContainer"
-                    android:gravity="center"
-                    android:paddingVertical="6dp"
-                    android:text="@string/out_of_bounds_warning"
-                    android:textAppearance="?attr/textAppearanceLabelMedium"
-                    android:textColor="?attr/colorError"
-                    android:visibility="gone"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/card_canvas"
-                    app:layout_constraintWidth_max="600dp" />
-
 
 
                 <!-- Back-side toggle switch -->
@@ -150,7 +133,7 @@
                     android:textAppearance="?attr/textAppearanceBodyMedium"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/tv_out_of_bounds" />
+                    app:layout_constraintTop_toBottomOf="@id/card_canvas" />
 
                 <!-- Short numbers toggle switch -->
                 <com.google.android.material.materialswitch.MaterialSwitch
@@ -176,11 +159,11 @@
         android:layout_width="match_parent"
         android:layout_height="400dp"
         android:layout_gravity="bottom"
+        android:clickable="true"
+        android:focusable="true"
         app:cardBackgroundColor="?attr/colorSurface"
         app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.TopRounded"
-        app:strokeWidth="0dp"
-        android:clickable="true"
-        android:focusable="true">
+        app:strokeWidth="0dp">
 
         <LinearLayout
             android:layout_width="match_parent"

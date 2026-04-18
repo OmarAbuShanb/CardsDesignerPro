@@ -46,14 +46,6 @@ data class CardStyle(
     val backgroundImagePath: String? = null,
     /** "FIT_XY", "CENTER_CROP", "FIT_CENTER" etc (persisted as String for forward config safety). */
     val backgroundImageScaleType: String = ImageScaleType.FIT_XY.name,
-    // ── Pattern (formerly BackgroundDecorationElement) ────────────────────────
-    val patternEnabled: Boolean = false,
-    val patternShape: DecorationShape = DecorationShape.STARS_FOUR_POINT,
-    val patternDensity: Float = 0.5f,
-    val patternColor: String = "#CCCCCC",
-    /** Optional custom image path (overrides patternShape if set). */
-    val patternCustomImagePath: String? = null,
-    val patternCustomImageTintEnabled: Boolean = false,
 )
 
 @Serializable
@@ -157,32 +149,30 @@ enum class FlipEdge(@param:StringRes val labelRes: Int) {
  * Controls the rendering resolution for raster content during PDF export.
  *
  * Each content type has an independent dimension cap, because small elements
- * (QR codes, pattern tiles) need proportionally more pixels than large ones
- * (card backgrounds, regular images) to appear sharp.
+ * (QR codes) need proportionally more pixels than large ones (card backgrounds,
+ * regular images) to appear sharp.
  *
  * **Note:** SVG images used as element images or card backgrounds are rendered
  * as vector graphics directly and are NOT affected by these quality settings.
  *
  * @property renderScale  Base multiplier for bitmap request dimensions.
  * @property maxImageDim  Cap for card backgrounds and regular image elements.
- * @property maxPatternDim Cap for pattern tiles and the offscreen pattern grid.
  * @property maxQrDim     Cap for QR code bitmaps (never exceeds 1024 for memory safety).
  */
 @Serializable
 enum class ExportQuality(
     val renderScale: Float,
     val maxImageDim: Int,
-    val maxPatternDim: Int,
     val maxQrDim: Int,
 ) {
     /** الجودة الكاملة — أقصى وضوح للطباعة */
-    FULL(    renderScale = 4.0f,  maxImageDim = 1536, maxPatternDim = 2048, maxQrDim = 900),
+    FULL(    renderScale = 4.0f,  maxImageDim = 1536, maxQrDim = 900),
     /** جودة عالية — الافتراضي */
-    HIGH(    renderScale = 3.5f,  maxImageDim = 1408, maxPatternDim = 1886, maxQrDim = 712),
+    HIGH(    renderScale = 3.5f,  maxImageDim = 1408, maxQrDim = 712),
     /** جودة جيدة — توازن بين الحجم والجودة */
-    GOOD(    renderScale = 3.0f,  maxImageDim = 1280, maxPatternDim = 1724, maxQrDim = 525),
+    GOOD(    renderScale = 3.0f,  maxImageDim = 1280, maxQrDim = 525),
     /** جودة متوسطة — ملفات أصغر */
-    MEDIUM(  renderScale = 2.5f,  maxImageDim = 1152, maxPatternDim = 1562, maxQrDim = 338),
+    MEDIUM(  renderScale = 2.5f,  maxImageDim = 1152, maxQrDim = 338),
     /** جودة منخفضة — أسرع تصدير للمسودات */
-    LOW(     renderScale = 2.0f,  maxImageDim = 1024, maxPatternDim = 1400, maxQrDim = 150);
+    LOW(     renderScale = 2.0f,  maxImageDim = 1024, maxQrDim = 150);
 }

@@ -6,7 +6,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.anonymous.cardsdesignerpro.data.model.CardSide
 import dev.anonymous.cardsdesignerpro.data.model.CardStyle
-import dev.anonymous.cardsdesignerpro.data.model.DecorationShape
 import dev.anonymous.cardsdesignerpro.data.model.Template
 import dev.anonymous.cardsdesignerpro.data.model.TemplateElement
 import dev.anonymous.cardsdesignerpro.data.repository.TemplateRepository
@@ -23,6 +22,8 @@ data class EditorUiState(
     val hasUnsavedChanges: Boolean = false,
     /** Set to true momentarily when the active side switches — triggers full list refresh. */
     val sideSwitched: Boolean = false,
+    /** Whether the undo stack has any snapshots. */
+    val canUndo: Boolean = false,
 )
 
 class EditorViewModel(application: Application) : AndroidViewModel(application) {
@@ -41,8 +42,41 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     /** Snapshot of the template as loaded from disk — used to restore on discard. */
     private var originalTemplate: Template? = null
 
-    /** Saved pattern shape index before switching to CUSTOM_IMAGE — survives config changes. */
-    var previousPatternShapeIndex = 0
+    // ── Undo Stack ────────────────────────────────────────────────────────────
+
+    private val undoStack = ArrayDeque<Template>()   // max UNDO_LIMIT snapshots
+    /** System clock ms of the last checkpoint push — used for debounce. */
+    private var lastCheckpointMs = 0L
+
+    /**
+     * Saves the current template as an undo checkpoint.
+     * Debounced: rapid calls within [UNDO_DEBOUNCE_MS] are collapsed into one.
+     * This lets drag / slider gestures produce a single undo step per gesture.
+     */
+    private fun pushCheckpoint() {
+        val now = System.currentTimeMillis()
+        if (now - lastCheckpointMs < UNDO_DEBOUNCE_MS) return   // still within same gesture
+        lastCheckpointMs = now
+        if (undoStack.size >= UNDO_LIMIT) undoStack.removeFirst()
+        undoStack.addLast(currentTemplate)
+        if (!uiState.value.canUndo) update(uiState.value.copy(canUndo = true))
+    }
+
+    /** Restores the most recent undo checkpoint. */
+    fun undo() {
+        val prev = undoStack.removeLastOrNull() ?: return
+        val state = uiState.value
+        // Keep selection only if the element still exists in the restored template
+        val selId = state.selectedElementId?.takeIf { id ->
+            currentSideElements(prev).any { it.id == id }
+        }
+        update(state.copy(
+            template = prev,
+            selectedElementId = selId,
+            hasUnsavedChanges = true,
+            canUndo = undoStack.isNotEmpty()
+        ))
+    }
 
     // ── Initialization ────────────────────────────────────────────────────────
 
@@ -52,9 +86,12 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             val template = repo.getById(templateId) ?: return@launch
             originalTemplate = template
+            // Always open on FRONT side — activeSide on disk is reset to FRONT before
+            // each save, so this is just an extra safety guard.
+            val startTemplate = template.copy(activeSide = CardSide.FRONT)
             _uiState.value = EditorUiState(
-                template = template,
-                selectedElementId = currentSideElements(template).firstOrNull()?.id
+                template = startTemplate,
+                selectedElementId = currentSideElements(startTemplate).firstOrNull()?.id
             )
         }
     }
@@ -63,11 +100,13 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
 
     /** Explicit save (toolbar button / dialog). Clears the unsaved flag. */
     fun save(onComplete: () -> Unit = {}) {
-        // Bump version only if it hasn't been bumped yet relative to the original template
-        val templateToSave = if (currentTemplate.version == originalTemplate?.version) {
-            currentTemplate.copy(version = currentTemplate.version + 1)
+        // Bump version only if it hasn't been bumped yet relative to the original template.
+        // Always persist with activeSide=FRONT so the next session opens on the front face.
+        val base = currentTemplate.copy(activeSide = CardSide.FRONT)
+        val templateToSave = if (base.version == originalTemplate?.version) {
+            base.copy(version = base.version + 1)
         } else {
-            currentTemplate
+            base
         }
         viewModelScope.launch {
             repo.save(templateToSave)
@@ -78,13 +117,16 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     /** Auto-save (onPause). Writes to disk but keeps hasUnsavedChanges so the
-     *  discard dialog still appears when the user returns. */
+     *  discard dialog still appears when the user returns.
+     *  Also resets activeSide to FRONT before writing so the next session starts
+     *  on the front face. */
     fun saveIfNeeded() {
         if (uiState.value.hasUnsavedChanges) {
-            val templateToSave = if (currentTemplate.version == originalTemplate?.version) {
-                currentTemplate.copy(version = currentTemplate.version + 1)
+            val base = currentTemplate.copy(activeSide = CardSide.FRONT)
+            val templateToSave = if (base.version == originalTemplate?.version) {
+                base.copy(version = base.version + 1)
             } else {
-                currentTemplate
+                base
             }
             _uiState.value = uiState.value.copy(template = templateToSave)
             viewModelScope.launch { repo.save(templateToSave) }
@@ -131,7 +173,11 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                     t.backElements
                 },
                 backCard = if (nowEnabled && t.backCard == null) {
-                    t.card.copy()  // Initialize back card with same style as front
+                    // Start with a clean white/neutral back — not a copy of the front
+                    t.card.copy(
+                        backgroundColor     = "#FFFFFFFF",
+                        backgroundImagePath = null,
+                    )
                 } else {
                     t.backCard
                 },
@@ -145,14 +191,15 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    /** Switches the active editing face and fires a side-switch signal. */
+    /** Switches the active editing face and fires a side-switch signal.
+     *  This is a VIEW-ONLY toggle — it does NOT mark unsaved changes. */
     fun setActiveSide(side: CardSide) {
         if (uiState.value.template.activeSide == side) return
         val prev = uiState.value
         update(prev.copy(
             template = prev.template.copy(activeSide = side),
             selectedElementId = null,
-            hasUnsavedChanges = true,
+            // hasUnsavedChanges intentionally NOT set — switching sides is not an edit
             sideSwitched = true,
         ))
     }
@@ -217,23 +264,6 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     fun updateCardBackgroundScale(scaleType: String) =
         mutateActiveCardStyle { it.copy(backgroundImageScaleType = scaleType) }
 
-    fun updatePatternEnabled(enabled: Boolean) =
-        mutateActiveCardStyle { it.copy(patternEnabled = enabled) }
-
-    fun updatePatternShape(shape: DecorationShape) =
-        mutateActiveCardStyle { it.copy(patternShape = shape) }
-
-    fun updatePatternDensity(density: Float) =
-        mutateActiveCardStyle { it.copy(patternDensity = density) }
-
-    fun updatePatternColor(color: String) =
-        mutateActiveCardStyle { it.copy(patternColor = color) }
-
-    fun updatePatternCustomImage(path: String?) =
-        mutateActiveCardStyle { it.copy(patternCustomImagePath = path) }
-
-    fun updatePatternCustomImageTint(enabled: Boolean) =
-        mutateActiveCardStyle { it.copy(patternCustomImageTintEnabled = enabled) }
 
     /**
      * Adjusts the card height ratio, clamping to [0.2, 2.0].
@@ -321,6 +351,15 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         enforceLayerOrder()
     }
 
+    fun addShapeElement() {
+        val w = 80f; val h = 60f
+        addElement(
+            TemplateElement.ShapeElement(
+                id = newId(), x = centerX(w), y = centerY(h), width = w, height = h,
+            )
+        )
+    }
+
 
 
     fun addImageElement(imagePath: String, srcW: Int = 0, srcH: Int = 0) {
@@ -380,14 +419,15 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         val wasVisible = currentElements.firstOrNull { it.id == id }?.isVisible ?: return
         mutateElement(id) { el ->
             when (el) {
-                is TemplateElement.TextElement -> el.copy(isVisible = !el.isVisible)
-                is TemplateElement.UsernameElement -> el.copy(isVisible = !el.isVisible)
-                is TemplateElement.PasswordElement -> el.copy(isVisible = !el.isVisible)
-                is TemplateElement.ImageElement -> el.copy(isVisible = !el.isVisible)
-                is TemplateElement.QrElement -> el.copy(isVisible = !el.isVisible)
-                is TemplateElement.DateElement -> el.copy(isVisible = !el.isVisible)
-                is TemplateElement.FrameElement -> el.copy(isVisible = !el.isVisible)
-                is TemplateElement.CardBackground -> el
+                is TemplateElement.TextElement       -> el.copy(isVisible = !el.isVisible)
+                is TemplateElement.UsernameElement   -> el.copy(isVisible = !el.isVisible)
+                is TemplateElement.PasswordElement   -> el.copy(isVisible = !el.isVisible)
+                is TemplateElement.ImageElement      -> el.copy(isVisible = !el.isVisible)
+                is TemplateElement.QrElement         -> el.copy(isVisible = !el.isVisible)
+                is TemplateElement.DateElement       -> el.copy(isVisible = !el.isVisible)
+                is TemplateElement.FrameElement      -> el.copy(isVisible = !el.isVisible)
+                is TemplateElement.ShapeElement      -> el.copy(isVisible = !el.isVisible)
+                is TemplateElement.CardBackground    -> el
             }
         }
         if (wasVisible && uiState.value.selectedElementId == id) selectElement(null)
@@ -399,24 +439,27 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
 
     fun updateElement(element: TemplateElement) {
         val prev = uiState.value
+        pushCheckpoint()
         val newList = currentSideElements(prev.template).map { if (it.id == element.id) element else it }
         update(prev.copy(
             template = setSideElements(prev.template, newList),
-            hasUnsavedChanges = true
+            hasUnsavedChanges = true,
+            canUndo = undoStack.isNotEmpty()
         ))
     }
 
     fun moveElement(id: String, dx: Float, dy: Float) {
         mutateElement(id) { el ->
             when (el) {
-                is TemplateElement.TextElement -> el.copy(x = el.x + dx, y = el.y + dy)
+                is TemplateElement.TextElement     -> el.copy(x = el.x + dx, y = el.y + dy)
                 is TemplateElement.UsernameElement -> el.copy(x = el.x + dx, y = el.y + dy)
                 is TemplateElement.PasswordElement -> el.copy(x = el.x + dx, y = el.y + dy)
-                is TemplateElement.ImageElement -> el.copy(x = el.x + dx, y = el.y + dy)
-                is TemplateElement.QrElement -> el.copy(x = el.x + dx, y = el.y + dy)
-                is TemplateElement.DateElement -> el.copy(x = el.x + dx, y = el.y + dy)
-                is TemplateElement.FrameElement -> el.copy(x = el.x + dx, y = el.y + dy)
-                is TemplateElement.CardBackground -> el
+                is TemplateElement.ImageElement    -> el.copy(x = el.x + dx, y = el.y + dy)
+                is TemplateElement.QrElement       -> el.copy(x = el.x + dx, y = el.y + dy)
+                is TemplateElement.DateElement     -> el.copy(x = el.x + dx, y = el.y + dy)
+                is TemplateElement.FrameElement    -> el.copy(x = el.x + dx, y = el.y + dy)
+                is TemplateElement.ShapeElement    -> el.copy(x = el.x + dx, y = el.y + dy)
+                is TemplateElement.CardBackground  -> el
             }
         }
     }
@@ -448,25 +491,50 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                     el.copy(x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
                         width = safeW, height = safeH,
                         textSizeSp = (el.textSizeSp * scaleW).coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP))
-                is TemplateElement.ImageElement -> el.copy(width = safeW, height = safeH)
-                is TemplateElement.QrElement -> el.copy(width = safeW, height = safeH)
-                is TemplateElement.FrameElement -> el.copy(width = safeW, height = safeH)
-                is TemplateElement.CardBackground -> el
+                is TemplateElement.ImageElement    -> el.copy(width = safeW, height = safeH)
+                is TemplateElement.QrElement       -> el.copy(width = safeW, height = safeH)
+                is TemplateElement.FrameElement    -> el.copy(width = safeW, height = safeH)
+                is TemplateElement.ShapeElement    -> el.copy(x = oldCX - safeW / 2f, y = oldCY - safeH / 2f, width = safeW, height = safeH)
+                is TemplateElement.CardBackground  -> el
             }
         }
     }
 
+    /** Right-center handle: changes width only, left edge stays fixed. */
+    fun resizeShapeWidth(id: String, newWidth: Float) {
+        val safeW = newWidth.coerceAtLeast(10f)
+        mutateElement(id) { el ->
+            when (el) {
+                is TemplateElement.ShapeElement -> el.copy(width = safeW)
+                else -> el
+            }
+        }
+    }
+
+    /** Top-center handle: top edge moves, bottom edge stays fixed. */
+    fun resizeShapeHeight(id: String, newY: Float, newHeight: Float) {
+        val safeH = newHeight.coerceAtLeast(10f)
+        mutateElement(id) { el ->
+            when (el) {
+                is TemplateElement.ShapeElement -> el.copy(y = newY, height = safeH)
+                else -> el
+            }
+        }
+    }
+
+
     fun rotateElement(id: String, angleDelta: Float) {
         mutateElement(id) { el ->
             when (el) {
-                is TemplateElement.TextElement -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
+                is TemplateElement.TextElement     -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
                 is TemplateElement.UsernameElement -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
                 is TemplateElement.PasswordElement -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
-                is TemplateElement.ImageElement -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
-                is TemplateElement.QrElement -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
-                is TemplateElement.DateElement -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
-                is TemplateElement.FrameElement -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
-                is TemplateElement.CardBackground -> el
+                is TemplateElement.ImageElement    -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
+                is TemplateElement.QrElement       -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
+                is TemplateElement.DateElement     -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
+                is TemplateElement.FrameElement    -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
+                is TemplateElement.ShapeElement    -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
+                is TemplateElement.CardBackground  -> el
             }
         }
     }
@@ -559,16 +627,19 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
 
     private fun mutateElement(id: String, transform: (TemplateElement) -> TemplateElement) {
         val prev = uiState.value
+        pushCheckpoint()
         val newList = currentSideElements(prev.template).map { if (it.id == id) transform(it) else it }
         update(prev.copy(
             template = setSideElements(prev.template, newList),
-            hasUnsavedChanges = true
+            hasUnsavedChanges = true,
+            canUndo = undoStack.isNotEmpty()
         ))
     }
 
     private fun mutateTemplate(transform: (Template) -> Template) {
         val prev = uiState.value
-        update(prev.copy(template = transform(prev.template), hasUnsavedChanges = true))
+        pushCheckpoint()
+        update(prev.copy(template = transform(prev.template), hasUnsavedChanges = true, canUndo = undoStack.isNotEmpty()))
     }
 
     private fun update(state: EditorUiState) { _uiState.value = state }
@@ -607,5 +678,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     companion object {
         const val MIN_TEXT_SIZE_SP = 10f
         const val MAX_TEXT_SIZE_SP = 100f
+        private const val UNDO_LIMIT        = 20    // max snapshots kept
+        private const val UNDO_DEBOUNCE_MS  = 1000L // changes within 1s = one checkpoint
     }
 }

@@ -66,9 +66,8 @@ class PagePreviewView @JvmOverloads constructor(
 
     /** Update renderer quality to match the user's selected export quality. */
     fun setQuality(q: dev.anonymous.cardsdesignerpro.data.model.ExportQuality) {
-        renderer.maxImageDim   = q.maxImageDim
-        renderer.maxPatternDim = q.maxPatternDim
-        renderer.maxQrDim      = q.maxQrDim
+        renderer.maxImageDim = q.maxImageDim
+        renderer.maxQrDim    = q.maxQrDim
     }
 
     fun bind(
@@ -151,9 +150,8 @@ class PagePreviewView @JvmOverloads constructor(
 
         val previewRenderer = TemplateRenderer(context).apply {
             val q = dev.anonymous.cardsdesignerpro.data.model.ExportQuality.LOW
-            maxImageDim   = q.maxImageDim
-            maxPatternDim = q.maxPatternDim
-            maxQrDim      = q.maxQrDim
+            maxImageDim = q.maxImageDim
+            maxQrDim    = q.maxQrDim
         }
 
         pendingFuture = RENDER_EXECUTOR.submit {

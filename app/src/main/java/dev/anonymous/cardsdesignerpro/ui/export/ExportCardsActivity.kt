@@ -142,12 +142,14 @@ class ExportCardsActivity : AppCompatActivity() {
         observeViewModel()
         
         checkIntentForDualPreview(intent)
+        handleIncomingFileIntent(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         checkIntentForDualPreview(intent)
+        handleIncomingFileIntent(intent)
     }
 
     private fun checkIntentForDualPreview(intent: Intent) {
@@ -698,4 +700,39 @@ class ExportCardsActivity : AppCompatActivity() {
 
     private fun timestamp() =
         SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+
+    /**
+     * Handles incoming [Intent.ACTION_VIEW] (open from file manager) and
+     * [Intent.ACTION_SEND] (share from another app) intents by automatically
+     * loading the CSV/Excel file into the export screen.
+     *
+     * Consumes the intent action to prevent re-processing on configuration change.
+     */
+    @Suppress("DEPRECATION")
+    private fun handleIncomingFileIntent(intent: Intent) {
+        // ?: return guarantees uri is non-null below — no explicit type annotation needed
+        val uri = when (intent.action) {
+            Intent.ACTION_VIEW -> intent.data
+            Intent.ACTION_SEND -> {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU)
+                    intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+                else
+                    @Suppress("DEPRECATION") intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+            }
+            else -> null
+        } ?: return
+
+        // Try to take persistent permission (may fail for file:// URIs — safe to ignore)
+        runCatching {
+            contentResolver.takePersistableUriPermission(
+                uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+        }
+
+        val name = queryFileName(uri) ?: uri.lastPathSegment ?: "file"
+        viewModel.addFiles(listOf(uri), listOf(name))
+
+        // Consume the action so rotation doesn't re-add the file
+        intent.action = null
+    }
 }
