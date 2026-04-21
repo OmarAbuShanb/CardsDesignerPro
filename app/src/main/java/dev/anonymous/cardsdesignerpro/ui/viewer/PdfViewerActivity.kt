@@ -22,12 +22,29 @@ class PdfViewerActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         binding.toolbar.setNavigationOnClickListener { finish() }
 
-        val uri = intent.data
-            ?: intent.getStringExtra(EXTRA_PDF_URI)?.toUri()
-            ?: run {
-                finish()
-                return
+        val uri = when (intent.action) {
+            android.content.Intent.ACTION_VIEW -> intent.data
+            android.content.Intent.ACTION_SEND -> {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU)
+                    intent.getParcelableExtra(android.content.Intent.EXTRA_STREAM, android.net.Uri::class.java)
+                else
+                    @Suppress("DEPRECATION") intent.getParcelableExtra<android.net.Uri>(android.content.Intent.EXTRA_STREAM)
             }
+            else -> intent.getStringExtra(EXTRA_PDF_URI)?.toUri()
+        } 
+
+        if (uri == null || !isPdf(uri, intent.type)) {
+            finish()
+            return
+        }
+
+        // Persistent Permission with masked flags (safe to call even if already granted)
+        if (uri.scheme == "content") {
+            val takeFlags = intent.flags and (android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+            runCatching {
+                contentResolver.takePersistableUriPermission(uri, takeFlags)
+            }
+        }
 
         val supportsJetpackPdf = if (android.os.Build.VERSION.SDK_INT >= 30) {
             android.os.ext.SdkExtensions.getExtensionVersion(android.os.Build.VERSION_CODES.S) >= 19
@@ -71,4 +88,17 @@ class PdfViewerActivity : AppCompatActivity() {
             binding.pdfViewLegacy.setMaxZoomScale(5f)
         }
     }
+
+    private fun isPdf(uri: android.net.Uri, type: String?): Boolean {
+        if (type != null && type != "*/*" && type == "application/pdf") return true
+        val name = queryFileName(uri) ?: return false
+        return name.endsWith(".pdf", ignoreCase = true)
+    }
+
+    private fun queryFileName(uri: android.net.Uri): String? =
+        contentResolver.query(uri, null, null, null, null)?.use { c ->
+            if (!c.moveToFirst()) return null
+            val col = c.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+            if (col < 0) null else c.getString(col)
+        }
 }

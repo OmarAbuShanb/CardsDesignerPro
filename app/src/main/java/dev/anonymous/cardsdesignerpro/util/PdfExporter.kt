@@ -16,6 +16,7 @@ import java.io.OutputStream
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import kotlin.math.ceil
+import androidx.core.graphics.withSave
 
 /**
  * Generates multi-page PDFs from a [Template] and a list of credential records.
@@ -364,30 +365,30 @@ object PdfExporter {
             val shortUsername = shortRecord[usernameCol ?: ""] ?: ""
             val shortPassword = shortRecord[passwordCol ?: ""] ?: ""
 
-            canvas.save()
-            // Short-edge flip: the back card content is physically upside-down
-            if (mirrored && flipEdge == FlipEdge.SHORT_EDGE) {
-                canvas.rotate(
-                    180f,
-                    cardLeft + layout.cardWidthPt / 2f,
-                    cardTop  + layout.cardHeightPt / 2f
+            canvas.withSave {
+                // Short-edge flip: the back card content is physically upside-down
+                if (mirrored && flipEdge == FlipEdge.SHORT_EDGE) {
+                    rotate(
+                        180f,
+                        cardLeft + layout.cardWidthPt / 2f,
+                        cardTop + layout.cardHeightPt / 2f
+                    )
+                }
+                renderer.draw(
+                    canvas = this,
+                    template = template,
+                    cardLeft = cardLeft,
+                    cardTop = cardTop,
+                    cardWidthPx = layout.cardWidthPt,
+                    cardHeightPx = layout.cardHeightPt,
+                    username = username,
+                    password = password,
+                    shortUsername = shortUsername,
+                    shortPassword = shortPassword,
+                    date = dateStr,
+                    renderScale = s.quality.renderScale
                 )
             }
-            renderer.draw(
-                canvas      = canvas,
-                template    = template,
-                cardLeft    = cardLeft,
-                cardTop     = cardTop,
-                cardWidthPx = layout.cardWidthPt,
-                cardHeightPx= layout.cardHeightPt,
-                username    = username,
-                password    = password,
-                shortUsername = shortUsername,
-                shortPassword = shortPassword,
-                date        = dateStr,
-                renderScale = s.quality.renderScale
-            )
-            canvas.restore()
         }
     }
 

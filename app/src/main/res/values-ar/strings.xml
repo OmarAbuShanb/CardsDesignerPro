@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">مصمم البطاقات برو</string>
+
+    <!-- Main Screen -->
+    <string name="btn_export_cards">تصدير البطاقات</string>
+    <string name="btn_new_template">إنشاء قالب من الصفر</string>
+    <string name="btn_edit_default_template">اختيار قالب جاهز للتعديل عليه</string>
+    <string name="title_default_templates_sheet">اختر قالب للتعديل عليه</string>
+    <string name="btn_import_template">استيراد قوالب مخزنة على الجهاز</string>
+    <string name="templates_title">القوالب</string>
+
+    <!-- Template dialogs -->
+    <string name="dialog_new_template_title">اسم القالب الجديد</string>
+    <string name="dialog_rename_template_title">إعادة تسمية القالب</string>
+    <string name="dialog_add_text_title">إضافة نص</string>
+    <string name="hint_template_name">اسم القالب</string>
+    <string name="btn_next">التالي</string>
+    <string name="btn_save">حفظ</string>
+    <string name="btn_cancel">إلغاء</string>
+    <string name="btn_confirm">تأكيد</string>
+    <string name="btn_delete">حذف</string>
+
+    <!-- Template 3-dot menu -->
+    <string name="menu_rename">إعادة التسمية</string>
+    <string name="menu_duplicate">تكرار القالب</string>
+    <string name="menu_delete">حذف القالب</string>
+
+    <!-- Delete confirmation -->
+    <string name="delete_template_title">حذف القالب</string>
+    <string name="delete_template_message">هل أنت متأكد من حذف القالب \"%s\"؟ لا يمكن التراجع عن هذا الإجراء.</string>
+
+    <!-- Import / Export messages -->
+    <string name="import_failed">فشل استيراد القالب. تأكد من صحة الملف.</string>
+    <string name="export_template_success">تم تصدير القالب بنجاح</string>
+    <string name="export_template_failed">فشل تصدير القالب</string>
+
+    <!-- Batch Export/Import -->
+    <string name="btn_export_templates">تصدير القوالب</string>
+    <string name="btn_export_selected_templates">تصدير القوالب المحددة</string>
+    <string name="btn_import_selected_templates">استيراد القوالب المحددة</string>
+    <string name="dialog_export_templates_title">تصدير القوالب</string>
+    <string name="dialog_import_templates_title">استيراد القوالب</string>
+    <string name="status_newer_version">إصدار أحدث</string>
+    <string name="status_older_version">إصدار سابق</string>
+    <string name="status_same_version">موجود</string>
+    <string name="import_warning_title">تنبيه بالاستبدال</string>
+    <string name="import_warning_message">سيتم استبدال القوالب المستوردة بالحالية. هذا الإجراء لا يمكن التراجع عنه وقد تفقد أية تغييرات مهمة موجودة حالياً. هل تريد المتابعة؟</string>
+    <string name="import_templates_success">تم استيراد قوالب عدد %d بنجاح</string>
+
+    <!-- Export Cards Screen -->
+    <string name="export_cards_title">تصدير البطاقات</string>
+    <string name="btn_choose_file">اختيار الملف</string>
+    <string name="label_template">القالب</string>
+    <string name="label_no_templates">لا يوجد قوالب</string>
+    <string name="no_templates_to_export">لا يوجد قوالب لتصديرها</string>
+    <string name="label_card_layout">تخطيط البطاقات في الصفحة</string>
+    <string name="layout_preset_format">%1$d بطاقة (%2$d أعمدة × %3$d صف)</string>
+    <string name="label_recommended_suffix"> — موصى به</string>
+
+    <!-- PDF Export Service -->
+    <string name="notif_channel_export_name">عملية التصدير للخلفية</string>
+    <string name="notif_channel_export_desc">يعرض حالة تصدير البطاقات في الخلفية لحين الانتهاء.</string>
+    <string name="notif_title_app_name">صانع البطاقات (Cards Designer Pro)</string>
+    <string name="notif_export_init">تهيئة عملية التصدير…</string>
+    <string name="notif_export_progress">جاري تصدير قالب: %s</string>
+    <string name="notif_export_success_title">تمت العملية بنجاح! \uD83C\uDF89</string>
+    <string name="notif_export_success_dual_desc">تم تصدير ملفين PDF، اختر أحدهما للمعاينة.</string>
+    <string name="notif_export_success_single_desc">تم تصدير ملف الـ PDF الخاص بك، اضغط هنا للمعاينة.</string>
+    <string name="notif_action_preview_front">معاينة الأمامي</string>
+    <string name="notif_action_preview_back">معاينة الخلفي</string>
+    <string name="label_horizontal_spacing">المسافة الأفقية</string>
+    <string name="label_vertical_spacing">المسافة العمودية</string>
+    <string name="label_page_size">حجم الصفحة</string>
+
+    <!-- Editor and Default Templates -->
+    <string name="flip_long_edge_desc">القلب على الحافة الطويلة</string>
+    <string name="flip_short_edge_desc">القلب على الحافة القصيرة</string>
+    <string name="editor_front_side_title">الوجه الأمامي</string>
+    <string name="editor_back_side_title">الوجه الخلفي</string>
+    <string name="editor_front_side_subtitle">إضغط لرؤية الوجه الخلفي</string>
+    <string name="editor_back_side_subtitle">إضغط لرؤية الوجه الأمامي</string>
+    <string name="error_extracting_template">فشل استخراج القالب</string>
+    <string name="template_name_copy">%s - نسخة</string>
+
+    <!-- QR Edit -->
+    <string name="btn_pick_qr_logo">اختيار شعار للQR</string>
+    <string name="label_chosen_logo">الشعار المختار</string>
+    <string name="cb_tint_logo">تلوين الشعار بنفس لون الباركود</string>
+    <string name="label_data_file">ملف أو ملفات البيانات (CSV / Excel)</string>
+    <string name="label_cards_per_page">عدد البطاقات التي تتسعها الصفحة</string>
+    <string name="label_total_pages">عدد الصفحات</string>
+    <string name="btn_export">تصدير</string>
+    <string name="export_success_title">تم التصدير بنجاح</string>
+    <string name="export_success_message">تم إنشاء ملف PDF بنجاح.</string>
+    <string name="btn_open_pdf">معاينة</string>
+    <string name="btn_preview_pdf">فتح باستخدام</string>
+    <string name="export_failed_message">فشل تصدير الملف. يرجى المحاولة مجدداً.</string>
+
+    <!-- Editor Screen -->
+    <string name="editor_back_confirm_title">تجاهل التغييرات؟</string>
+    <string name="editor_back_confirm_message">ستضيع التغييرات غير المحفوظة. هل تريد المتابعة؟</string>
+    <string name="btn_discard">تجاهل</string>
+    <string name="editor_undo_title">تراجع</string>
+    <string name="editor_restore_title">إعادة ضبط</string>
+    <string name="editor_restore_message">سيتم التراجع عن جميع التغييرات التي أجريتها في هذه الجلسة. هل تريد المتابعة؟</string>
+    <string name="btn_restore">إعادة ضبط</string>
+
+    <!-- Editor – Add Element Tab -->
+    <string name="tab_add_element">إضافة عنصر</string>
+    <string name="tab_elements_list">قائمة العناصر</string>
+    <string name="tab_properties">الخصائص</string>
+    <string name="btn_add_username">اسم المستخدم</string>
+    <string name="btn_add_password">كلمة المرور</string>
+    <string name="btn_add_text">نص</string>
+    <string name="btn_add_image">صورة</string>
+    <string name="btn_add_qr">رمز QR</string>
+    <string name="btn_add_date">تاريخ</string>
+    <string name="btn_add_frame">إطار البطاقة</string>
+    <string name="btn_add_shape">شكل هندسي</string>
+    <string name="btn_add_pack">عناصر جاهزة</string>
+
+    <!-- Pack Browser -->
+    <string name="pack_title">عناصر جاهزة</string>
+    <string name="pack_tab_icons">أيقونات</string>
+    <string name="pack_tab_fields">حقول</string>
+    <string name="pack_tab_dividers">قواسم</string>
+    <string name="pack_tab_logos">شعارات</string>
+    <string name="pack_tab_patterns">أنماط</string>
+    <string name="pack_tab_misc">متنوع</string>
+
+    <!-- Editor – Properties -->
+    <string name="prop_no_selection">قم بتحديد أي عنصر لتغيير خصائصه</string>
+    <string name="prop_background_color">لون الخلفية</string>
+    <string name="prop_background_image">صورة الخلفية</string>
+    <string name="prop_choose_image">اختيار صورة</string>
+    <string name="prop_remove_image">حذف الصورة</string>
+    <string name="prop_bg_scale_fit">شد الصورة وتعبئتها</string>
+    <string name="prop_bg_scale_crop">توسيط الأبعاد مع القص</string>
+    <string name="prop_text_content">محتوى النص</string>
+    <string name="prop_text_color">لون النص</string>
+    <string name="prop_text_bg_color">لون خلفية النص</string>
+    <string name="prop_bold">نص غامق</string>
+    <string name="prop_font">نوع الخط</string>
+    <string name="prop_font_size">حجم الخط</string>
+    <string name="prop_enable_stroke">تفعيل حواف النص</string>
+    <string name="prop_stroke_color">لون الحواف</string>
+    <string name="prop_text_stroke">سُمك حواف النص</string>
+    <string name="prop_digit_count">عدد الأرقام</string>
+    <string name="prop_host">عنوان الخادم (Host)</string>
+    <string name="prop_qr_color">لون QR</string>
+    <string name="prop_date_format">شكل التاريخ</string>
+    <string name="prop_frame_color">لون الإطار</string>
+    <string name="prop_frame_thickness">سُمك الإطار</string>
+    <string name="prop_frame_corner_radius">استدارة الزوايا</string>
+    <string name="prop_frame_padding">بُعد الإطار عن الحواف</string>
+    <string name="prop_frame_dashed">إطار منقط</string>
+    <string name="prop_frame_dash_length">طول الشرطة</string>
+    <string name="prop_frame_dash_gap">حجم الفراغات</string>
+    <string name="prop_frame_dash_rounded">نقاط مستديرة</string>
+    <string name="prop_tint">لون التوحيد (Tint)</string>
+    <string name="prop_qr_bg_color">لون خلفية QR</string>
+    <string name="prop_logo_size">حجم الشعار</string>
+    <string name="prop_qr_pixel_shape">شكل نقاط QR</string>
+    <string name="prop_qr_eye_shape">شكل عيون QR</string>
+    <string name="prop_qr_padding">هامش QR</string>
+
+    <!-- Shape element properties -->
+    <string name="prop_shape_fill_color">لون التعبئة</string>
+    <string name="prop_shape_stroke_color">لون الحدود</string>
+    <string name="prop_shape_stroke_width">سُمك الحدود</string>
+    <string name="prop_shape_corner_radius">استدارة الزوايا</string>
+    <string name="prop_shape_dashed">حدود منقطة</string>
+
+    <!-- Elements list -->
+    <string name="elem_card_background">الخلفية</string>
+    <string name="elem_text">نص</string>
+    <string name="elem_username">اسم المستخدم</string>
+    <string name="elem_password">كلمة المرور</string>
+    <string name="elem_image">صورة</string>
+    <string name="elem_icon">أيقونة</string>
+    <string name="elem_field">حقل</string>
+    <string name="elem_divider">قاسم</string>
+    <string name="elem_logo">شعار</string>
+    <string name="elem_pattern">نمط خلفية</string>
+    <string name="elem_misc">عنصر جاهز</string>
+    <string name="elem_qr">رمز QR</string>
+    <string name="elem_date">تاريخ</string>
+    <string name="elem_frame">إطار البطاقة</string>
+    <string name="elem_shape">شكل هندسي</string>
+
+    <!-- General -->
+    <string name="btn_close">إغلاق</string>
+    <string name="loading">جار التحميل…</string>
+
+    <!-- PDF Viewer -->
+    <string name="pdf_viewer_title">معاينة PDF</string>
+
+    <!-- Dual-sided card feature — Editor -->
+    <string name="label_enable_back_side">تفعيل الوجه الخلفي للبطاقة</string>
+    <string name="label_front_side">الوجه الأمامي</string>
+    <string name="label_back_side">الوجه الخلفي</string>
+
+    <!-- Dual-sided card feature — Export settings -->
+    <string name="label_export_front_only">تصدير الوجه الأمامي فقط (تجاهل الوجه الخلفي)</string>
+    <string name="flip_edge_long">الحافة الطويلة</string>
+    <string name="flip_edge_short">الحافة القصيرة</string>
+    <string name="label_flip_edge_hint">اتجاه قلب الورقة — الحافة الطويلة هي الخيار الافتراضي والموصى به</string>
+    <string name="flip_hint_long_edge">(قلب على الحافة الطويلة)</string>
+    <string name="flip_hint_short_edge">(قلب على الحافة القصيرة)</string>
+
+    <!-- Dual-sided card feature — File list -->
+    <string name="label_file_unsupported">نوع غير مدعوم — يرجى اختيار CSV أو Excel</string>
+    <string name="action_remove_file">إزالة الملف</string>
+    <string name="error_no_valid_file">يرجى اختيار ملف CSV أو Excel صحيح أولاً</string>
+
+    <!-- File name tokens used in saved PDF names -->
+    <string name="front_filename">الوجه_الامامي</string>
+    <string name="back_side_filename">الوجه_الخلفي</string>
+    <string name="dual_filename">مزدوج_الوجهين</string>
+
+    <!-- Dual-sided card feature — Export preview stats -->
+    <string name="label_total_pages_front">صفحات الوجه الأمامي</string>
+    <string name="label_total_pages_both">إجمالي الصفحات (الوجهين)</string>
+    <string name="label_cards_per_page_front">عدد البطاقات التي تتسعها الصفحة</string>
+    <string name="label_total_cards">إجمالي البطاقات</string>
+
+    <!-- Dual-sided card feature — Export buttons -->
+    <string name="btn_export_dual">تصدير ملف PDF مزدوج للوجهين</string>
+    <string name="btn_export_separate">تصدير ملفين PDF منفصلين</string>
+
+    <!-- Dual-sided card feature — Success dialogs -->
+    <string name="export_separate_success_message">تم تصدير الوجهين بنجاح في ملفين PDF منفصلين.</string>
+    <string name="btn_open_front_pdf">معاينة ملف الوجه الأمامي</string>
+    <string name="btn_open_back_pdf">معاينة ملف الوجه الخلفي</string>
+    <string name="label_cards_count">%1$d بطاقة</string>
+    <string name="prop_tint_none">لم يتم تعيين أي لون</string>
+
+    <!-- Export settings bottom sheet title -->
+    <string name="title_export_settings">إعدادات التصدير</string>
+
+    <!-- Export quality -->
+    <string name="label_export_quality">جودة التصدير (خاص بجودة صور المعرض والQr)</string>
+    <string name="quality_full">الجودة الكاملة — للطباعة الاحترافية</string>
+    <string name="quality_high">جودة عالية (افتراضي)</string>
+    <string name="quality_good">جودة جيدة</string>
+    <string name="quality_medium">جودة متوسطة</string>
+    <string name="quality_low">جودة منخفضة — تصدير سريع</string>
+
+    <string name="default_text_placeholder">نص افتراضي</string>
+    <string name="prop_no_bg_color">لا يوجد خلفية للنص بشكل افتراضي</string>
+
+    <string name="label_short_numbers_switch">استخدام الأرقام المختصرة</string>
+    <string name="btn_add_short_username">اسم المستخدم - المختصر</string>
+    <string name="btn_add_short_password">كلمة المرور - المختصرة</string>
+    <string name="prop_qr_short_numbers">ربط القارئ بالأرقام المختصرة</string>
+    <string name="label_short_data_file">ملف أو ملفات البيانات المختصرة</string>
+    <string name="short_numbers_warning_format">عدد البيانات الأصلية %1$d بينما عدد البيانات المختصرة %2$d</string>
+
+    <string name="font_default">افتراضي (بدون خط)</string>
+
+    <!-- File parsing / validation strings -->
+    <string name="error_file_still_parsing">جاري معالجة الملف، يرجى الانتظار…</string>
+    <string name="label_file_parsing">جاري المعالجة…</string>
+    <string name="dialog_mismatch_title">بيانات غير متطابقة مع القالب</string>
+    <string name="dialog_mismatch_desc">عدد أرقام بعض البيانات لا يتطابق مع القالب المحدد.\nاليوزرنيم المطلوب: %1$d رقم — الباسورد المطلوب: %2$d رقم.</string>
+    <string name="dialog_mismatch_desc_user_only">عدد أرقام بعض اليوزرات لا يتطابق مع القالب (المطلوب: %1$d رقم).</string>
+    <string name="dialog_mismatch_desc_pass_only">عدد أرقام بعض كلمات المرور لا يتطابق مع القالب (المطلوب: %1$d رقم).</string>
+    <string name="item_mismatch_record_index">المستخدم رقم %1$d</string>
+    <string name="item_mismatch_username">اليوزر: %1$s (%2$d رقم)</string>
+    <string name="item_mismatch_password">الباسورد: %1$s (%2$d رقم)</string>
+    <string name="action_continue_export">متابعة التصدير</string>
+    <string name="action_fix_data">تعديل البيانات</string>
+
+    <!-- Date format display names (used in DateFormat enum spinner) -->
+    <string name="date_format_year_month_day_slash">السنة/الشهر/اليوم</string>
+    <string name="date_format_year_month_day_dash">السنة-الشهر-اليوم</string>
+    <string name="date_format_month_day_slash">الشهر/اليوم</string>
+    <string name="date_format_month_day_dash">الشهر-اليوم</string>
+
+    <!-- Text alignment -->
+    <string name="prop_text_alignment">محاذاة النص</string>
+    <string name="prop_align_start">محاذاة البداية</string>
+    <string name="prop_align_center">محاذاة الوسط</string>
+    <string name="prop_align_end">محاذاة النهاية</string>
+
+    <!-- Activity Labels for External Integration -->
+    <string name="alias_pdf_preview">معاينة PDF</string>
+    <string name="alias_export_cards">تصدير البطاقات</string>
+
+</resources>

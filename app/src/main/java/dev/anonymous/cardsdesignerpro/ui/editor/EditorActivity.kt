@@ -9,7 +9,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.snackbar.Snackbar
 import dev.anonymous.cardsdesignerpro.R
 import dev.anonymous.cardsdesignerpro.data.model.CardSide
 import dev.anonymous.cardsdesignerpro.databinding.ActivityEditorBinding
@@ -383,8 +382,14 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
     override fun onShapeHeightResized(id: String, newY: Float, newHeight: Float) =
         viewModel.resizeShapeHeight(id, newY, newHeight)
 
+    override fun onTextWidthResized(id: String, newWidth: Float) =
+        viewModel.resizeTextWidth(id, newWidth)
+
+    override fun onTextFontScaled(id: String, newSizeSp: Float, newWidth: Float, newHeight: Float) =
+        viewModel.scaleTextFontSize(id, newSizeSp, newWidth, newHeight)
+
     override fun onElementDeleteRequested(id: String) {
-        val el = viewModel.currentElements.firstOrNull { it.id == id } ?: return
+        viewModel.currentElements.firstOrNull { it.id == id } ?: return
         MaterialAlertDialogBuilder(this)
             .setTitle("حذف العنصر")
             .setMessage("هل تريد حذف هذا العنصر؟")
@@ -418,7 +423,7 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
             putExtra(EXTRA_TEMPLATE_ID, viewModel.currentTemplate.id)
             putExtra("extra_template_version", viewModel.currentTemplate.version)
         }
-        setResult(android.app.Activity.RESULT_OK, intent)
+        setResult(RESULT_OK, intent)
         super.finish()
     }
 

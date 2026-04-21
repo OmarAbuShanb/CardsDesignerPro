@@ -5,13 +5,13 @@ plugins {
 
 android {
     namespace = "dev.anonymous.cardsdesignerpro"
-    compileSdk = 36
+    compileSdk = 37
     compileSdkExtension = 19
 
     defaultConfig {
         applicationId = "dev.anonymous.cardsdesignerpro"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 1
         versionName = "1.0"
 
@@ -80,6 +80,9 @@ dependencies {
     
     // SVG Parsing
     implementation(libs.androidsvg.aar)
+
+    // Splash Screen API (backport to API 26+)
+    implementation(libs.androidx.core.splashscreen)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

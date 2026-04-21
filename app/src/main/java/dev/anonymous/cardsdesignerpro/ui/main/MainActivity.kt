@@ -8,20 +8,17 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.widget.doAfterTextChanged
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import dev.anonymous.cardsdesignerpro.ui.common.TemplateNameDialogFragment
 import com.google.android.material.snackbar.Snackbar
-import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
 import dev.anonymous.cardsdesignerpro.R
 import dev.anonymous.cardsdesignerpro.data.model.Template
 import dev.anonymous.cardsdesignerpro.databinding.ActivityMainBinding
-import dev.anonymous.cardsdesignerpro.databinding.DialogTemplateNameBinding
+import dev.anonymous.cardsdesignerpro.ui.common.TemplateNameDialogFragment
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorActivity
 import dev.anonymous.cardsdesignerpro.ui.export.ExportCardsActivity
 import kotlinx.coroutines.launch
@@ -39,7 +36,8 @@ class MainActivity : AppCompatActivity() {
     ) { result ->
         if (result.resultCode == RESULT_OK) {
             val data = result.data ?: return@registerForActivityResult
-            val templateId = data.getStringExtra(EditorActivity.EXTRA_TEMPLATE_ID) ?: return@registerForActivityResult
+            val templateId = data.getStringExtra(EditorActivity.EXTRA_TEMPLATE_ID)
+                ?: return@registerForActivityResult
             val returnedVersion = data.getIntExtra("extra_template_version", -1)
 
             val currentList = viewModel.templates.value
@@ -60,11 +58,20 @@ class MainActivity : AppCompatActivity() {
     private val exportLauncher = registerForActivityResult(
         ActivityResultContracts.CreateDocument("application/octet-stream")
     ) { uri: Uri? ->
-        uri?.let { dest -> pendingExportTemplateIds?.let { ids -> viewModel.exportTemplates(ids, dest) } }
+        uri?.let { dest ->
+            pendingExportTemplateIds?.let { ids ->
+                viewModel.exportTemplates(
+                    ids,
+                    dest
+                )
+            }
+        }
         pendingExportTemplateIds = null
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Must be called BEFORE super.onCreate() to properly intercept the splash
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -114,12 +121,15 @@ class MainActivity : AppCompatActivity() {
                             binding.rvTemplates.visibility = View.GONE
                             binding.tvEmpty.visibility = View.GONE
                         } else {
-                            val isFirstLoad = adapter.currentList.isEmpty() && templates.isNotEmpty()
+                            val isFirstLoad =
+                                adapter.currentList.isEmpty() && templates.isNotEmpty()
                             adapter.submitList(templates) {
                                 if (isFirstLoad) binding.rvTemplates.scheduleLayoutAnimation()
                             }
-                            binding.tvEmpty.visibility = if (templates.isEmpty()) View.VISIBLE else View.GONE
-                            binding.rvTemplates.visibility = if (templates.isEmpty()) View.GONE else View.VISIBLE
+                            binding.tvEmpty.visibility =
+                                if (templates.isEmpty()) View.VISIBLE else View.GONE
+                            binding.rvTemplates.visibility =
+                                if (templates.isEmpty()) View.GONE else View.VISIBLE
                         }
                     }
                 }
@@ -129,12 +139,16 @@ class MainActivity : AppCompatActivity() {
                         when (event) {
                             is MainEvent.ExportSuccess ->
                                 snack(getString(R.string.export_template_success))
+
                             is MainEvent.ExportFailed ->
                                 snack(getString(R.string.export_template_failed))
+
                             is MainEvent.ShowImportDialog ->
                                 showImportDialog(event.uri, event.templates)
+
                             is MainEvent.ImportSuccess ->
                                 snack(getString(R.string.import_templates_success, event.count))
+
                             is MainEvent.ImportFailed ->
                                 snack(getString(R.string.import_failed))
                         }
@@ -162,7 +176,12 @@ class MainActivity : AppCompatActivity() {
             }
         }
         if (supportFragmentManager.findFragmentByTag(TemplateNameDialogFragment.TAG) == null) {
-            TemplateNameDialogFragment.newInstance(R.string.dialog_new_template_title, R.string.btn_next, null, reqKey).show(supportFragmentManager, TemplateNameDialogFragment.TAG)
+            TemplateNameDialogFragment.newInstance(
+                R.string.dialog_new_template_title,
+                R.string.btn_next,
+                null,
+                reqKey
+            ).show(supportFragmentManager, TemplateNameDialogFragment.TAG)
         }
     }
 
@@ -173,13 +192,21 @@ class MainActivity : AppCompatActivity() {
             if (!name.isNullOrEmpty()) viewModel.renameTemplate(template.id, name)
         }
         if (supportFragmentManager.findFragmentByTag(TemplateNameDialogFragment.TAG) == null) {
-            TemplateNameDialogFragment.newInstance(R.string.dialog_rename_template_title, R.string.btn_save, template.name, reqKey).show(supportFragmentManager, TemplateNameDialogFragment.TAG)
+            TemplateNameDialogFragment.newInstance(
+                R.string.dialog_rename_template_title,
+                R.string.btn_save,
+                template.name,
+                reqKey
+            ).show(supportFragmentManager, TemplateNameDialogFragment.TAG)
         }
     }
 
     private fun showNewDefaultTemplateDialog() {
         if (supportFragmentManager.findFragmentByTag(DefaultTemplatesBottomSheet.TAG) == null) {
-            DefaultTemplatesBottomSheet().show(supportFragmentManager, DefaultTemplatesBottomSheet.TAG)
+            DefaultTemplatesBottomSheet().show(
+                supportFragmentManager,
+                DefaultTemplatesBottomSheet.TAG
+            )
         }
     }
 
@@ -210,7 +237,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         val view = layoutInflater.inflate(R.layout.dialog_select_templates, null)
-        val rv = view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rv_select_templates)
+        val rv =
+            view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rv_select_templates)
         rv.layoutManager = LinearLayoutManager(this)
         rv.adapter = selectionAdapter
 
@@ -228,7 +256,7 @@ class MainActivity : AppCompatActivity() {
             .create()
 
         dialog.show()
-        val btnPositive = dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
+        val btnPositive = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
         onSelectionUpdated = {
             btnPositive.isEnabled = selectionAdapter.getSelectedIds().isNotEmpty()
         }
@@ -252,7 +280,8 @@ class MainActivity : AppCompatActivity() {
             onSelectionUpdated?.invoke()
         }
         val view = layoutInflater.inflate(R.layout.dialog_select_templates, null)
-        val rv = view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rv_select_templates)
+        val rv =
+            view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rv_select_templates)
         rv.layoutManager = LinearLayoutManager(this)
         rv.adapter = selectionAdapter
 
@@ -282,7 +311,7 @@ class MainActivity : AppCompatActivity() {
             .create()
 
         dialog.show()
-        val btnPositive = dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
+        val btnPositive = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
         onSelectionUpdated = {
             btnPositive.isEnabled = selectionAdapter.getSelectedIds().isNotEmpty()
         }

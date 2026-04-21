@@ -24,6 +24,7 @@
         <activity
             android:name=".ui.main.MainActivity"
             android:exported="true"
+            android:theme="@style/Theme.CardsDesignerPro.Splash"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -38,9 +39,14 @@
 
         <activity
             android:name=".ui.export.ExportCardsActivity"
-            android:exported="true"
-            android:windowSoftInputMode="adjustResize">
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
+        <activity-alias
+            android:name=".ExportCardsAlias"
+            android:label="@string/alias_export_cards"
+            android:targetActivity=".ui.export.ExportCardsActivity"
+            android:exported="true">
             <!-- فتح من مدير الملفات — يتطابق مع كل أنواع CSV و Excel -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -55,28 +61,37 @@
             <!-- مشاركة من تطبيق آخر — بدون تحديد scheme -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/csv" />
                 <data android:mimeType="text/comma-separated-values" />
                 <data android:mimeType="application/vnd.ms-excel" />
                 <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
             </intent-filter>
-        </activity>
+        </activity-alias>
 
         <activity
             android:name=".ui.viewer.PdfViewerActivity"
+            android:exported="false" />
+
+        <activity-alias
+            android:name=".PdfViewerAlias"
+            android:label="@string/alias_pdf_preview"
+            android:targetActivity=".ui.viewer.PdfViewerActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
-
                 <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
                 <data android:scheme="file" />
                 <data android:scheme="content" />
                 <data android:mimeType="application/pdf" />
             </intent-filter>
-        </activity>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
+        </activity-alias>
 
         <service
             android:name=".ui.export.PdfExportService"

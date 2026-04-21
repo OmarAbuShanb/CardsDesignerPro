@@ -6,8 +6,7 @@
     android:orientation="horizontal"
     android:gravity="center_vertical"
     android:paddingVertical="8dp"
-    android:paddingHorizontal="4dp"
-    android:layoutDirection="rtl">
+    android:paddingHorizontal="4dp">
 
     <ImageView
         android:id="@+id/iv_drag_handle"
@@ -19,18 +18,19 @@
         android:padding="4dp"
         app:tint="?attr/colorOnSurfaceVariant" />
 
-    <!-- Card count badge — shown when file is supported + parsed -->
+    <!-- Card count badge — always visible; text changes between "جاري المعالجة…" / count / empty -->
     <TextView
         android:id="@+id/tv_card_count"
         android:layout_width="wrap_content"
         android:layout_height="48dp"
+        android:minWidth="64dp"
         android:paddingHorizontal="8dp"
         android:gravity="center"
         android:textAppearance="?attr/textAppearanceLabelMedium"
         android:textColor="?attr/colorOnPrimaryContainer"
         android:background="@android:color/transparent"
         android:layout_marginEnd="8dp"
-        android:visibility="gone" />
+        android:visibility="visible" />
 
     <!-- Name + error -->
     <LinearLayout
@@ -66,6 +66,6 @@
         android:background="?attr/selectableItemBackgroundBorderless"
         android:padding="4dp"
         android:contentDescription="@string/action_remove_file"
-        android:tint="?attr/colorOnSurfaceVariant" />
+        app:tint="?attr/colorOnSurfaceVariant" />
 
 </LinearLayout>

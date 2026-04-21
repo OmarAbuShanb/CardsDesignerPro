@@ -122,13 +122,14 @@
     {
       "type": "image",
       "id": "username_icon",
-      "x": 420.0,
+      "x": 410.0,
       "y": 80.0,
       "width": 30.0,
       "height": 30.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/avatar_icon.svg"
+      "imagePath": "pack:packs/icons/avatar_icon.svg",
+      "tintColor": "#1A2228"
     },
     {
       "type": "username",
@@ -162,13 +163,14 @@
     {
       "type": "image",
       "id": "password_icon",
-      "x": 420.0,
+      "x": 410.0,
       "y": 140.0,
       "width": 30.0,
       "height": 30.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/lock_icon.svg"
+      "imagePath": "pack:packs/icons/lock_icon.svg",
+      "tintColor": "#1A2228"
     },
     {
       "type": "password",
@@ -200,7 +202,7 @@
       "fontName": "cairo"
     },
     {
-      "type": "image",
+      "type": "shape",
       "id": "username_bg",
       "x": 180.0,
       "y": 70.0,
@@ -208,10 +210,13 @@
       "height": 50.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/misc/input_field_bg.svg"
+      "fillColor": "#FFFFFF",
+      "strokeColor": "#1A2228",
+      "strokeWidthDp": 2.0,
+      "cornerRadiusDp": 25.0
     },
     {
-      "type": "image",
+      "type": "shape",
       "id": "password_bg",
       "x": 180.0,
       "y": 130.0,
@@ -219,10 +224,13 @@
       "height": 50.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/misc/input_field_bg.svg"
+      "fillColor": "#FFFFFF",
+      "strokeColor": "#1A2228",
+      "strokeWidthDp": 2.0,
+      "cornerRadiusDp": 25.0
     },
     {
-      "type": "image",
+      "type": "shape",
       "id": "price_circle",
       "x": 20.0,
       "y": 70.0,
@@ -230,7 +238,10 @@
       "height": 100.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/misc/circle_price.svg"
+      "fillColor": "#FFFFFF",
+      "strokeColor": "#1A2228",
+      "strokeWidthDp": 3.0,
+      "cornerRadiusDp": 50.0
     },
     {
       "type": "image",

@@ -1,8 +1,8 @@
 [versions]
 agp = "9.1.1"
 androidsvgAar = "1.4"
-kotlin = "2.1.0"
-kotlinxSerialization = "1.10.0"
+kotlinSerialization = "2.3.20"
+kotlinxSerializationJson = "1.11.0"
 coreKtx = "1.18.0"
 junit = "4.13.2"
 junitVersion = "1.3.0"
@@ -29,6 +29,8 @@ afreakyelfPdfViewer = "2.4.0"
 androidxPdfViewer = "1.0.0-alpha17"
 # Image loading
 coil = "2.7.0"
+# Splash Screen
+splashscreen = "1.2.0"
 
 [libraries]
 androidsvg-aar = { module = "com.caverock:androidsvg-aar", version.ref = "androidsvgAar" }
@@ -49,7 +51,7 @@ androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecyc
 # Coroutines
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 # Serialization
-kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 # Lightweight pure Kotlin 16KB safe PDF Viewer for old devices
 afreakyelf-pdf-viewer = { module = "io.github.afreakyelf:Pdf-Viewer", version.ref = "afreakyelfPdfViewer" }
 # Jetpack PDF Viewer for Android 12+ devices
@@ -63,7 +65,9 @@ custom-qr-generator = { group = "com.github.alexzhirkevich", name = "custom-qr-g
 colorpickerview = { group = "com.github.skydoves", name = "colorpickerview", version.ref = "colorpickerview" }
 # Image loading
 coil = { group = "io.coil-kt", name = "coil", version.ref = "coil" }
+# Splash Screen
+androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashscreen" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinSerialization" }

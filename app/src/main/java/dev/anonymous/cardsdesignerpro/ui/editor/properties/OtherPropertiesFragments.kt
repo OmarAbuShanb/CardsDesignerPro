@@ -36,10 +36,10 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
         super.onViewCreated(view, savedInstanceState)
         b.sliderFontSize.valueFrom = MIN_TEXT_SIZE_SP
         b.sliderFontSize.valueTo = MAX_TEXT_SIZE_SP
-        val formats = DateFormat.values()
+        val formats = DateFormat.entries.toTypedArray()
         b.spinnerDateFormat.adapter = ArrayAdapter(
             requireContext(),
-            android.R.layout.simple_spinner_item, formats.map { it.displayName })
+            android.R.layout.simple_spinner_item, formats.map { getString(it.displayNameRes) })
             .apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
 
         fontAdapter = FontSpinnerAdapter(requireContext(), getAvailableFonts(requireContext()))
@@ -83,6 +83,7 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
             }
         }
         b.sliderFontSize.addOnChangeListener { _, v, _ ->
+            b.tvFontSizeLabel.text = getString(R.string.prop_font_size) + ": ${v.toInt()}"
             if (!updating) {
                 val e = viewModel.selectedElement as? TemplateElement.DateElement
                 if (e != null && e.textSizeSp != v) viewModel.updateElement(e.copy(textSizeSp = v))
@@ -100,6 +101,7 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
             if (e != null && e.textStrokeColor != hex) viewModel.updateElement(e.copy(textStrokeColor = hex))
         }
         b.sliderTextStroke.addOnChangeListener { _, v, _ ->
+            b.tvStrokeSizeLabel.text = getString(R.string.prop_text_stroke) + ": ${v.toInt()}"
             if (!updating && b.cbTextStroke.isChecked) {
                 val e = viewModel.selectedElement as? TemplateElement.DateElement
                 if (e != null && e.textStrokeWidth != v) viewModel.updateElement(e.copy(textStrokeWidth = v))
@@ -134,8 +136,9 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
             b.btnClearBgColor.visibility = View.GONE
         }
         if (b.cbBold.isChecked != e.isBold) b.cbBold.isChecked = e.isBold
-        val s = kotlin.math.round(e.textSizeSp).toFloat().coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP)
+        val s = kotlin.math.round(e.textSizeSp).coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP)
         if (b.sliderFontSize.value != s) b.sliderFontSize.value = s
+        b.tvFontSizeLabel.text = getString(R.string.prop_font_size) + ": ${s.toInt()}"
         
         // Text stroke
         val hasStroke = e.textStrokeWidth > 0f
@@ -144,13 +147,14 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
         
         val targetStroke = e.textStrokeWidth.coerceAtLeast(1f).coerceAtMost(10f)
         if (b.sliderTextStroke.value != targetStroke) b.sliderTextStroke.value = targetStroke
+        b.tvStrokeSizeLabel.text = getString(R.string.prop_text_stroke) + ": ${targetStroke.toInt()}"
         if (b.cpvStrokeColor.colorHex != e.textStrokeColor) b.cpvStrokeColor.colorHex = e.textStrokeColor
         b.tvStrokeColorHex.text = e.textStrokeColor
 
         // Update Font Adapter preview
         val previewStr = try {
             java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern(e.format.pattern))
-        } catch (ex: Exception) {
+        } catch (_: Exception) {
             "معاينة التاريخ"
         }
         if (fontAdapter?.previewText != previewStr) {
@@ -168,7 +172,7 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
         val el = viewModel.currentElements.firstOrNull { it.id == state.selectedElementId }
                 as? TemplateElement.DateElement ?: return
         populate(
-            el, DateFormat.values()
+            el, DateFormat.entries.toTypedArray()
         )
     }
 
@@ -200,16 +204,28 @@ class FramePropertiesFragment : Fragment(), PropertyFragment {
         }
         b.stepperThickness.onValueChanged =
             { update { el2 -> el2.copy(strokeWidthDp = it.toFloat()) } }
-        b.sliderCornerRadius.addOnChangeListener { _, value, _ -> update { it.copy(cornerRadiusDp = value) } }
-        b.sliderPadding.addOnChangeListener { _, value, _ -> update { it.copy(paddingDp = value) } }
+        b.sliderCornerRadius.addOnChangeListener { _, value, _ -> 
+            b.tvCornerRadiusLabel.text = getString(R.string.prop_frame_corner_radius) + ": ${value.toInt()}"
+            update { it.copy(cornerRadiusDp = value) } 
+        }
+        b.sliderPadding.addOnChangeListener { _, value, _ -> 
+            b.tvPaddingLabel.text = getString(R.string.prop_frame_padding) + ": ${value.toInt()}"
+            update { it.copy(paddingDp = value) } 
+        }
         b.cbDashed.setOnCheckedChangeListener { _, checked ->
             if (!updating) {
                 update { it.copy(isDashed = checked) }
                 b.layoutDashOptions.visibility = if (checked) View.VISIBLE else View.GONE
             }
         }
-        b.sliderDashLength.addOnChangeListener { _, value, _ -> update { it.copy(dashLengthDp = value) } }
-        b.sliderDashGap.addOnChangeListener { _, value, _ -> update { it.copy(dashGapDp = value) } }
+        b.sliderDashLength.addOnChangeListener { _, value, _ -> 
+            b.tvDashLengthLabel.text = getString(R.string.prop_frame_dash_length) + ": ${value.toInt()}"
+            update { it.copy(dashLengthDp = value) } 
+        }
+        b.sliderDashGap.addOnChangeListener { _, value, _ -> 
+            b.tvDashGapLabel.text = getString(R.string.prop_frame_dash_gap) + ": ${value.toInt()}"
+            update { it.copy(dashGapDp = value) } 
+        }
         b.cbDashRounded.setOnCheckedChangeListener { _, checked ->
             if (!updating) update { it.copy(isDashRounded = checked) }
         }
@@ -228,8 +244,12 @@ class FramePropertiesFragment : Fragment(), PropertyFragment {
         }
         val corner = el.cornerRadiusDp.coerceIn(0f, 100f)
         if (b.sliderCornerRadius.value != corner) b.sliderCornerRadius.value = corner
+        b.tvCornerRadiusLabel.text = getString(R.string.prop_frame_corner_radius) + ": ${corner.toInt()}"
+
         val padding = el.paddingDp.coerceIn(0f, 60f)
         if (b.sliderPadding.value != padding) b.sliderPadding.value = padding
+        b.tvPaddingLabel.text = getString(R.string.prop_frame_padding) + ": ${padding.toInt()}"
+
         // Checkbox: guard to prevent requestLayout from firing when value same
         if (b.cbDashed.isChecked != el.isDashed) {
             b.cbDashed.isChecked = el.isDashed
@@ -237,8 +257,11 @@ class FramePropertiesFragment : Fragment(), PropertyFragment {
         }
         val dashLen = el.dashLengthDp.coerceIn(2f, 60f)
         if (b.sliderDashLength.value != dashLen) b.sliderDashLength.value = dashLen
+        b.tvDashLengthLabel.text = getString(R.string.prop_frame_dash_length) + ": ${dashLen.toInt()}"
+
         val dashGap = el.dashGapDp.coerceIn(0f, 40f)
         if (b.sliderDashGap.value != dashGap) b.sliderDashGap.value = dashGap
+        b.tvDashGapLabel.text = getString(R.string.prop_frame_dash_gap) + ": ${dashGap.toInt()}"
         if (b.cbDashRounded.isChecked != el.isDashRounded) b.cbDashRounded.isChecked =
             el.isDashRounded
         updating = false

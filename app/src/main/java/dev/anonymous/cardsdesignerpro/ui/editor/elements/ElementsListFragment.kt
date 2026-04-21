@@ -50,7 +50,8 @@ class ElementsListFragment : Fragment() {
                 (parentFragment as? dev.anonymous.cardsdesignerpro.ui.editor.EditorBottomSheetFragment)
                     ?.switchToPropertiesTab()
             },
-            onDelete = { id -> viewModel.deleteElement(id) }
+            onDelete = { id -> viewModel.deleteElement(id) },
+            onDuplicate = { id -> viewModel.duplicateShapeElement(id) },
         )
         binding.rvElements.layoutManager = LinearLayoutManager(requireContext())
         binding.rvElements.adapter = adapter

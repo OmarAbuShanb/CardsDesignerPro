@@ -3,19 +3,20 @@ package dev.anonymous.cardsdesignerpro.ui.export
 import android.app.Application
 import android.content.Context
 import android.net.Uri
+import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import dev.anonymous.cardsdesignerpro.data.model.ExportSettings
 import dev.anonymous.cardsdesignerpro.data.model.ExportQuality
+import dev.anonymous.cardsdesignerpro.data.model.ExportSettings
 import dev.anonymous.cardsdesignerpro.data.model.FlipEdge
 import dev.anonymous.cardsdesignerpro.data.model.PageSize
 import dev.anonymous.cardsdesignerpro.data.model.Template
+import dev.anonymous.cardsdesignerpro.data.model.TemplateElement
 import dev.anonymous.cardsdesignerpro.data.parser.CsvParser
 import dev.anonymous.cardsdesignerpro.data.parser.ExcelParser
 import dev.anonymous.cardsdesignerpro.data.parser.ParseResult
 import dev.anonymous.cardsdesignerpro.data.repository.TemplateRepository
 import dev.anonymous.cardsdesignerpro.util.PdfExporter
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,11 +24,24 @@ import kotlinx.coroutines.launch
 
 /** A single file chosen by the user for export data. */
 data class SelectedFile(
-    val uri: android.net.Uri,
+    val uri: Uri,
     val displayName: String,
     val isSupported: Boolean,
     val parseResult: ParseResult? = null,  // null while parsing
     val isParsing: Boolean = false,
+)
+
+/**
+ * A record whose username/password digit length doesn't match the template's [digitCount].
+ * [recordIndex] is 1-based — it reflects the user's position in the merged data list,
+ * not the physical row number in the original spreadsheet.
+ */
+data class MismatchedRecord(
+    val recordIndex: Int,
+    val username: String?,
+    val password: String?,
+    val expectedUserLen: Int?,
+    val expectedPassLen: Int?,
 )
 
 data class ExportUiState(
@@ -49,11 +63,9 @@ data class ExportUiState(
 ) {
     /** Convenience: true when at least one file is still being parsed. */
     val isParsingFile: Boolean get() = selectedFiles.any { it.isParsing }
-    val isParsingShortFile: Boolean get() = selectedShortFiles.any { it.isParsing }
+
     /** Convenience accessor used by renderState. */
     val parseResult: ParseResult? get() = combinedParseResult
-    val fileName: String? get() = selectedFiles.firstOrNull()?.displayName
-    val fileUri: android.net.Uri? get() = selectedFiles.firstOrNull()?.uri
 }
 
 
@@ -64,8 +76,14 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
     val uiState: StateFlow<ExportUiState> = _uiState.asStateFlow()
 
     private val prefs = application.getSharedPreferences("export_prefs", Context.MODE_PRIVATE)
+    
+    /** Flag to prevent re-processing the same intent (e.g. during system recreation). */
+    private var _isIntentProcessed = false
+    var isIntentProcessed: Boolean
+        get() = _isIntentProcessed
+        set(value) { _isIntentProcessed = value }
 
-    init { 
+    init {
         loadTemplates()
         observeExportManager()
     }
@@ -121,7 +139,8 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     fun addFiles(uris: List<Uri>, displayNames: List<String>, isShort: Boolean = false) {
-        val current = if (isShort) _uiState.value.selectedShortFiles.toMutableList() else _uiState.value.selectedFiles.toMutableList()
+        val current =
+            if (isShort) _uiState.value.selectedShortFiles.toMutableList() else _uiState.value.selectedFiles.toMutableList()
         val supported = setOf("csv", "xlsx", "xls")
         uris.forEachIndexed { i, uri ->
             val name = displayNames.getOrElse(i) { uri.lastPathSegment ?: "file" }
@@ -130,11 +149,14 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
             val entry = SelectedFile(uri, name, isSupported, isParsing = isSupported)
             current.add(entry)
         }
-        _uiState.value = if (isShort) _uiState.value.copy(selectedShortFiles = current) else _uiState.value.copy(selectedFiles = current)
+        _uiState.value =
+            if (isShort) _uiState.value.copy(selectedShortFiles = current) else _uiState.value.copy(
+                selectedFiles = current
+            )
         parseNewFiles(uris.filterIndexed { i, _ ->
             val name = displayNames.getOrElse(i) { "" }
             name.substringAfterLast('.', "").lowercase() in supported
-        }, displayNames.filterIndexed { i, name ->
+        }, displayNames.filterIndexed { _, name ->
             name.substringAfterLast('.', "").lowercase() in supported
         }, isShort)
     }
@@ -155,9 +177,6 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
         }
         recalcLayout()
     }
-
-    /** Legacy single-file API kept for compatibility. */
-    fun setFile(uri: Uri, displayName: String) = addFiles(listOf(uri), listOf(displayName))
 
     fun setFilesOrder(files: List<SelectedFile>, isShort: Boolean = false) {
         if (isShort) {
@@ -180,9 +199,19 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
             viewModelScope.launch {
                 val ctx = getApplication<Application>()
                 val result = when {
-                    name.endsWith(".csv",  ignoreCase = true) -> CsvParser.parse(ctx, uri)
-                    name.endsWith(".xlsx", ignoreCase = true) -> ExcelParser.parse(ctx, uri, isXlsx = true)
-                    name.endsWith(".xls",  ignoreCase = true) -> ExcelParser.parse(ctx, uri, isXlsx = false)
+                    name.endsWith(".csv", ignoreCase = true) -> CsvParser.parse(ctx, uri)
+                    name.endsWith(".xlsx", ignoreCase = true) -> ExcelParser.parse(
+                        ctx,
+                        uri,
+                        isXlsx = true
+                    )
+
+                    name.endsWith(".xls", ignoreCase = true) -> ExcelParser.parse(
+                        ctx,
+                        uri,
+                        isXlsx = false
+                    )
+
                     else -> null
                 }
                 if (isShort) {
@@ -217,18 +246,33 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
     }
 
 
-    fun updateCardLayout(index: Int) { mutateSettings { it.copy(selectedLayoutIndex = index) } }
-    fun updateHorizontalSpacing(v: Float) { mutateSettings { it.copy(horizontalSpacingDp = v) } }
-    fun updateVerticalSpacing(v: Float)   { mutateSettings { it.copy(verticalSpacingDp = v) } }
-    fun updatePageSize(p: PageSize)       { mutateSettings { it.copy(pageSize = p) } }
+    fun updateCardLayout(index: Int) {
+        mutateSettings { it.copy(selectedLayoutIndex = index) }
+    }
+
+    fun updateHorizontalSpacing(v: Float) {
+        mutateSettings { it.copy(horizontalSpacingDp = v) }
+    }
+
+    fun updateVerticalSpacing(v: Float) {
+        mutateSettings { it.copy(verticalSpacingDp = v) }
+    }
+
+    fun updatePageSize(p: PageSize) {
+        mutateSettings { it.copy(pageSize = p) }
+    }
+
     fun updateQuality(q: ExportQuality) {
         _uiState.value = _uiState.value.copy(settings = _uiState.value.settings.copy(quality = q))
     }
-    fun updateFlipEdge(e: FlipEdge)       {
+
+    fun updateFlipEdge(e: FlipEdge) {
         _uiState.value = _uiState.value.copy(settings = _uiState.value.settings.copy(flipEdge = e))
     }
+
     fun updateExportFrontOnly(v: Boolean) {
-        _uiState.value = _uiState.value.copy(settings = _uiState.value.settings.copy(exportFrontOnly = v))
+        _uiState.value =
+            _uiState.value.copy(settings = _uiState.value.settings.copy(exportFrontOnly = v))
     }
 
     fun export(outputUri: Uri) {
@@ -236,7 +280,7 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
         val state = _uiState.value
         val template = state.templates.getOrNull(state.selectedTemplateIndex) ?: return
         val parse = state.parseResult ?: return
-        
+
         ExportManager.currentRequest = ExportManager.ExportRequest(
             template = template,
             parseResult = parse,
@@ -247,7 +291,7 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
             backUri = null,
             mode = ExportManager.ExportRequest.Mode.SINGLE
         )
-        
+
         startExportService(template)
     }
 
@@ -256,7 +300,7 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
         val state = _uiState.value
         val template = state.templates.getOrNull(state.selectedTemplateIndex) ?: return
         val parse = state.parseResult ?: return
-        
+
         ExportManager.currentRequest = ExportManager.ExportRequest(
             template = template,
             parseResult = parse,
@@ -267,7 +311,7 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
             backUri = null,
             mode = ExportManager.ExportRequest.Mode.DUAL
         )
-        
+
         startExportService(template)
     }
 
@@ -276,7 +320,7 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
         val state = _uiState.value
         val template = state.templates.getOrNull(state.selectedTemplateIndex) ?: return
         val parse = state.parseResult ?: return
-        
+
         ExportManager.currentRequest = ExportManager.ExportRequest(
             template = template,
             parseResult = parse,
@@ -287,28 +331,24 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
             backUri = backUri,
             mode = ExportManager.ExportRequest.Mode.SEPARATE
         )
-        
+
         startExportService(template)
     }
-    
+
     private fun startExportService(template: Template) {
         val ctx = getApplication<Application>()
         val intent = android.content.Intent(ctx, PdfExportService::class.java)
         androidx.core.content.ContextCompat.startForegroundService(ctx, intent)
-        
+
         viewModelScope.launch {
             repo.save(template.copy(exportSettings = _uiState.value.settings))
-            prefs.edit().putString("last_template_id", template.id).apply()
+            prefs.edit { putString("last_template_id", template.id) }
         }
     }
 
     fun consumeEvent() {
         _uiState.value = _uiState.value.copy(event = null)
         ExportManager.clearEvent()
-    }
-    
-    fun cancelExport() { 
-        // We do not allow cancelling foreground export actively from UI to avoid corruption.
     }
 
     val selectedTemplate: Template?
@@ -319,10 +359,52 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
         recalcLayout()
     }
 
+    /**
+     * Validates that each record's username/password length matches the template's [digitCount].
+     * Returns a list of [MismatchedRecord] for records that don't match (empty = all OK).
+     * [recordIndex] is the 1-based position of the user in the final data list (not the Excel row).
+     */
+    fun validateDigitLengths(): List<MismatchedRecord> {
+        val state = _uiState.value
+        val template = state.templates.getOrNull(state.selectedTemplateIndex) ?: return emptyList()
+        val parse = state.combinedParseResult ?: return emptyList()
+
+        val userEl = template.elements
+            .filterIsInstance<TemplateElement.UsernameElement>()
+            .firstOrNull { !it.isShortVariant }
+        val passEl = template.elements
+            .filterIsInstance<TemplateElement.PasswordElement>()
+            .firstOrNull { !it.isShortVariant }
+
+        // If the template has no username/password elements, skip validation
+        if (userEl == null && passEl == null) return emptyList()
+
+        val expectedUserLen = userEl?.digitCount
+        val expectedPassLen = passEl?.digitCount
+
+        return parse.records.mapIndexedNotNull { index, record ->
+            val username = parse.usernameColumn?.let { record[it] }
+            val password = parse.passwordColumn?.let { record[it] }
+            val userMismatch =
+                username != null && expectedUserLen != null && username.length != expectedUserLen
+            val passMismatch =
+                password != null && expectedPassLen != null && password.length != expectedPassLen
+            if (userMismatch || passMismatch) {
+                MismatchedRecord(
+                    recordIndex = index + 1,
+                    username = username,
+                    password = password,
+                    expectedUserLen = expectedUserLen,
+                    expectedPassLen = expectedPassLen
+                )
+            } else null
+        }
+    }
+
     private fun recalcLayout() {
-        val state    = _uiState.value
+        val state = _uiState.value
         val template = state.templates.getOrNull(state.selectedTemplateIndex) ?: return
-        val layout   = PdfExporter.calculateLayout(template, state.settings)
+        val layout = PdfExporter.calculateLayout(template, state.settings)
         val backLayout = if (template.isBackSideEnabled) layout else null
         _uiState.value = _uiState.value.copy(layout = layout, backLayout = backLayout)
     }

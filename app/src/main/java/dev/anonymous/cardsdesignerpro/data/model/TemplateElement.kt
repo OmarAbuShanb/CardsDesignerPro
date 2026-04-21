@@ -1,5 +1,7 @@
 package dev.anonymous.cardsdesignerpro.data.model
 
+import androidx.annotation.StringRes
+import dev.anonymous.cardsdesignerpro.R
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -15,6 +17,7 @@ sealed class TemplateElement {
     abstract val width: Float
     abstract val height: Float
     abstract val isVisible: Boolean
+
     /** Rotation in degrees around element center. */
     abstract val rotation: Float
 
@@ -52,6 +55,7 @@ sealed class TemplateElement {
         val textSizeSp: Float = 15f,
         val textStrokeWidth: Float = 0f,
         val textStrokeColor: String = "#000000",
+        val textAlign: TextAlign = TextAlign.CENTER,
     ) : TemplateElement()
 
     // ── Username ─────────────────────────────────────────────────────────────
@@ -210,16 +214,27 @@ sealed class TemplateElement {
         val strokeWidthDp: Float = 0f,
         /** Corner radius in template dp (0 = sharp corners). */
         val cornerRadiusDp: Float = 0f,
+        /** Whether the stroke is drawn as a dashed line. */
+        val isDashed: Boolean = false,
+        /** Dash segment length in template dp. */
+        val dashLengthDp: Float = 10f,
+        /** Gap between dashes in template dp. */
+        val dashGapDp: Float = 5f,
+        /** Whether dash caps are rounded. */
+        val isDashRounded: Boolean = false,
     ) : TemplateElement()
 }
 
 // ── Supporting enums ──────────────────────────────────────────────────────────
 
-enum class DateFormat(val pattern: String, val displayName: String) {
-    YEAR_MONTH_DAY_SLASH("yyyy/MM/dd", "السنة/الشهر/اليوم"),
-    YEAR_MONTH_DAY_DASH("yyyy-MM-dd", "السنة-الشهر-اليوم"),
-    MONTH_DAY_SLASH("MM/dd", "الشهر/اليوم"),
-    MONTH_DAY_DASH("MM-dd", "الشهر-اليوم");
+@Serializable
+enum class TextAlign {
+    START, CENTER, END
 }
 
-
+enum class DateFormat(val pattern: String, @param:StringRes val displayNameRes: Int) {
+    YEAR_MONTH_DAY_SLASH("yyyy/MM/dd", R.string.date_format_year_month_day_slash),
+    YEAR_MONTH_DAY_DASH("yyyy-MM-dd", R.string.date_format_year_month_day_dash),
+    MONTH_DAY_SLASH("MM/dd", R.string.date_format_month_day_slash),
+    MONTH_DAY_DASH("MM-dd", R.string.date_format_month_day_dash);
+}

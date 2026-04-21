@@ -42,7 +42,7 @@
       "id": "network_name_title",
       "x": 240.0,
       "y": 20.0,
-      "width": 300.0,
+      "width": 360.0,
       "height": 40.0,
       "isVisible": true,
       "rotation": 0.0,
@@ -126,7 +126,7 @@
       "fontName": "cairo"
     },
     {
-      "type": "image",
+      "type": "shape",
       "id": "username_bg",
       "x": 270.0,
       "y": 105.0,
@@ -134,10 +134,13 @@
       "height": 45.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/misc/input_bg_gray_large.svg"
+      "fillColor": "#F5F5F5",
+      "strokeColor": "#D0D0D0",
+      "strokeWidthDp": 1.0,
+      "cornerRadiusDp": 10.0
     },
     {
-      "type": "image",
+      "type": "shape",
       "id": "password_bg",
       "x": 230.0,
       "y": 160.0,
@@ -145,7 +148,10 @@
       "height": 45.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/misc/input_bg_gray_small.svg"
+      "fillColor": "#F5F5F5",
+      "strokeColor": "#D0D0D0",
+      "strokeWidthDp": 1.0,
+      "cornerRadiusDp": 10.0
     },
     {
       "type": "image",

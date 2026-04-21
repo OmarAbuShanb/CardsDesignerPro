@@ -5,13 +5,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import dev.anonymous.cardsdesignerpro.R
 import dev.anonymous.cardsdesignerpro.databinding.FragmentPropTextBinding
 import dev.anonymous.cardsdesignerpro.data.model.TemplateElement
+import dev.anonymous.cardsdesignerpro.data.model.TextAlign
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorUiState
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel.Companion.MAX_TEXT_SIZE_SP
@@ -89,7 +89,8 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
         if (binding.cbBold.isChecked != el.isBold) binding.cbBold.isChecked = el.isBold
 
         // Slider: guard setValue (also fires listener which could loop)
-        val targetSize = kotlin.math.round(el.textSizeSp).toFloat().coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP)
+        val targetSize = kotlin.math.round(el.textSizeSp)
+            .coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP)
         if (binding.sliderFontSize.value != targetSize) {
             binding.sliderFontSize.value = targetSize
         }
@@ -120,6 +121,16 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
         val fontIdx = getAvailableFonts(requireContext()).indexOfFirst { it.second == el.fontName }.coerceAtLeast(0)
         if (binding.spinnerFont.selectedItemPosition != fontIdx) binding.spinnerFont.setSelection(fontIdx)
 
+        // Text alignment toggle
+        val alignBtnId = when (el.textAlign) {
+            TextAlign.START  -> R.id.btn_align_start
+            TextAlign.CENTER -> R.id.btn_align_center
+            TextAlign.END    -> R.id.btn_align_end
+        }
+        if (binding.toggleTextAlign.checkedButtonId != alignBtnId) {
+            binding.toggleTextAlign.check(alignBtnId)
+        }
+
         updating = false
     }
 
@@ -132,7 +143,9 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
             val el = viewModel.selectedElement as? TemplateElement.TextElement ?: return@doAfterTextChanged
             val newText = text.toString().ifEmpty { getString(R.string.default_text_placeholder) }
             if (el.text == newText) return@doAfterTextChanged   // no real change
-            viewModel.updateElement(el.copy(text = newText))
+            val updated = el.copy(text = newText)
+            viewModel.updateElement(updated)
+            viewModel.resizeTextElementToFit(updated)
         }
         binding.cpvTextColor.onColorSelected = { hex ->
             binding.tvTextColorHex.text = hex
@@ -158,8 +171,14 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
             binding.tvFontSizeLabel.text = getString(R.string.prop_font_size) + ": ${size.toInt()}"
             if (!updating) {
                 val el = viewModel.selectedElement as? TemplateElement.TextElement
-                if (el != null && el.textSizeSp != size)
-                    viewModel.updateElement(el.copy(textSizeSp = size))
+                if (el != null && el.textSizeSp != size) {
+                    // Uniform scale — same behavior as the bottom-right resize handle:
+                    // width and height scale proportionally so the text box keeps its shape.
+                    val scaleFactor = size / el.textSizeSp.coerceAtLeast(0.1f)
+                    val newW = el.width  * scaleFactor
+                    val newH = el.height * scaleFactor
+                    viewModel.scaleTextFontSize(el.id, size, newW, newH)
+                }
             }
         }
         binding.cbTextStroke.setOnCheckedChangeListener { _, isChecked ->
@@ -189,9 +208,21 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
                 val el = viewModel.selectedElement as? TemplateElement.TextElement ?: return
                 val newFont = getAvailableFonts(requireContext())[pos].second
                 if (el.fontName == newFont) return   // spurious fire from setSelection()
-                viewModel.updateElement(el.copy(fontName = newFont))
+                val updated = el.copy(fontName = newFont)
+                viewModel.updateElement(updated)
+                viewModel.resizeTextElementToFit(updated)
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+        binding.toggleTextAlign.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked || updating) return@addOnButtonCheckedListener
+            val el = viewModel.selectedElement as? TemplateElement.TextElement ?: return@addOnButtonCheckedListener
+            val newAlign = when (checkedId) {
+                R.id.btn_align_start  -> TextAlign.START
+                R.id.btn_align_end    -> TextAlign.END
+                else                  -> TextAlign.CENTER
+            }
+            if (el.textAlign != newAlign) viewModel.updateElement(el.copy(textAlign = newAlign))
         }
     }
 

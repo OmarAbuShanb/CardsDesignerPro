@@ -1,4 +1,4 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources>
 
     <style name="Base.Theme.CardsDesignerPro" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/md_theme_dark_primary</item>
@@ -16,8 +16,13 @@
         <item name="colorError">@color/md_theme_dark_error</item>
         <item name="colorOnError">@color/md_theme_dark_onError</item>
         <item name="android:statusBarColor">?attr/colorSurface</item>
-        <item name="android:layoutDirection">rtl</item>
         <item name="android:supportsRtl">true</item>
+    </style>
+
+    <!-- Splash Screen (dark mode) -->
+    <style name="Theme.CardsDesignerPro.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenAnimatedIcon">@drawable/app_icon</item>
+        <item name="postSplashScreenTheme">@style/Theme.CardsDesignerPro</item>
     </style>
 
 </resources>

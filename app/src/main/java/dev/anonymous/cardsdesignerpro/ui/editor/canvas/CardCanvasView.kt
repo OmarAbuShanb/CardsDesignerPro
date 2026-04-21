@@ -21,6 +21,9 @@ import dev.anonymous.cardsdesignerpro.data.model.Template
 import dev.anonymous.cardsdesignerpro.data.model.TemplateElement
 import kotlin.math.atan2
 import kotlin.math.hypot
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.withRotation
+import androidx.core.graphics.toColorInt
 
 /**
  * Interactive canvas for the Template Editor.
@@ -36,7 +39,7 @@ import kotlin.math.hypot
  *
  * Touch:
  *  - requestDisallowInterceptTouchEvent(true) prevents NestedScrollView from stealing events
- *  - activePointerId tracks the exact finger for multi-touch safety
+ *  - activePointerId tracks the exact finger for multitouch safety
  *  - Tap vs drag detected via TAP_SLOP threshold on ACTION_UP (no GestureDetector in MOVE path)
  */
 class CardCanvasView @JvmOverloads constructor(
@@ -53,6 +56,10 @@ class CardCanvasView @JvmOverloads constructor(
         fun onCardHeightDrag(deltaRatio: Float)
         fun onShapeWidthResized(id: String, newWidth: Float)
         fun onShapeHeightResized(id: String, newY: Float, newHeight: Float)
+        fun onTextWidthResized(id: String, newWidth: Float)
+        /** Called during bottom-right drag on a TextElement: all three values are absolute targets.
+         *  [newWidth] and [newHeight] are in template-dp; [newSizeSp] is the target font size. */
+        fun onTextFontScaled(id: String, newSizeSp: Float, newWidth: Float, newHeight: Float)
     }
 
     var listener: Listener? = null
@@ -142,7 +149,7 @@ class CardCanvasView @JvmOverloads constructor(
             overlayTextPaint.typeface = resolveTypeface(fontName, isBold)
             // Large boxW — respects \n without wrapping long single lines
             val layout = StaticLayout.Builder
-                .obtain(textStr, 0, textStr.length, overlayTextPaint, 4096)
+                .obtain(textStr, 0, textStr.length, overlayTextPaint, 8192)
                 .setAlignment(Layout.Alignment.ALIGN_NORMAL)
                 .setLineSpacing(0f, 1f)
                 .setIncludePad(false)
@@ -160,8 +167,8 @@ class CardCanvasView @JvmOverloads constructor(
     private data class TextMeasureInfo(val text: String, val textSizeSp: Float, val fontName: String, val isBold: Boolean)
 
     private fun textMeasureInfo(el: TemplateElement): TextMeasureInfo? = when (el) {
-        is TemplateElement.TextElement ->
-            TextMeasureInfo(el.text.ifBlank { "A" }, el.textSizeSp, el.fontName, el.isBold)
+        // TextElement bounds are stored in el.width/el.height (set at creation + resized by pill handle)
+        // → do NOT measure dynamically; fall through to el.width/el.height path.
         is TemplateElement.UsernameElement ->
             TextMeasureInfo(dummyDigits(el.digitCount.coerceAtLeast(1)), el.textSizeSp, el.fontName, el.isBold)
         is TemplateElement.PasswordElement ->
@@ -206,7 +213,7 @@ class CardCanvasView @JvmOverloads constructor(
     private val iconDelete: Drawable? by lazy { loadIcon(R.drawable.ic_handle_delete) }
     private val iconMove:   Drawable? by lazy { loadIcon(R.drawable.ic_handle_move)   }
     private val iconHeight: Drawable? by lazy { loadIcon(R.drawable.ic_handle_height) }
-    private val iconWidth:  Drawable? by lazy { loadIcon(R.drawable.ic_handle_width)  }
+
     // Visibility toggle (eye) icon — loaded dynamically based on el.isVisible state
     private val iconVisOn:  Drawable? by lazy { loadIcon(R.drawable.ic_visibility_24)     }
     private val iconVisOff: Drawable? by lazy { loadIcon(R.drawable.ic_visibility_off_24) }
@@ -227,6 +234,7 @@ class CardCanvasView @JvmOverloads constructor(
     private var resizeStartAspect = 0f     // height/width ratio at drag start (0 = free resize)
     private var resizeStartRotation = 0f   // element rotation (degrees) at drag start
     private var resizeShapeStartElY = 0f   // el.y at RESIZE_H drag start (to keep bottom fixed)
+    private var resizeStartTextSizeSp = 0f // TextElement font size at RESIZE drag start
     // Drag (MOVE) start tracking — used for absolute-position snap calculation
     private var dragStartElX    = 0f      // el.x at the moment DRAG mode was entered
     private var dragStartElY    = 0f      // el.y at the moment DRAG mode was entered
@@ -289,7 +297,7 @@ class CardCanvasView @JvmOverloads constructor(
         if (!isInteractive) {
             val cached = previewCache
             if (cached != null) {
-                val dstRect = android.graphics.RectF(0f, 0f, cardWidthPx, cardHeightPx)
+                val dstRect = RectF(0f, 0f, cardWidthPx, cardHeightPx)
                 canvas.drawBitmap(cached, null, dstRect, null)
             } else {
                 // Draw placeholder (card background color) while rendering in background
@@ -300,8 +308,10 @@ class CardCanvasView @JvmOverloads constructor(
                     previewRendering = true
                     val tCopy = t
                     
-                    // Cap the preview dimension to balance performance and sharpness
-                    val maxDim = 1600f
+                    // Cap the preview dimension to balance performance and sharpness.
+                    // 900px gives good quality in the list while keeping render times short
+                    // (≈4× fewer pixels than 1600px → much faster landscape scrolling).
+                    val maxDim = 1200f
                     val scale = if (cardWidthPx > maxDim) maxDim / cardWidthPx else 1f
                     val reqW = (cardWidthPx * scale).toInt().coerceAtLeast(1)
                     val reqH = (cardHeightPx * scale).toInt().coerceAtLeast(1)
@@ -312,8 +322,10 @@ class CardCanvasView @JvmOverloads constructor(
                             renderer.maxImageDim = q.maxImageDim
                             renderer.maxQrDim    = q.maxQrDim
 
-                            val bmp = android.graphics.Bitmap.createBitmap(reqW, reqH, android.graphics.Bitmap.Config.ARGB_8888)
-                            renderer.draw(Canvas(bmp), tCopy, 0f, 0f, reqW.toFloat(), reqH.toFloat())
+                            val bmp = createBitmap(reqW, reqH)
+                            renderer.draw(Canvas(bmp), tCopy, 0f, 0f, reqW.toFloat(),
+                                reqH.toFloat()
+                            )
                             post {
                                 previewCache = bmp
                                 previewRendering = false
@@ -352,58 +364,84 @@ class CardCanvasView @JvmOverloads constructor(
             val cx = (el.x + el.width  / 2) * scaleX
             val cy = (el.y + el.height / 2) * scaleY
             val (hw, hh) = elementHalfSizes(el)
-            canvas.save()
-            canvas.rotate(el.rotation, cx, cy)
-            drawHandle(canvas, cx - hw - HANDLE_OFF, cy + hh + HANDLE_OFF, iconVisOff)
-            canvas.restore()
+            canvas.withRotation(el.rotation, cx, cy) {
+                drawHandle(this, cx - hw - HANDLE_OFF, cy + hh + HANDLE_OFF, iconVisOff)
+            }
             return
         }
 
-        val cx = (el.x + el.width  / 2) * scaleX
+        val cx = (el.x + el.width / 2) * scaleX
         val cy = (el.y + el.height / 2) * scaleY
         // For text elements: use measured text bounds; for others: use model bounds
         val (hw, hh) = elementHalfSizes(el)
 
-        canvas.save()
-        canvas.rotate(el.rotation, cx, cy)
-        // Two-stripe dashed border: hidden when user toggles the eye-handle for preview
-        if (showSelectionOverlay) {
-            val dashOn = 10f; val dashOff = 6f
-            selBorderDark.pathEffect  = DashPathEffect(floatArrayOf(dashOn, dashOff), 0f)
-            selBorderLight.pathEffect = DashPathEffect(floatArrayOf(dashOn, dashOff), (dashOn + dashOff) / 2)
-            val rect = RectF(cx - hw, cy - hh, cx + hw, cy + hh)
-            canvas.drawRect(rect, selBorderDark)
-            canvas.drawRect(rect, selBorderLight)
-            selBorderDark.pathEffect = null; selBorderLight.pathEffect = null
+        canvas.withRotation(el.rotation, cx, cy) {
+            // Two-stripe dashed border: hidden when user toggles the eye-handle for preview
+            if (showSelectionOverlay) {
+                val dashOn = 10f
+                val dashOff = 6f
+                selBorderDark.pathEffect = DashPathEffect(floatArrayOf(dashOn, dashOff), 0f)
+                selBorderLight.pathEffect =
+                    DashPathEffect(floatArrayOf(dashOn, dashOff), (dashOn + dashOff) / 2)
+                val rect = RectF(cx - hw, cy - hh, cx + hw, cy + hh)
+                drawRect(rect, selBorderDark)
+                drawRect(rect, selBorderLight)
+                selBorderDark.pathEffect = null; selBorderLight.pathEffect = null
+            }
+            // Handles:
+            //  top-left      → delete
+            //  top-right     → rotate
+            //  bottom-right  → resize (proportional for ShapeElement)
+            //  bottom-left   → overlay toggle (eye): hides/shows the dashed selection border
+            //  bottom-center → move
+            //  right edge    → width  (ShapeElement only, pill style)
+            //  top edge      → height (ShapeElement only, pill style)
+            drawHandle(this, cx + hw + HANDLE_OFF, cy + hh + HANDLE_OFF, iconResize)
+            drawHandle(this, cx + hw + HANDLE_OFF, cy - hh - HANDLE_OFF, iconRotate)
+            drawHandle(this, cx - hw - HANDLE_OFF, cy - hh - HANDLE_OFF, iconDelete)
+            // ShapeElement-only: pill handles on right/top edges + eye toggle at bottom-left
+            if (el is TemplateElement.ShapeElement) {
+                // Pass the full edge length so the pill scales with the element size
+                drawPillHandle(
+                    this,
+                    cx + hw,
+                    cy,
+                    isVertical = true,
+                    edgePx = hh * 2f
+                )  // right edge → width
+                drawPillHandle(
+                    this,
+                    cx,
+                    cy - hh,
+                    isVertical = false,
+                    edgePx = hw * 2f
+                )  // top edge  → height
+                drawHandle(
+                    this,
+                    cx - hw - HANDLE_OFF,
+                    cy + hh + HANDLE_OFF,                  // bottom-left → eye
+                    if (showSelectionOverlay) iconVisOn else iconVisOff
+                )
+            }
+            // TextElement-only: right-edge pill handle for width resize
+            if (el is TemplateElement.TextElement) {
+                drawPillHandle(
+                    this,
+                    cx + hw,
+                    cy,
+                    isVertical = true,
+                    edgePx = hh * 2f
+                )  // right edge → width
+            }
+            // Connector line: bottom-center of rect → move handle
+            val connDash = DashPathEffect(floatArrayOf(6f, 5f), 0f)
+            connectorDark.pathEffect = connDash
+            connectorLight.pathEffect = DashPathEffect(floatArrayOf(6f, 5f), 5.5f)
+            drawLine(cx, cy + hh, cx, cy + hh + HANDLE_OFF * 2 - HR, connectorDark)
+            drawLine(cx, cy + hh, cx, cy + hh + HANDLE_OFF * 2 - HR, connectorLight)
+            connectorDark.pathEffect = null; connectorLight.pathEffect = null
+            drawHandle(this, cx, cy + hh + HANDLE_OFF * 2, iconMove) // bottom-center → move
         }
-        // Handles:
-        //  top-left      → delete
-        //  top-right     → rotate
-        //  bottom-right  → resize (proportional for ShapeElement)
-        //  bottom-left   → overlay toggle (eye): hides/shows the dashed selection border
-        //  bottom-center → move
-        //  right edge    → width  (ShapeElement only, pill style)
-        //  top edge      → height (ShapeElement only, pill style)
-        drawHandle(canvas, cx + hw + HANDLE_OFF, cy + hh + HANDLE_OFF, iconResize)
-        drawHandle(canvas, cx + hw + HANDLE_OFF, cy - hh - HANDLE_OFF, iconRotate)
-        drawHandle(canvas, cx - hw - HANDLE_OFF, cy - hh - HANDLE_OFF, iconDelete)
-        // ShapeElement-only: pill handles on right/top edges + eye toggle at bottom-left
-        if (el is TemplateElement.ShapeElement) {
-            // Pass the full edge length so the pill scales with the element size
-            drawPillHandle(canvas, cx + hw, cy,     isVertical = true,  edgePx = hh * 2f)  // right edge → width
-            drawPillHandle(canvas, cx,     cy - hh, isVertical = false, edgePx = hw * 2f)  // top edge  → height
-            drawHandle(canvas, cx - hw - HANDLE_OFF, cy + hh + HANDLE_OFF,                  // bottom-left → eye
-                if (showSelectionOverlay) iconVisOn else iconVisOff)
-        }
-        // Connector line: bottom-center of rect → move handle
-        val connDash = DashPathEffect(floatArrayOf(6f, 5f), 0f)
-        connectorDark.pathEffect  = connDash
-        connectorLight.pathEffect = DashPathEffect(floatArrayOf(6f, 5f), 5.5f)
-        canvas.drawLine(cx, cy + hh, cx, cy + hh + HANDLE_OFF * 2 - HR, connectorDark)
-        canvas.drawLine(cx, cy + hh, cx, cy + hh + HANDLE_OFF * 2 - HR, connectorLight)
-        connectorDark.pathEffect = null; connectorLight.pathEffect = null
-        drawHandle(canvas, cx, cy + hh + HANDLE_OFF * 2, iconMove) // bottom-center → move
-        canvas.restore()
     }
 
     /**
@@ -618,7 +656,15 @@ class CardCanvasView @JvmOverloads constructor(
             resizeStartY        = y
             resizeStartVisualW  = hw * 2f / scaleX
             resizeStartRotation = el.rotation
-            // Proportional resize for Image, QR, Shape, and all text elements
+            // Store initial font size for ALL text-based elements to support clamped scaling
+            resizeStartTextSizeSp = when (el) {
+                is TemplateElement.TextElement -> el.textSizeSp
+                is TemplateElement.UsernameElement -> el.textSizeSp
+                is TemplateElement.PasswordElement -> el.textSizeSp
+                is TemplateElement.DateElement -> el.textSizeSp
+                else -> 0f
+            }
+            // Proportional resize for Image, QR, Shape, and other text elements
             resizeStartAspect = when {
                 el is TemplateElement.ImageElement || el is TemplateElement.QrElement ||
                 el is TemplateElement.ShapeElement ||
@@ -651,6 +697,18 @@ class CardCanvasView @JvmOverloads constructor(
                 return
             }
         }
+        // TextElement right-edge pill handle: width resize (height recalculates automatically)
+        if (el is TemplateElement.TextElement) {
+            val pillHitShort = 16f * dp
+            val pillHitLong  = hh * 0.6f
+            if (kotlin.math.abs(lx - (cx + hw)) < pillHitShort &&
+                kotlin.math.abs(ly - cy)        < pillHitLong) {
+                mode = Mode.RESIZE_W
+                resizeStartW = el.width
+                resizeStartX = x
+                return
+            }
+        }
         val elRect = RectF(cx - hw, cy - hh, cx + hw, cy + hh)
         if (elRect.contains(lx, ly)) {
             mode = Mode.DRAG
@@ -680,15 +738,19 @@ class CardCanvasView @JvmOverloads constructor(
                 val screenDy = (y - resizeStartY) / scaleY
                 // Local X component = how much we moved along the element's width axis
                 val localDx = screenDx * cosR + screenDy * sinR
-                // Local Y component = how much we moved along the element's height axis
-                val localDy = -screenDx * sinR + screenDy * cosR
 
-                if (isTextEl(el)) {
-                    // Text: uniform scale driven by X-axis movement
-                    val visualScale = ((resizeStartVisualW + localDx) / resizeStartVisualW).coerceAtLeast(0.1f)
-                    val newW = (resizeStartW * visualScale).coerceAtLeast(10f)
-                    val newH = (resizeStartH * visualScale).coerceAtLeast(10f)
-                    listener?.onElementResized(id, newW, newH)
+                if (el is TemplateElement.TextElement || isTextEl(el)) {
+                    // ALL text elements: bottom-right drag = uniform SCALE.
+                    // Font size is clamped first (10sp - 100sp).
+                    // Effective scale is derived from clamped size → stops W/H when font limit hit.
+                    val rawScale    = ((resizeStartVisualW + localDx) / resizeStartVisualW).coerceAtLeast(0.1f)
+                    val newSizeSp   = (resizeStartTextSizeSp * rawScale).coerceIn(10f, 100f)
+                    val effectiveScale = if (resizeStartTextSizeSp > 0f) newSizeSp / resizeStartTextSizeSp else 1f
+                    
+                    val newW = (resizeStartW * effectiveScale).coerceAtLeast(20f)
+                    val newH = (resizeStartH * effectiveScale).coerceAtLeast(8f)
+                    
+                    listener?.onTextFontScaled(id, newSizeSp, newW, newH)
                 } else if (resizeStartAspect > 0f) {
                     // Aspect-locked: Image, QR — use X-axis movement
                     val minW = if (resizeStartAspect > 1f) 20f / resizeStartAspect else 20f
@@ -696,6 +758,7 @@ class CardCanvasView @JvmOverloads constructor(
                     listener?.onElementResized(id, newW, newW * resizeStartAspect)
                 } else {
                     // Free resize (e.g. Frame, Line) — independent W and H
+                    val localDy = -screenDx * sinR + screenDy * cosR
                     val newW = (resizeStartW + localDx).coerceAtLeast(20f)
                     val newH = (resizeStartH + localDy).coerceAtLeast(20f)
                     listener?.onElementResized(id, newW, newH)
@@ -726,18 +789,23 @@ class CardCanvasView @JvmOverloads constructor(
                 // Drag right-center handle: changes width only, left edge stays fixed
                 val el = activeElements.firstOrNull { it.id == id } ?: return
                 val rawW = (resizeStartW + (x - resizeStartX) / scaleX).coerceAtLeast(10f)
-                // Snap to square: if width ≈ height, lock them equal
-                val newW = if (kotlin.math.abs(rawW - el.height) < SHAPE_SQUARE_SNAP) {
-                    if (!shapeSquareSnapped) {
-                        performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK)
-                        shapeSquareSnapped = true
-                    }
-                    el.height
+                if (el is TemplateElement.TextElement) {
+                    // TextElement: no snap-to-square; height is auto-recalculated by ViewModel
+                    listener?.onTextWidthResized(id, rawW)
                 } else {
-                    shapeSquareSnapped = false
-                    rawW
+                    // ShapeElement: snap to square
+                    val newW = if (kotlin.math.abs(rawW - el.height) < SHAPE_SQUARE_SNAP) {
+                        if (!shapeSquareSnapped) {
+                            performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK)
+                            shapeSquareSnapped = true
+                        }
+                        el.height
+                    } else {
+                        shapeSquareSnapped = false
+                        rawW
+                    }
+                    listener?.onShapeWidthResized(id, newW)
                 }
-                listener?.onShapeWidthResized(id, newW)
             }
             Mode.RESIZE_H -> {
                 // Drag top-center handle: top edge moves, bottom edge stays fixed
@@ -766,9 +834,9 @@ class CardCanvasView @JvmOverloads constructor(
     // ── Tap ───────────────────────────────────────────────────────────────────
 
     private fun handleTap(x: Float, y: Float) {
-        val t = template ?: return
+        template ?: return
         if (selectedId == "card_background" && dist(x, y, cardWidthPx / 2, cardHeightPx) < HR * 2f) return
-        if (x < 0f || x > cardWidthPx || y < 0f || y > cardHeightPx) {
+        if (x !in 0f..cardWidthPx || y < 0f || y > cardHeightPx) {
             listener?.onElementSelected(null); return
         }
         for (el in activeElements) {
@@ -793,10 +861,8 @@ class CardCanvasView @JvmOverloads constructor(
         return cardinals.any { kotlin.math.abs(angle - it) <= 1f }
     }
 
-    fun clearCache() = renderer.clearBitmapCache()
-
     private fun parseColorSafe(hex: String) =
-        runCatching { Color.parseColor(hex) }.getOrElse { Color.WHITE }
+        runCatching { hex.toColorInt() }.getOrElse { Color.WHITE }
 
     // ── Snap Guidelines ───────────────────────────────────────────────────────
 

@@ -15,7 +15,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.slider.Slider
 import com.google.android.material.snackbar.Snackbar
 import dev.anonymous.cardsdesignerpro.R
 import dev.anonymous.cardsdesignerpro.data.model.CardLayoutPreset
@@ -28,6 +27,7 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.core.net.toUri
 
 class ExportCardsActivity : AppCompatActivity() {
 
@@ -158,7 +158,7 @@ class ExportCardsActivity : AppCompatActivity() {
             val frontStr = intent.getStringExtra("front_uri")
             val backStr = intent.getStringExtra("back_uri")
             if (frontStr != null && backStr != null) {
-                showSeparateSuccessDialog(Uri.parse(frontStr), Uri.parse(backStr))
+                showSeparateSuccessDialog(frontStr.toUri(), backStr.toUri())
             }
         }
     }
@@ -168,7 +168,7 @@ class ExportCardsActivity : AppCompatActivity() {
     private fun setupToolbar() = binding.toolbar.setNavigationOnClickListener { finish() }
 
     private fun setupBottomSheetDrag() {
-        var initialDragY = 0f;
+        var initialDragY = 0f
         var initialHeight = 0
         
         // Adjust initial height in landscape to prevent obscuring the whole screen
@@ -336,12 +336,12 @@ class ExportCardsActivity : AppCompatActivity() {
     }
 
     private fun setupSpacingSliders() {
-        binding.sliderHSpacing.addOnChangeListener(Slider.OnChangeListener { _, v, fromUser ->
-            if (fromUser) viewModel.updateHorizontalSpacing(v)
-        })
-        binding.sliderVSpacing.addOnChangeListener(Slider.OnChangeListener { _, v, fromUser ->
-            if (fromUser) viewModel.updateVerticalSpacing(v)
-        })
+        binding.stepperHSpacing.onValueChanged = { v ->
+            viewModel.updateHorizontalSpacing(v.toFloat())
+        }
+        binding.stepperVSpacing.onValueChanged = { v ->
+            viewModel.updateVerticalSpacing(v.toFloat())
+        }
     }
 
     private fun setupPageSizeSpinner() {
@@ -410,47 +410,110 @@ class ExportCardsActivity : AppCompatActivity() {
     }
 
     private fun setupExportButtons() {
-        binding.btnExport.setOnClickListener {
-            val parse = viewModel.uiState.value.combinedParseResult
-            if (parse == null || parse.count == 0) {
-                Snackbar.make(binding.root, R.string.error_no_valid_file, Snackbar.LENGTH_SHORT)
-                    .show()
-                return@setOnClickListener
+        binding.btnExport.setOnClickListener { handleExportClick(isSeparate = false) }
+        binding.btnExportSeparate.setOnClickListener { handleExportClick(isSeparate = true) }
+    }
+
+    /**
+     * Shared guard logic for both export buttons:
+     * 1. Block if any file is still being parsed.
+     * 2. Block if no valid file data is available.
+     * 3. Validate digit lengths — show mismatch dialog if needed.
+     * 4. Proceed to launch the PDF saver.
+     */
+    private fun handleExportClick(isSeparate: Boolean) {
+        val state = viewModel.uiState.value
+
+        // Guard 1: file still being parsed
+        if (state.isParsingFile) {
+            Snackbar.make(binding.root, R.string.error_file_still_parsing, Snackbar.LENGTH_SHORT).show()
+            return
+        }
+
+        // Guard 2: no valid data
+        val parse = state.combinedParseResult
+        if (parse == null || parse.count == 0) {
+            Snackbar.make(binding.root, R.string.error_no_valid_file, Snackbar.LENGTH_SHORT).show()
+            return
+        }
+
+        // Guard 3: short-numbers count mismatch
+        if (state.isShortNumbersEnabled) {
+            val shortParse = state.combinedShortParseResult
+            if (shortParse != null && parse.count > 0 && shortParse.count > 0 && parse.count != shortParse.count) {
+                Snackbar.make(
+                    binding.root,
+                    getString(R.string.short_numbers_warning_format, parse.count, shortParse.count),
+                    Snackbar.LENGTH_LONG
+                ).show()
+                return
             }
-            val state = viewModel.uiState.value
-            if (state.isShortNumbersEnabled) {
-                val shortParse = state.combinedShortParseResult
-                if (shortParse != null && parse.count > 0 && shortParse.count > 0 && parse.count != shortParse.count) {
-                    Snackbar.make(binding.root, getString(R.string.short_numbers_warning_format, parse.count, shortParse.count), Snackbar.LENGTH_LONG).show()
-                    return@setOnClickListener
-                }
-            }
-            val name = viewModel.selectedTemplate?.name ?: "cards"
+        }
+
+        // Guard 4: digit-length mismatch — show dialog but allow the user to continue anyway
+        val mismatches = viewModel.validateDigitLengths()
+        if (mismatches.isNotEmpty()) {
+            showMismatchDialog(mismatches) { doLaunchExport(isSeparate) }
+            return
+        }
+
+        doLaunchExport(isSeparate)
+    }
+
+    /** Launches the appropriate PDF saver picker without any extra checks. */
+    private fun doLaunchExport(isSeparate: Boolean) {
+        val state = viewModel.uiState.value
+        val name  = viewModel.selectedTemplate?.name ?: "cards"
+        if (isSeparate) {
+            frontPdfSaver.launch("${name}_${getString(R.string.front_filename)}_${timestamp()}.pdf")
+        } else {
             val fname = if (state.hasBackSide && !state.settings.exportFrontOnly)
                 "${name}_${getString(R.string.dual_filename)}_${timestamp()}.pdf"
             else
                 "${name}_${getString(R.string.front_filename)}_${timestamp()}.pdf"
             singlePdfSaver.launch(fname)
         }
+    }
 
-        binding.btnExportSeparate.setOnClickListener {
-            val parse = viewModel.uiState.value.combinedParseResult
-            if (parse == null || parse.count == 0) {
-                Snackbar.make(binding.root, R.string.error_no_valid_file, Snackbar.LENGTH_SHORT)
-                    .show()
-                return@setOnClickListener
-            }
-            val state = viewModel.uiState.value
-            if (state.isShortNumbersEnabled) {
-                val shortParse = state.combinedShortParseResult
-                if (shortParse != null && parse.count > 0 && shortParse.count > 0 && parse.count != shortParse.count) {
-                    Snackbar.make(binding.root, getString(R.string.short_numbers_warning_format, parse.count, shortParse.count), Snackbar.LENGTH_LONG).show()
-                    return@setOnClickListener
-                }
-            }
-            val name = viewModel.selectedTemplate?.name ?: "cards"
-            frontPdfSaver.launch("${name}_${getString(R.string.front_filename)}_${timestamp()}.pdf")
+    /**
+     * Shows a [MaterialAlertDialogBuilder] dialog listing all [MismatchedRecord] entries.
+     * [onContinue] is called only when the user explicitly chooses to proceed.
+     */
+    private fun showMismatchDialog(mismatches: List<MismatchedRecord>, onContinue: () -> Unit) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_mismatched_records, null)
+
+        // Build description based on which fields have mismatches
+        viewModel.uiState.value
+        val template     = viewModel.selectedTemplate
+        val userEl       = template?.elements
+            ?.filterIsInstance<dev.anonymous.cardsdesignerpro.data.model.TemplateElement.UsernameElement>()
+            ?.firstOrNull { !it.isShortVariant }
+        val passEl       = template?.elements
+            ?.filterIsInstance<dev.anonymous.cardsdesignerpro.data.model.TemplateElement.PasswordElement>()
+            ?.firstOrNull { !it.isShortVariant }
+        val hasUserEl    = userEl != null
+        val hasPassEl    = passEl != null
+        val desc = when {
+            hasUserEl && hasPassEl ->
+                getString(R.string.dialog_mismatch_desc, userEl.digitCount, passEl.digitCount)
+            hasUserEl ->
+                getString(R.string.dialog_mismatch_desc_user_only, userEl.digitCount)
+            hasPassEl ->
+                getString(R.string.dialog_mismatch_desc_pass_only, passEl.digitCount)
+            else -> ""
         }
+        dialogView.findViewById<android.widget.TextView>(R.id.tv_mismatch_desc).text = desc
+
+        val rv = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rv_mismatched)
+        rv.layoutManager = LinearLayoutManager(this)
+        rv.adapter = MismatchedRecordAdapter(mismatches)
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.dialog_mismatch_title)
+            .setView(dialogView)
+            .setPositiveButton(R.string.action_continue_export) { _, _ -> onContinue() }
+            .setNegativeButton(R.string.action_fix_data, null)
+            .show()
     }
 
     // ── Observers ─────────────────────────────────────────────────────────────
@@ -511,12 +574,18 @@ class ExportCardsActivity : AppCompatActivity() {
         if (binding.spinnerCardLayout.selectedItemPosition != layoutIdx)
             binding.spinnerCardLayout.setSelection(layoutIdx)
 
-        // Spacing sliders
-        if (binding.sliderHSpacing.value != state.settings.horizontalSpacingDp)
-            binding.sliderHSpacing.value = state.settings.horizontalSpacingDp.coerceIn(0f, 60f)
-        if (binding.sliderVSpacing.value != state.settings.verticalSpacingDp)
-            binding.sliderVSpacing.value = state.settings.verticalSpacingDp.coerceIn(0f, 60f)
-
+        // Spacing steppers
+        binding.stepperHSpacing.minValue = 0
+        binding.stepperHSpacing.maxValue = 60
+        if (binding.stepperHSpacing.value != state.settings.horizontalSpacingDp.toInt())
+            binding.stepperHSpacing.value = state.settings.horizontalSpacingDp.toInt().coerceIn(0, 60)
+        binding.tvHSpacingLabel.text = getString(R.string.label_horizontal_spacing)
+            
+        binding.stepperVSpacing.minValue = 0
+        binding.stepperVSpacing.maxValue = 60
+        if (binding.stepperVSpacing.value != state.settings.verticalSpacingDp.toInt())
+            binding.stepperVSpacing.value = state.settings.verticalSpacingDp.toInt().coerceIn(0, 60)
+        binding.tvVSpacingLabel.text = getString(R.string.label_vertical_spacing)
         // Page size
         val psIdx = PageSize.entries.indexOf(state.settings.pageSize).coerceAtLeast(0)
         if (binding.spinnerPageSize.selectedItemPosition != psIdx)
@@ -703,36 +772,86 @@ class ExportCardsActivity : AppCompatActivity() {
 
     /**
      * Handles incoming [Intent.ACTION_VIEW] (open from file manager) and
-     * [Intent.ACTION_SEND] (share from another app) intents by automatically
-     * loading the CSV/Excel file into the export screen.
+     * [Intent.ACTION_SEND] / [Intent.ACTION_SEND_MULTIPLE] (share from another app) 
+     * intents by automatically loading the CSV/Excel file into the export screen.
      *
-     * Consumes the intent action to prevent re-processing on configuration change.
+     * Consumes the intent action and uses a ViewModel flag to prevent re-processing.
      */
     @Suppress("DEPRECATION")
     private fun handleIncomingFileIntent(intent: Intent) {
-        // ?: return guarantees uri is non-null below — no explicit type annotation needed
-        val uri = when (intent.action) {
-            Intent.ACTION_VIEW -> intent.data
+        val action = intent.action ?: return
+        if (viewModel.isIntentProcessed) return
+
+        val incomingType = intent.type
+        val uris = when (action) {
+            Intent.ACTION_VIEW -> intent.data?.let { listOf(it) }
+            
             Intent.ACTION_SEND -> {
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU)
+                val uri = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU)
                     intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
                 else
                     @Suppress("DEPRECATION") intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+                uri?.let { listOf(it) }
+            }
+            
+            Intent.ACTION_SEND_MULTIPLE -> {
+                val list = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU)
+                    intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java)
+                else
+                    @Suppress("DEPRECATION") intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)
+
+                if (!list.isNullOrEmpty()) {
+                    list
+                } else {
+                    val single = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU)
+                        intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+                    else
+                        @Suppress("DEPRECATION") intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+                    single?.let { listOf(it) }
+                }
             }
             else -> null
         } ?: return
 
-        // Try to take persistent permission (may fail for file:// URIs — safe to ignore)
-        runCatching {
-            contentResolver.takePersistableUriPermission(
-                uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
-            )
+        // 1. Advanced MIME/Extension validation
+        val validUris = uris.filter { isSupported(it, incomingType) }
+        if (validUris.isEmpty()) return
+
+        // 2. Persistent Permission with masked flags
+        val takeFlags = intent.flags and (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+        validUris.forEach { uri ->
+            if (uri.scheme == "content") {
+                runCatching {
+                    contentResolver.takePersistableUriPermission(uri, takeFlags)
+                }
+            }
         }
 
-        val name = queryFileName(uri) ?: uri.lastPathSegment ?: "file"
-        viewModel.addFiles(listOf(uri), listOf(name))
+        val names = validUris.map { queryFileName(it) ?: it.lastPathSegment ?: "file" }
+        viewModel.addFiles(validUris, names)
 
-        // Consume the action so rotation doesn't re-add the file
+        // 3. Mark as processed to prevent repeats on recreation or rotation
+        viewModel.isIntentProcessed = true
         intent.action = null
+    }
+
+    /**
+     * Verifies if a URI pointing to a data file is supported, 
+     * checking both MIME type and file extension as a fallback.
+     */
+    private fun isSupported(uri: Uri, type: String?): Boolean {
+        val validMimeTypes = setOf(
+            "text/csv", "text/comma-separated-values",
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        if (type != null && type != "*/*") {
+            if (validMimeTypes.contains(type)) return true
+        }
+
+        val name = queryFileName(uri) ?: return false
+        return name.endsWith(".csv", true) ||
+               name.endsWith(".xls", true) ||
+               name.endsWith(".xlsx", true)
     }
 }

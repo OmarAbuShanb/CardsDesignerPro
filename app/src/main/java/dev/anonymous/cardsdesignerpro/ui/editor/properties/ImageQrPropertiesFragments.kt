@@ -270,6 +270,8 @@ class QrPropertiesFragment : Fragment(), PropertyFragment {
         }
         
         binding.sliderLogoSize.addOnChangeListener { _, value, fromUser ->
+            val fraction = String.format("%.2f", value / 100f)
+            binding.tvLogoSizeLabel.text = getString(R.string.prop_logo_size) + ": $fraction"
             if (fromUser && !updating) {
                 val e = viewModel.selectedElement as? TemplateElement.QrElement ?: return@addOnChangeListener
                 viewModel.updateElement(e.copy(logoSizeFraction = value / 100f))
@@ -282,6 +284,8 @@ class QrPropertiesFragment : Fragment(), PropertyFragment {
         }
         
         binding.sliderQrPadding.addOnChangeListener { _, value, fromUser ->
+            val fraction = String.format("%.2f", value / 100f)
+            binding.tvPaddingLabel.text = getString(R.string.prop_qr_padding) + ": $fraction"
             if (fromUser && !updating) {
                 val e = viewModel.selectedElement as? TemplateElement.QrElement ?: return@addOnChangeListener
                 viewModel.updateElement(e.copy(qrPadding = value / 100f))
@@ -298,8 +302,13 @@ class QrPropertiesFragment : Fragment(), PropertyFragment {
         binding.tvQrBgColorHex.text = el.backgroundColor
         binding.spinnerPixelShape.setSelection(pixelShapeValues.indexOf(el.pixelShape).coerceAtLeast(0))
         binding.spinnerEyeShape.setSelection(eyeShapeValues.indexOf(el.eyeShape).coerceAtLeast(0))
-        binding.sliderLogoSize.value = (el.logoSizeFraction * 100f).coerceIn(5f, 33f)
-        binding.sliderQrPadding.value = (el.qrPadding * 100f).coerceIn(0f, 25f)
+        val logoVal = (el.logoSizeFraction * 100f).coerceIn(5f, 33f)
+        binding.sliderLogoSize.value = logoVal
+        binding.tvLogoSizeLabel.text = getString(R.string.prop_logo_size) + ": " + String.format("%.2f", logoVal / 100f)
+        
+        val padVal = (el.qrPadding * 100f).coerceIn(0f, 25f)
+        binding.sliderQrPadding.value = padVal
+        binding.tvPaddingLabel.text = getString(R.string.prop_qr_padding) + ": " + String.format("%.2f", padVal / 100f)
         
         if (el.logoPath != null) {
             binding.layoutSelectedLogo.visibility = View.VISIBLE

@@ -44,7 +44,7 @@ data class CardStyle(
     val backgroundColor: String = "#FFFFFF",
     /** Absolute path inside filesDir, null = no background image. */
     val backgroundImagePath: String? = null,
-    /** "FIT_XY", "CENTER_CROP", "FIT_CENTER" etc (persisted as String for forward config safety). */
+    /** "FIT_XY", "CENTER_CROP", "FIT_CENTER" etc. (persisted as String for forward config safety). */
     val backgroundImageScaleType: String = ImageScaleType.FIT_XY.name,
 )
 

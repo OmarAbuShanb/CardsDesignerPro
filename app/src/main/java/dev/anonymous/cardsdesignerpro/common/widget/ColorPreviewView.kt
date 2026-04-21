@@ -2,12 +2,12 @@ package dev.anonymous.cardsdesignerpro.common.widget
 
 import android.content.Context
 import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.util.AttributeSet
 import android.view.View
 import android.graphics.drawable.GradientDrawable
 import com.skydoves.colorpickerview.ColorPickerDialog
 import com.skydoves.colorpickerview.listeners.ColorEnvelopeListener
+import androidx.core.graphics.toColorInt
 
 /**
  * A small square view showing a color. Tapping it opens a [ColorPickerDialog].
@@ -31,10 +31,10 @@ class ColorPreviewView @JvmOverloads constructor(
             try {
                 val drawable = GradientDrawable()
                 drawable.shape = GradientDrawable.RECTANGLE
-                drawable.setColor(Color.parseColor(value))
+                drawable.setColor(value.toColorInt())
                 drawable.setStroke(
                     (1 * resources.displayMetrics.density).toInt().coerceAtLeast(1),
-                    Color.parseColor("#44888888")
+                    "#44888888".toColorInt()
                 )
                 drawable.cornerRadius = 4 * resources.displayMetrics.density
                 background = drawable
@@ -65,10 +65,10 @@ class ColorPreviewView @JvmOverloads constructor(
         // ── Resolve visual initial color ──────────────────────────────────────
         // For pure black (#000000): brightness slider would be at 0, making every
         // hue appear black. We instead open with full brightness so the user can
-        // pick any colour, then optionally drag brightness down to get black.
+        // pick any color, then optionally drag brightness down to get black.
         val initialColor: Int
         try {
-            val parsed = Color.parseColor(colorHex)
+            val parsed = colorHex.toColorInt()
             val hsv = FloatArray(3)
             Color.colorToHSV(parsed, hsv)
             initialColor = if (hsv[2] < 0.01f) {

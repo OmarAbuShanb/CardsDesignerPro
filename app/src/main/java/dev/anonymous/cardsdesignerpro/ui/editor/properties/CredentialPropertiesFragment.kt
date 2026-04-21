@@ -5,9 +5,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import dev.anonymous.cardsdesignerpro.R
 import dev.anonymous.cardsdesignerpro.databinding.FragmentPropCredentialBinding
 import dev.anonymous.cardsdesignerpro.data.model.TemplateElement
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorUiState
@@ -91,18 +91,19 @@ abstract class CredentialPropertiesFragment : Fragment(), PropertyFragment {
         if (bg != null) {
             if (binding.cpvBgColor.colorHex != bg) binding.cpvBgColor.colorHex = bg
             binding.tvBgColorHex.text = bg
-            binding.btnClearBgColor.visibility = android.view.View.VISIBLE
+            binding.btnClearBgColor.visibility = View.VISIBLE
         } else {
             binding.cpvBgColor.colorHex = "#FFFFFFFF"
-            binding.tvBgColorHex.text = getString(dev.anonymous.cardsdesignerpro.R.string.prop_no_bg_color)
-            binding.btnClearBgColor.visibility = android.view.View.GONE
+            binding.tvBgColorHex.text = getString(R.string.prop_no_bg_color)
+            binding.btnClearBgColor.visibility = View.GONE
         }
         val bold = isBold(el)
         if (binding.cbBold.isChecked != bold) binding.cbBold.isChecked = bold
-        val targetSize = kotlin.math.round(textSize(el)).toFloat().coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP)
+        val targetSize = kotlin.math.round(textSize(el)).coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP)
         if (binding.sliderFontSize.value != targetSize) {
             binding.sliderFontSize.value = targetSize
         }
+        binding.tvFontSizeLabel.text = getString(R.string.prop_font_size) + ": ${targetSize.toInt()}"
         
         // Text stroke
         val hasStroke = textStroke(el) > 0f
@@ -113,6 +114,7 @@ abstract class CredentialPropertiesFragment : Fragment(), PropertyFragment {
         if (binding.sliderTextStroke.value != targetStroke) {
             binding.sliderTextStroke.value = targetStroke
         }
+        binding.tvStrokeSizeLabel.text = getString(R.string.prop_text_stroke) + ": ${targetStroke.toInt()}"
         if (binding.cpvStrokeColor.colorHex != textStrokeColor(el)) binding.cpvStrokeColor.colorHex = textStrokeColor(el)
         binding.tvStrokeColorHex.text = textStrokeColor(el)
 
@@ -149,6 +151,7 @@ abstract class CredentialPropertiesFragment : Fragment(), PropertyFragment {
             if (!updating) getElement()?.let { el -> viewModel.updateElement(copyWithBold(el, checked)) }
         }
         binding.sliderFontSize.addOnChangeListener { _, size, _ ->
+            binding.tvFontSizeLabel.text = getString(R.string.prop_font_size) + ": ${size.toInt()}"
             if (!updating) getElement()?.let { el -> viewModel.updateElement(copyWithSize(el, size)) }
         }
         binding.cbTextStroke.setOnCheckedChangeListener { _, isChecked ->
@@ -164,6 +167,7 @@ abstract class CredentialPropertiesFragment : Fragment(), PropertyFragment {
             getElement()?.let { el -> viewModel.updateElement(copyWithTextStrokeColor(el, hex)) }
         }
         binding.sliderTextStroke.addOnChangeListener { _, size, _ ->
+            binding.tvStrokeSizeLabel.text = getString(R.string.prop_text_stroke) + ": ${size.toInt()}"
             if (!updating && binding.cbTextStroke.isChecked) getElement()?.let { el -> viewModel.updateElement(copyWithTextStroke(el, size)) }
         }
         binding.spinnerFont.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {

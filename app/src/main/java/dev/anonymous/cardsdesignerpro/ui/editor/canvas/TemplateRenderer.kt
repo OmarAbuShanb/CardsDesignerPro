@@ -1,12 +1,27 @@
 package dev.anonymous.cardsdesignerpro.ui.editor.canvas
 
 import android.content.Context
-import android.graphics.*
-import android.graphics.drawable.BitmapDrawable
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.DashPathEffect
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
+import android.graphics.RectF
+import android.graphics.Typeface
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
+import androidx.core.graphics.createBitmap
 import androidx.core.graphics.drawable.toBitmap
+import androidx.core.graphics.drawable.toDrawable
+import androidx.core.graphics.toColorInt
+import androidx.core.graphics.withClip
+import androidx.core.graphics.withRotation
+import androidx.core.graphics.withSave
+import androidx.core.graphics.withTranslation
 import com.github.alexzhirkevich.customqrgenerator.QrData
 import com.github.alexzhirkevich.customqrgenerator.QrErrorCorrectionLevel
 import com.github.alexzhirkevich.customqrgenerator.style.BitmapScale
@@ -23,23 +38,26 @@ import com.github.alexzhirkevich.customqrgenerator.vector.style.QrVectorPixelSha
 import com.github.alexzhirkevich.customqrgenerator.vector.style.QrVectorShapes
 import dev.anonymous.cardsdesignerpro.data.model.Template
 import dev.anonymous.cardsdesignerpro.data.model.TemplateElement
+import dev.anonymous.cardsdesignerpro.data.model.TextAlign
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 
 /**
- * Pure-stateless renderer shared between [CardCanvasView] (screen) and [PdfExporter] (PDF).
+ * Pure-stateless renderer shared between [CardCanvasView] (screen) and [dev.anonymous.cardsdesignerpro.util.PdfExporter] (PDF).
  *
- * @param renderScale  Multiplier for raster-content (QR bitmaps). Use 1f for screen,
+ * @param dev.anonymous.cardsdesignerpro.data.model.ExportQuality.renderScale  Multiplier for raster-content (QR bitmaps). Use 1f for screen,
  *                     ~4f for 300-dpi PDF output so bitmaps look sharp when printed.
  */
 class TemplateRenderer(private val context: Context) {
 
-    private val paint  = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val bitmapCache = mutableMapOf<String, Bitmap?>()
+
     /** Separate cache for expensive QR bitmaps: key = content+style hash. */
     private val qrCache = mutableMapOf<String, Bitmap?>()
     private val svgCache = mutableMapOf<String, com.caverock.androidsvg.SVG?>()
+
     /** Cache for resolved Typefaces to avoid repeated resource lookups. */
     private val typefaceCache = mutableMapOf<String, Typeface>()
 
@@ -47,7 +65,7 @@ class TemplateRenderer(private val context: Context) {
     /**
      * Maximum bitmap dimensions for each content type.
      * Set before [draw] when exporting PDF to control quality per content type.
-     * Screen rendering uses the defaults; PDF export overrides via [ExportQuality].
+     * Screen rendering uses the defaults; PDF export overrides via [dev.anonymous.cardsdesignerpro.data.model.ExportQuality].
      */
     var maxImageDim: Int = 2048
     var maxQrDim: Int = 1024
@@ -57,7 +75,7 @@ class TemplateRenderer(private val context: Context) {
 
     // ── Reusable objects to reduce GC pressure during draw ────────────────────
     private val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG)
-    private val tempRect  = RectF()
+    private val tempRect = RectF()
 
     fun draw(
         canvas: Canvas,
@@ -76,46 +94,97 @@ class TemplateRenderer(private val context: Context) {
         val scaleX = cardWidthPx / template.card.widthDp
         val scaleY = cardHeightPx / (template.card.widthDp * template.card.heightRatio)
 
-        canvas.save()
-        canvas.clipRect(cardLeft, cardTop, cardLeft + cardWidthPx, cardTop + cardHeightPx)
+        canvas.withClip(cardLeft, cardTop, cardLeft + cardWidthPx, cardTop + cardHeightPx) {
+            template.elements.asReversed().filter { it.isVisible }.forEach { el ->
+                when (el) {
+                    is TemplateElement.CardBackground ->
+                        drawCardBackground(
+                            this,
+                            template,
+                            cardLeft,
+                            cardTop,
+                            cardWidthPx,
+                            cardHeightPx,
+                            renderScale
+                        )
 
-        template.elements.asReversed().filter { it.isVisible }.forEach { el ->
-            when (el) {
-                is TemplateElement.CardBackground ->
-                    drawCardBackground(canvas, template, cardLeft, cardTop, cardWidthPx, cardHeightPx, renderScale)
-                is TemplateElement.FrameElement ->
-                    drawFrame(canvas, el, cardLeft, cardTop, scaleX, scaleY)
-                is TemplateElement.TextElement ->
-                    drawTextProps(canvas, textProps(el, el.text), cardLeft, cardTop, scaleX, scaleY)
-                is TemplateElement.UsernameElement -> {
-                    val u = if (el.isShortVariant) shortUsername ?: dummyDigits(el.digitCount.coerceAtLeast(1)) else username ?: dummyDigits(el.digitCount.coerceAtLeast(1))
-                    drawTextProps(canvas, textProps(el, u), cardLeft, cardTop, scaleX, scaleY)
+                    is TemplateElement.FrameElement ->
+                        drawFrame(this, el, cardLeft, cardTop, scaleX, scaleY)
+
+                    is TemplateElement.TextElement ->
+                        drawTextProps(
+                            this,
+                            textProps(el, el.text),
+                            cardLeft,
+                            cardTop,
+                            scaleX,
+                            scaleY
+                        )
+
+                    is TemplateElement.UsernameElement -> {
+                        val u = if (el.isShortVariant) shortUsername
+                            ?: dummyDigits(el.digitCount.coerceAtLeast(1)) else username
+                            ?: dummyDigits(el.digitCount.coerceAtLeast(1))
+                        drawTextProps(this, textProps(el, u), cardLeft, cardTop, scaleX, scaleY)
+                    }
+
+                    is TemplateElement.PasswordElement -> {
+                        val p = if (el.isShortVariant) shortPassword
+                            ?: dummyDigits(el.digitCount.coerceAtLeast(1)) else password
+                            ?: dummyDigits(el.digitCount.coerceAtLeast(1))
+                        drawTextProps(this, textProps(el, p), cardLeft, cardTop, scaleX, scaleY)
+                    }
+
+                    is TemplateElement.DateElement ->
+                        drawTextProps(
+                            this,
+                            textProps(el, date ?: formatDate(el)),
+                            cardLeft,
+                            cardTop,
+                            scaleX,
+                            scaleY
+                        )
+
+                    is TemplateElement.ImageElement ->
+                        drawImage(this, el, cardLeft, cardTop, scaleX, scaleY, renderScale)
+
+                    is TemplateElement.QrElement -> {
+                        val qrUser = if (el.linkToShortNumbers) shortUsername else username
+                        val qrPass = if (el.linkToShortNumbers) shortPassword else password
+                        drawQr(
+                            this,
+                            el,
+                            qrUser,
+                            qrPass,
+                            cardLeft,
+                            cardTop,
+                            scaleX,
+                            scaleY,
+                            renderScale
+                        )
+                    }
+
+                    is TemplateElement.ShapeElement ->
+                        drawShape(this, el, cardLeft, cardTop, scaleX, scaleY)
                 }
-                is TemplateElement.PasswordElement -> {
-                    val p = if (el.isShortVariant) shortPassword ?: dummyDigits(el.digitCount.coerceAtLeast(1)) else password ?: dummyDigits(el.digitCount.coerceAtLeast(1))
-                    drawTextProps(canvas, textProps(el, p), cardLeft, cardTop, scaleX, scaleY)
-                }
-                is TemplateElement.DateElement ->
-                    drawTextProps(canvas, textProps(el, date ?: formatDate(el)), cardLeft, cardTop, scaleX, scaleY)
-                is TemplateElement.ImageElement ->
-                    drawImage(canvas, el, cardLeft, cardTop, scaleX, scaleY, renderScale)
-                is TemplateElement.QrElement -> {
-                    val qrUser = if (el.linkToShortNumbers) shortUsername else username
-                    val qrPass = if (el.linkToShortNumbers) shortPassword else password
-                    drawQr(canvas, el, qrUser, qrPass, cardLeft, cardTop, scaleX, scaleY, renderScale)
-                }
-                is TemplateElement.ShapeElement ->
-                    drawShape(canvas, el, cardLeft, cardTop, scaleX, scaleY)
             }
         }
-        canvas.restore()
     }
 
     // ── Background ────────────────────────────────────────────────────────────
 
-    private fun drawCardBackground(canvas: Canvas, template: Template, left: Float, top: Float, w: Float, h: Float, renderScale: Float) {
+    private fun drawCardBackground(
+        canvas: Canvas,
+        template: Template,
+        left: Float,
+        top: Float,
+        w: Float,
+        h: Float,
+        renderScale: Float
+    ) {
         val card = template.card
-        paint.reset(); paint.color = parseColor(card.backgroundColor); paint.style = Paint.Style.FILL
+        paint.reset(); paint.color = parseColor(card.backgroundColor); paint.style =
+            Paint.Style.FILL
         canvas.drawRect(left, top, left + w, top + h, paint)
         card.backgroundImagePath?.let { path ->
             val isCenterCrop = card.backgroundImageScaleType == "CENTER_CROP"
@@ -123,22 +192,22 @@ class TemplateRenderer(private val context: Context) {
                 loadSvg(path)?.let { svg ->
                     val aspectW = if (svg.documentWidth > 0f) svg.documentWidth else w
                     val aspectH = if (svg.documentHeight > 0f) svg.documentHeight else h
-                    
-                    canvas.save()
-                    if (isCenterCrop) {
-                        val scale = maxOf(w / aspectW, h / aspectH)
-                        val drawW = aspectW * scale
-                        val drawH = aspectH * scale
-                        val dx = left + (w - drawW) / 2f
-                        val dy = top + (h - drawH) / 2f
-                        canvas.translate(dx, dy)
-                        canvas.scale(scale, scale)
-                    } else {
-                        canvas.translate(left, top)
-                        canvas.scale(w / aspectW, h / aspectH)
+
+                    canvas.withSave {
+                        if (isCenterCrop) {
+                            val scale = maxOf(w / aspectW, h / aspectH)
+                            val drawW = aspectW * scale
+                            val drawH = aspectH * scale
+                            val dx = left + (w - drawW) / 2f
+                            val dy = top + (h - drawH) / 2f
+                            translate(dx, dy)
+                            scale(scale, scale)
+                        } else {
+                            translate(left, top)
+                            scale(w / aspectW, h / aspectH)
+                        }
+                        svg.renderToCanvas(this)
                     }
-                    svg.renderToCanvas(canvas)
-                    canvas.restore()
                 }
             } else {
                 val reqDim = (maxOf(w, h) * renderScale * 2f).toInt().coerceIn(64, maxImageDim)
@@ -149,7 +218,7 @@ class TemplateRenderer(private val context: Context) {
                         val drawH = bmp.height * scale
                         val dx = left + (w - drawW) / 2f
                         val dy = top + (h - drawH) / 2f
-                        
+
                         val matrix = android.graphics.Matrix().apply {
                             postScale(scale, scale)
                             postTranslate(dx, dy)
@@ -166,17 +235,25 @@ class TemplateRenderer(private val context: Context) {
 
     // ── Frame ─────────────────────────────────────────────────────────────────
 
-    private fun drawFrame(canvas: Canvas, el: TemplateElement.FrameElement, left: Float, top: Float, sX: Float, sY: Float) {
+    private fun drawFrame(
+        canvas: Canvas,
+        el: TemplateElement.FrameElement,
+        left: Float,
+        top: Float,
+        sX: Float,
+        sY: Float
+    ) {
         // Apply paddingDp as an inset so the frame border moves inward from card edges
         val pad = el.paddingDp * sX
-        val l = left  + el.x * sX + pad
-        val t = top   + el.y * sY + pad
-        val r = left  + (el.x + el.width)  * sX - pad
-        val b = top   + (el.y + el.height) * sY - pad
+        val l = left + el.x * sX + pad
+        val t = top + el.y * sY + pad
+        val r = left + (el.x + el.width) * sX - pad
+        val b = top + (el.y + el.height) * sY - pad
         paint.reset(); paint.color = parseColor(el.color); paint.style = Paint.Style.STROKE
         paint.strokeWidth = el.strokeWidthDp * sX; paint.isAntiAlias = true
         if (el.isDashed) {
-            paint.pathEffect = DashPathEffect(floatArrayOf(el.dashLengthDp * sX, el.dashGapDp * sX), 0f)
+            paint.pathEffect =
+                DashPathEffect(floatArrayOf(el.dashLengthDp * sX, el.dashGapDp * sX), 0f)
             if (el.isDashRounded) paint.strokeCap = Paint.Cap.ROUND
         }
         val cr = el.cornerRadiusDp * sX
@@ -185,37 +262,48 @@ class TemplateRenderer(private val context: Context) {
 
     // ── Shape ─────────────────────────────────────────────────────────────────
 
-    private fun drawShape(canvas: Canvas, el: TemplateElement.ShapeElement, left: Float, top: Float, sX: Float, sY: Float) {
+    private fun drawShape(
+        canvas: Canvas,
+        el: TemplateElement.ShapeElement,
+        left: Float,
+        top: Float,
+        sX: Float,
+        sY: Float
+    ) {
         val l = left + el.x * sX
-        val t = top  + el.y * sY
-        val r = l    + el.width  * sX
-        val b = t    + el.height * sY
+        val t = top + el.y * sY
+        val r = l + el.width * sX
+        val b = t + el.height * sY
         val cx = (l + r) / 2f
         val cy = (t + b) / 2f
         val cr = el.cornerRadiusDp * sX
         val rect = RectF(l, t, r, b)
 
-        canvas.save()
-        canvas.rotate(el.rotation, cx, cy)
+        canvas.withRotation(el.rotation, cx, cy) {
+            // Fill
+            if (el.fillColor.isNotEmpty()) {
+                paint.reset(); paint.isAntiAlias = true
+                paint.style = Paint.Style.FILL
+                paint.color = parseColor(el.fillColor)
+                drawRoundRect(rect, cr, cr, paint)
+            }
 
-        // Fill
-        if (el.fillColor.isNotEmpty()) {
-            paint.reset(); paint.isAntiAlias = true
-            paint.style = Paint.Style.FILL
-            paint.color = parseColor(el.fillColor)
-            canvas.drawRoundRect(rect, cr, cr, paint)
+            // Stroke (solid or dashed)
+            if (el.strokeWidthDp > 0f) {
+                paint.reset(); paint.isAntiAlias = true
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = el.strokeWidthDp * sX
+                paint.color = parseColor(el.strokeColor)
+                if (el.isDashed) {
+                    paint.pathEffect = DashPathEffect(
+                        floatArrayOf(el.dashLengthDp * sX, el.dashGapDp * sX), 0f
+                    )
+                    if (el.isDashRounded) paint.strokeCap = Paint.Cap.ROUND
+                }
+                drawRoundRect(rect, cr, cr, paint)
+            }
+
         }
-
-        // Stroke
-        if (el.strokeWidthDp > 0f) {
-            paint.reset(); paint.isAntiAlias = true
-            paint.style = Paint.Style.STROKE
-            paint.strokeWidth = el.strokeWidthDp * sX
-            paint.color = parseColor(el.strokeColor)
-            canvas.drawRoundRect(rect, cr, cr, paint)
-        }
-
-        canvas.restore()
     }
 
     // ── Text (StaticLayout — handles Arabic ligatures & BiDi correctly) ───────
@@ -224,9 +312,21 @@ class TemplateRenderer(private val context: Context) {
         return (1..count).joinToString("") { (it % 10).toString() }
     }
 
-    private fun drawTextProps(canvas: Canvas, p: TextProps, left: Float, top: Float, sX: Float, sY: Float) {
-        val l = left + p.x * sX; val t = top + p.y * sY; val r = l + p.width * sX; val b = t + p.height * sY
-        val cx = (l + r) / 2f; val cy = (t + b) / 2f
+    private fun drawTextProps(
+        canvas: Canvas,
+        p: TextProps,
+        left: Float,
+        top: Float,
+        sX: Float,
+        sY: Float
+    ) {
+        val l = left + p.x * sX
+        val t = top + p.y * sY
+        val r = l + p.width * sX
+        val b = t + p.height * sY
+        val cx = (l + r) / 2f
+        val cy = (t + b) / 2f
+        val elW = (r - l).toInt().coerceAtLeast(1)
 
         // Reuse the shared TextPaint instead of allocating a new one each draw
         textPaint.reset()
@@ -235,104 +335,161 @@ class TemplateRenderer(private val context: Context) {
         textPaint.textSize = p.textSizeSp * sX
         textPaint.typeface = resolveTypeface(p.fontName, p.isBold)
         textPaint.letterSpacing = 0f
-        textPaint.isLinearText = true   // disables size-hinting → consistent metrics on screen vs PDF
+        textPaint.isLinearText =
+            true   // disables size-hinting → consistent metrics on screen vs PDF
 
-        // Measure each explicit line independently (never auto-wrap)
-        val singleLineMaxW = p.text.split('\n').maxOf { textPaint.measureText(it) }
-        // boxW must be at least the longest line to prevent StaticLayout from wrapping;
-        // if shorter than element width, element width wins (so ALIGN_CENTER fills the box).
-        val boxW = maxOf(singleLineMaxW.toInt() + 2, (r - l).toInt()).coerceAtLeast(1)
+        // Map TextAlign → StaticLayout.Alignment
+        val layoutAlign = when (p.textAlign) {
+            TextAlign.START -> Layout.Alignment.ALIGN_NORMAL
+            TextAlign.END -> Layout.Alignment.ALIGN_OPPOSITE
+            TextAlign.CENTER -> Layout.Alignment.ALIGN_CENTER
+        }
+
+        // If p.wrap is false (Username, Password, Date), use a huge boxW to prevent wrapping.
+        // If p.wrap is true (TextElement), use the actual element width.
+        val boxW = if (p.wrap) elW else 8192
+
+        // For non-wrapping text (Credentials), we handle alignment manually via 'tx'.
+        // We MUST use ALIGN_NORMAL here so the layout starts at 0; otherwise, ALIGN_CENTER
+        // within the huge 8192 box would push the text off-screen.
+        val finalAlign = if (p.wrap) layoutAlign else Layout.Alignment.ALIGN_NORMAL
 
         val layout = StaticLayout.Builder
             .obtain(p.text, 0, p.text.length, textPaint, boxW)
-            .setAlignment(Layout.Alignment.ALIGN_CENTER)
+            .setAlignment(finalAlign)
             .setLineSpacing(0f, 1f)
             .setIncludePad(false)
             .build()
 
+        // Measure the actual ink-bounds of all lines
+        var minL = Float.MAX_VALUE
+        var maxR = Float.MIN_VALUE
+        for (i in 0 until layout.lineCount) {
+            minL = minOf(minL, layout.getLineLeft(i))
+            maxR = maxOf(maxR, layout.getLineRight(i))
+        }
+        val tightW = if (maxR > minL) maxR - minL else 0f
         val actualTextH = layout.height.toFloat()
         val padPx = TEXT_PAD_DP * sX     // matches CardCanvasView selection box padding
 
-        canvas.save()
-        canvas.rotate(p.rotation, cx, cy)
-
-        // Background rect sized to the actual longest rendered line
-        p.bgColor?.let { bg ->
-            val maxRenderedW = (0 until layout.lineCount)
-                .maxOfOrNull { layout.getLineWidth(it) } ?: singleLineMaxW
-            paint.reset(); paint.color = parseColor(bg); paint.style = Paint.Style.FILL
-            tempRect.set(
-                cx - maxRenderedW / 2 - padPx, cy - actualTextH / 2 - padPx,
-                cx + maxRenderedW / 2 + padPx, cy + actualTextH / 2 + padPx)
-            canvas.drawRoundRect(tempRect, padPx / 2, padPx / 2, paint)
+        // Translation logic:
+        // For wrapping text (TextElement), we anchor at 'l' and let StaticLayout handles alignment within boxW=elW.
+        // For non-wrapping (Credentials), we anchor such that the measured ink-bounds are centered/aligned relative to element 'cx'.
+        val tx = if (p.wrap) {
+            l
+        } else {
+            val targetL = when (p.textAlign) {
+                TextAlign.START -> l
+                TextAlign.END -> r - tightW
+                TextAlign.CENTER -> cx - tightW / 2f
+            }
+            targetL - minL // compensate for any internal layout offset (like RTL gap)
         }
 
-        // Translate so the layout is CENTERED at element-center cx.
-        canvas.translate(cx - boxW / 2f, cy - actualTextH / 2f)
+        canvas.withRotation(p.rotation, cx, cy) {
+            // Background rect — anchor to the actual ink-bounds relative to tx
+            p.bgColor?.let { bg ->
+                paint.reset(); paint.color = parseColor(bg); paint.style = Paint.Style.FILL
+                tempRect.set(
+                    tx + minL - padPx, cy - actualTextH / 2 - padPx,
+                    tx + minL + tightW + padPx, cy + actualTextH / 2 + padPx
+                )
+                drawRoundRect(tempRect, padPx / 2, padPx / 2, paint)
+            }
 
-        // Draw Stroke (if any)
-        if (p.textStrokeWidth > 0f) {
-            textPaint.style = Paint.Style.STROKE
-            textPaint.strokeWidth = p.textStrokeWidth * sX
-            textPaint.color = parseColor(p.textStrokeColor)
-            layout.draw(canvas)
+            translate(tx, cy - actualTextH / 2f)
+
+            // Draw Stroke (if any)
+            if (p.textStrokeWidth > 0f) {
+                textPaint.style = Paint.Style.STROKE
+                textPaint.strokeWidth = p.textStrokeWidth * sX
+                textPaint.color = parseColor(p.textStrokeColor)
+                layout.draw(this)
+            }
+
+            // Draw Fill
+            textPaint.style = Paint.Style.FILL
+            textPaint.color = parseColor(p.textColor)
+            layout.draw(this)
         }
-
-        // Draw Fill
-        textPaint.style = Paint.Style.FILL
-        textPaint.color = parseColor(p.textColor)
-        layout.draw(canvas)
-        canvas.restore()
     }
 
     // ── Image ─────────────────────────────────────────────────────────────────
 
-    private fun drawImage(canvas: Canvas, el: TemplateElement.ImageElement, left: Float, top: Float, sX: Float, sY: Float, renderScale: Float) {
-        val path = el.imagePath ?: return
+    private fun drawImage(
+        canvas: Canvas,
+        el: TemplateElement.ImageElement,
+        left: Float,
+        top: Float,
+        sX: Float,
+        sY: Float,
+        renderScale: Float
+    ) {
+        val path = el.imagePath
         val w = el.width * sX
         val h = el.height * sY
-        val l = left + el.x * sX; val t = top + el.y * sY; val r = l + w; val b = t + h
-        
-        paint.reset(); paint.isAntiAlias = true
-        el.tintColor?.let { paint.colorFilter = PorterDuffColorFilter(parseColor(it), PorterDuff.Mode.SRC_IN) }
-        
-        canvas.save()
-        canvas.rotate(el.rotation, (l+r)/2, (t+b)/2)
+        val l = left + el.x * sX
+        val t = top + el.y * sY
+        val r = l + w
+        val b = t + h
 
-        if (path.lowercase().endsWith(".svg")) {
-            val svg = loadSvg(path)
-            if (svg != null) {
-                val aspectW = if (svg.documentWidth > 0f) svg.documentWidth else w
-                val aspectH = if (svg.documentHeight > 0f) svg.documentHeight else h
-                canvas.save()
-                canvas.translate(l, t)
-                canvas.scale(w / aspectW, h / aspectH)
-                if (el.tintColor != null) {
-                    canvas.saveLayer(null, paint)
-                    svg.renderToCanvas(canvas)
-                    canvas.restore()
-                } else {
-                    svg.renderToCanvas(canvas)
-                }
-                canvas.restore()
-            }
-        } else {
-            val reqDim = (maxOf(w, h) * renderScale * 2f).toInt().coerceIn(64, maxImageDim)
-            val bmp = loadBitmap(path, reqDim)
-            if (bmp != null) {
-                canvas.drawBitmap(bmp, null, RectF(l, t, r, b), paint)
-            }
+        paint.reset(); paint.isAntiAlias = true
+        el.tintColor?.let {
+            paint.colorFilter = PorterDuffColorFilter(parseColor(it), PorterDuff.Mode.SRC_IN)
         }
-        
-        canvas.restore(); paint.colorFilter = null
+
+        canvas.withRotation(el.rotation, (l + r) / 2, (t + b) / 2) {
+            if (path.lowercase().endsWith(".svg")) {
+                val svg = loadSvg(path)
+                if (svg != null) {
+                    val aspectW = if (svg.documentWidth > 0f) svg.documentWidth else w
+                    val aspectH = if (svg.documentHeight > 0f) svg.documentHeight else h
+                    withTranslation(l, t) {
+                        if (el.tintColor != null) {
+                            // saveLayer(null, paint) causes AndroidSVG to use the full canvas clip
+                            // bounds as its viewport. On a PDF canvas (full A4 page) this makes the
+                            // SVG render at tiny natural size which is then up-scaled → very blurry.
+                            // Fix: rasterize SVG into a correctly-sized bitmap, then draw with tint.
+                            val bmpW = w.toInt().coerceAtLeast(1)
+                            val bmpH = h.toInt().coerceAtLeast(1)
+                            val tmp = createBitmap(bmpW, bmpH)
+                            Canvas(tmp).also { c ->
+                                c.scale(bmpW / aspectW, bmpH / aspectH)
+                                svg.renderToCanvas(c)
+                            }
+                            // Undo the translation so we draw at the original (l, t) coords
+                            translate(-l, -t)
+                            drawBitmap(tmp, null, RectF(l, t, r, b), paint)
+                            tmp.recycle()
+                        } else {
+                            scale(w / aspectW, h / aspectH)
+                            svg.renderToCanvas(this)
+                        }
+                    }
+                }
+            } else {
+                val reqDim = (maxOf(w, h) * renderScale * 2f).toInt().coerceIn(64, maxImageDim)
+                val bmp = loadBitmap(path, reqDim)
+                if (bmp != null) {
+                    drawBitmap(bmp, null, RectF(l, t, r, b), paint)
+                }
+            }
+
+        }; paint.colorFilter = null
     }
 
     // ── QR ────────────────────────────────────────────────────────────────────
 
-    private fun drawQr(canvas: Canvas, el: TemplateElement.QrElement, username: String?, password: String?,
-                       left: Float, top: Float, sX: Float, sY: Float, renderScale: Float) {
-        val content = "http://${el.host}/login?username=${username ?: "username"}&password=${password ?: "password"}"
-        val l = left + el.x * sX; val t = top + el.y * sY; val r = l + el.width * sX; val b = t + el.height * sY
+    private fun drawQr(
+        canvas: Canvas, el: TemplateElement.QrElement, username: String?, password: String?,
+        left: Float, top: Float, sX: Float, sY: Float, renderScale: Float
+    ) {
+        val content =
+            "http://${el.host}/login?username=${username ?: "username"}&password=${password ?: "password"}"
+        val l = left + el.x * sX
+        val t = top + el.y * sY
+        val r = l + el.width * sX
+        val b = t + el.height * sY
 
         // Always square — centered within element bounds
         val side = minOf(r - l, b - t)
@@ -340,13 +497,13 @@ class TemplateRenderer(private val context: Context) {
         val qrT = t + (b - t - side) / 2f
 
         // Scan clarity doesn't require massive bitmaps; restrict it to 1024 to prevent memory exhaustion
-        val bitmapSize = (side * renderScale * 4f).toInt().coerceIn(128, maxQrDim.coerceAtMost(1024))
+        val bitmapSize =
+            (side * renderScale * 4f).toInt().coerceIn(128, maxQrDim.coerceAtMost(1024))
         val qrBmp = generateQrBitmapForEl(content, bitmapSize, el) ?: return
 
-        canvas.save()
-        canvas.rotate(el.rotation, (l + r) / 2, (t + b) / 2)
-        canvas.drawBitmap(qrBmp, null, RectF(qrL, qrT, qrL + side, qrT + side), null)
-        canvas.restore()
+        canvas.withRotation(el.rotation, (l + r) / 2, (t + b) / 2) {
+            drawBitmap(qrBmp, null, RectF(qrL, qrT, qrL + side, qrT + side), null)
+        }
     }
 
     /** Generates a QR bitmap using the custom-qr-generator library (vector API). */
@@ -361,19 +518,21 @@ class TemplateRenderer(private val context: Context) {
             val bg = parseColor(el.backgroundColor)
 
             fun pixelShape(code: String): QrVectorPixelShape = when (code) {
-                "round"  -> QrVectorPixelShape.RoundCorners(radius = .5f)
+                "round" -> QrVectorPixelShape.RoundCorners(radius = .5f)
                 "circle" -> QrVectorPixelShape.Circle(1f)
-                else     -> QrVectorPixelShape.Default
+                else -> QrVectorPixelShape.Default
             }
+
             fun ballShape(code: String): QrVectorBallShape = when (code) {
-                "round"  -> QrVectorBallShape.RoundCorners(radius = .25f)
+                "round" -> QrVectorBallShape.RoundCorners(radius = .25f)
                 "circle" -> QrVectorBallShape.Circle(1f)
-                else     -> QrVectorBallShape.Default
+                else -> QrVectorBallShape.Default
             }
+
             fun frameShape(code: String): QrVectorFrameShape = when (code) {
-                "round"  -> QrVectorFrameShape.RoundCorners(corner = .25f)
+                "round" -> QrVectorFrameShape.RoundCorners(corner = .25f)
                 "circle" -> QrVectorFrameShape.Circle(1f, 1f)
-                else     -> QrVectorFrameShape.Default
+                else -> QrVectorFrameShape.Default
             }
 
             // Attach logo if provided (Android BitmapDrawable, not library class)
@@ -382,24 +541,24 @@ class TemplateRenderer(private val context: Context) {
             val logoObj: QrVectorLogo? = if (logoBitmapRaw != null) {
                 // Pad to a square to prevent stretching or cropping from CenterCrop / FitXY
                 val size = maxOf(logoBitmapRaw.width, logoBitmapRaw.height)
-                val squareBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+                val squareBitmap = createBitmap(size, size)
                 val paint = if (el.tintLogo) Paint().apply {
                     colorFilter = PorterDuffColorFilter(fg, PorterDuff.Mode.SRC_IN)
                 } else null
-                
-                android.graphics.Canvas(squareBitmap).drawBitmap(
-                    logoBitmapRaw, 
-                    (size - logoBitmapRaw.width) / 2f, 
-                    (size - logoBitmapRaw.height) / 2f, 
+
+                Canvas(squareBitmap).drawBitmap(
+                    logoBitmapRaw,
+                    (size - logoBitmapRaw.width) / 2f,
+                    (size - logoBitmapRaw.height) / 2f,
                     paint
                 )
 
-                val drawable = BitmapDrawable(context.resources, squareBitmap)
+                val drawable = squareBitmap.toDrawable(context.resources)
                 QrVectorLogo(
-                    drawable  = drawable,
-                    size      = el.logoSizeFraction.coerceIn(0.05f, 1f / 3f),
-                    padding   = QrVectorLogoPadding.Accurate(.15f),
-                    scale     = BitmapScale.CenterCrop, 
+                    drawable = drawable,
+                    size = el.logoSizeFraction.coerceIn(0.05f, 1f / 3f),
+                    padding = QrVectorLogoPadding.Accurate(.15f),
+                    scale = BitmapScale.CenterCrop,
                 )
             } else null
 
@@ -409,18 +568,24 @@ class TemplateRenderer(private val context: Context) {
                     if (logoObj != null) QrErrorCorrectionLevel.High
                     else QrErrorCorrectionLevel.Auto
                 )
-                .setBackground(QrVectorBackground(
-                    color = QrVectorColor.Solid(bg)
-                ))
-                .setColors(QrVectorColors(
-                    dark  = QrVectorColor.Solid(fg),
-                    light = QrVectorColor.Unspecified, // uses solid bg color from QrBackground
-                ))
-                .setShapes(QrVectorShapes(
-                    darkPixel = pixelShape(el.pixelShape),
-                    ball      = ballShape(el.eyeShape),
-                    frame     = frameShape(el.eyeShape),
-                ))
+                .setBackground(
+                    QrVectorBackground(
+                        color = QrVectorColor.Solid(bg)
+                    )
+                )
+                .setColors(
+                    QrVectorColors(
+                        dark = QrVectorColor.Solid(fg),
+                        light = QrVectorColor.Unspecified, // uses solid bg color from QrBackground
+                    )
+                )
+                .setShapes(
+                    QrVectorShapes(
+                        darkPixel = pixelShape(el.pixelShape),
+                        ball = ballShape(el.eyeShape),
+                        frame = frameShape(el.eyeShape),
+                    )
+                )
                 .apply { if (logoObj != null) setLogo(logoObj) }
                 .build()
 
@@ -435,8 +600,8 @@ class TemplateRenderer(private val context: Context) {
     ): Bitmap? {
         // Cache key includes all style fields so any change triggers regeneration
         val key = "qr|$content|$sizePx|${el.qrColor}|${el.backgroundColor}" +
-                  "|${el.pixelShape}|${el.eyeShape}|${el.qrPadding}" +
-                  "|${el.logoPath}|${el.logoSizeFraction}|${el.tintLogo}"
+                "|${el.pixelShape}|${el.eyeShape}|${el.qrPadding}" +
+                "|${el.logoPath}|${el.logoSizeFraction}|${el.tintLogo}"
         return qrCache.getOrPut(key) { generateQrBitmap(content, sizePx, el) }
     }
 
@@ -452,19 +617,23 @@ class TemplateRenderer(private val context: Context) {
         val cacheKey = "$path|$reqMaxDim"
         if (bitmapCache.containsKey(cacheKey)) return bitmapCache[cacheKey]
 
-        fun decodeSampled(options: BitmapFactory.Options, streamProvider: () -> java.io.InputStream?): Bitmap? {
+        fun decodeSampled(
+            options: BitmapFactory.Options,
+            streamProvider: () -> java.io.InputStream?
+        ): Bitmap? {
             options.inJustDecodeBounds = true
             streamProvider()?.use { BitmapFactory.decodeStream(it, null, options) }
             if (options.outWidth <= 0 || options.outHeight <= 0) return null
-            
+
             var inSampleSize = 1
             while ((options.outHeight / (inSampleSize * 2)) >= reqMaxDim || (options.outWidth / (inSampleSize * 2)) >= reqMaxDim) {
                 inSampleSize *= 2
             }
             options.inJustDecodeBounds = false
             options.inSampleSize = inSampleSize
-            
-            val decoded = streamProvider()?.use { BitmapFactory.decodeStream(it, null, options) } ?: return null
+
+            val decoded = streamProvider()?.use { BitmapFactory.decodeStream(it, null, options) }
+                ?: return null
             return decoded
         }
 
@@ -478,14 +647,19 @@ class TemplateRenderer(private val context: Context) {
                 }
                 stream.use {
                     val svg = com.caverock.androidsvg.SVG.getFromInputStream(it)
-                    val docW = if (svg.documentWidth > 0f) svg.documentWidth else reqMaxDim.toFloat()
-                    val docH = if (svg.documentHeight > 0f) svg.documentHeight else reqMaxDim.toFloat()
+                    val docW =
+                        if (svg.documentWidth > 0f) svg.documentWidth else reqMaxDim.toFloat()
+                    val docH =
+                        if (svg.documentHeight > 0f) svg.documentHeight else reqMaxDim.toFloat()
                     val aspect = docW / docH
                     // Force the SVG to render at the highest permitted raster quality
                     val finalW = if (docW > docH) reqMaxDim.toFloat() else reqMaxDim * aspect
                     val finalH = finalW / aspect
-                    
-                    val b = Bitmap.createBitmap(finalW.toInt().coerceAtLeast(1), finalH.toInt().coerceAtLeast(1), Bitmap.Config.ARGB_8888)
+
+                    val b = createBitmap(
+                        finalW.toInt().coerceAtLeast(1),
+                        finalH.toInt().coerceAtLeast(1)
+                    )
                     val c = Canvas(b)
                     svg.documentWidth = finalW
                     svg.documentHeight = finalH
@@ -497,8 +671,9 @@ class TemplateRenderer(private val context: Context) {
             val resName = path.removePrefix("res:")
             val resId = context.resources.getIdentifier(resName, "drawable", context.packageName)
             if (resId == 0) return null else {
-                val d = androidx.core.content.ContextCompat.getDrawable(context, resId) ?: return null
-                val b = Bitmap.createBitmap(reqMaxDim.coerceAtMost(1024), reqMaxDim.coerceAtMost(1024), Bitmap.Config.ARGB_8888)
+                val d =
+                    androidx.core.content.ContextCompat.getDrawable(context, resId) ?: return null
+                val b = createBitmap(reqMaxDim.coerceAtMost(1024), reqMaxDim.coerceAtMost(1024))
                 val c = Canvas(b)
                 d.setBounds(0, 0, b.width, b.height)
                 d.draw(c)
@@ -517,7 +692,10 @@ class TemplateRenderer(private val context: Context) {
     private fun loadSvg(path: String): com.caverock.androidsvg.SVG? {
         if (svgCache.containsKey(path)) return svgCache[path]
         val svg = runCatching {
-            val stream = if (path.startsWith("pack:")) context.assets.open(path.removePrefix("pack:")) else java.io.FileInputStream(path)
+            val stream =
+                if (path.startsWith("pack:")) context.assets.open(path.removePrefix("pack:")) else java.io.FileInputStream(
+                    path
+                )
             stream.use { com.caverock.androidsvg.SVG.getFromInputStream(it) }
         }.getOrNull()
         svgCache[path] = svg
@@ -533,7 +711,7 @@ class TemplateRenderer(private val context: Context) {
         // Note: typefaceCache is NOT cleared — typefaces are lightweight and reusable across renders
     }
 
-    private fun parseColor(hex: String) = runCatching { Color.parseColor(hex) }.getOrElse { Color.BLACK }
+    private fun parseColor(hex: String) = runCatching { hex.toColorInt() }.getOrElse { Color.BLACK }
 
     private fun resolveTypeface(fontName: String, isBold: Boolean): Typeface {
         val key = "$fontName|$isBold"
@@ -541,15 +719,21 @@ class TemplateRenderer(private val context: Context) {
             val style = if (isBold) Typeface.BOLD else Typeface.NORMAL
             val baseTypeface = when (fontName.lowercase()) {
                 "default", "" -> Typeface.DEFAULT
-                "serif"       -> Typeface.SERIF
-                "monospace"   -> Typeface.MONOSPACE
-                "sans-serif"  -> Typeface.SANS_SERIF
+                "serif" -> Typeface.SERIF
+                "monospace" -> Typeface.MONOSPACE
+                "sans-serif" -> Typeface.SANS_SERIF
                 else -> {
                     try {
-                        val resId = context.resources.getIdentifier(fontName, "font", context.packageName)
-                        if (resId != 0) androidx.core.content.res.ResourcesCompat.getFont(context, resId) ?: Typeface.DEFAULT
+                        val resId =
+                            context.resources.getIdentifier(fontName, "font", context.packageName)
+                        if (resId != 0) androidx.core.content.res.ResourcesCompat.getFont(
+                            context,
+                            resId
+                        ) ?: Typeface.DEFAULT
                         else Typeface.DEFAULT
-                    } catch (e: Exception) { Typeface.DEFAULT }
+                    } catch (_: Exception) {
+                        Typeface.DEFAULT
+                    }
                 }
             }
             Typeface.create(baseTypeface, style)
@@ -557,18 +741,85 @@ class TemplateRenderer(private val context: Context) {
     }
 
 
-
-    private data class TextProps(val x: Float, val y: Float, val width: Float, val height: Float,
-                                 val rotation: Float, val text: String, val textColor: String,
-                                 val bgColor: String?, val isBold: Boolean, val fontName: String, val textSizeSp: Float,
-                                 val textStrokeWidth: Float, val textStrokeColor: String)
+    private data class TextProps(
+        val x: Float, val y: Float, val width: Float, val height: Float,
+        val rotation: Float, val text: String, val textColor: String,
+        val bgColor: String?, val isBold: Boolean, val fontName: String, val textSizeSp: Float,
+        val textStrokeWidth: Float, val textStrokeColor: String,
+        val textAlign: TextAlign = TextAlign.CENTER,
+        val wrap: Boolean = true
+    )
 
     private fun textProps(el: TemplateElement.TextElement, text: String) =
-        TextProps(el.x, el.y, el.width, el.height, el.rotation, text, el.textColor, el.bgColor, el.isBold, el.fontName, el.textSizeSp, el.textStrokeWidth, el.textStrokeColor)
+        TextProps(
+            el.x,
+            el.y,
+            el.width,
+            el.height,
+            el.rotation,
+            text,
+            el.textColor,
+            el.bgColor,
+            el.isBold,
+            el.fontName,
+            el.textSizeSp,
+            el.textStrokeWidth,
+            el.textStrokeColor,
+            el.textAlign,
+            wrap = true
+        )
+
     private fun textProps(el: TemplateElement.UsernameElement, text: String) =
-        TextProps(el.x, el.y, el.width, el.height, el.rotation, text, el.textColor, el.bgColor, el.isBold, el.fontName, el.textSizeSp, el.textStrokeWidth, el.textStrokeColor)
+        TextProps(
+            el.x,
+            el.y,
+            el.width,
+            el.height,
+            el.rotation,
+            text,
+            el.textColor,
+            el.bgColor,
+            el.isBold,
+            el.fontName,
+            el.textSizeSp,
+            el.textStrokeWidth,
+            el.textStrokeColor,
+            wrap = false
+        )
+
     private fun textProps(el: TemplateElement.PasswordElement, text: String) =
-        TextProps(el.x, el.y, el.width, el.height, el.rotation, text, el.textColor, el.bgColor, el.isBold, el.fontName, el.textSizeSp, el.textStrokeWidth, el.textStrokeColor)
+        TextProps(
+            el.x,
+            el.y,
+            el.width,
+            el.height,
+            el.rotation,
+            text,
+            el.textColor,
+            el.bgColor,
+            el.isBold,
+            el.fontName,
+            el.textSizeSp,
+            el.textStrokeWidth,
+            el.textStrokeColor,
+            wrap = false
+        )
+
     private fun textProps(el: TemplateElement.DateElement, text: String) =
-        TextProps(el.x, el.y, el.width, el.height, el.rotation, text, el.textColor, el.bgColor, el.isBold, el.fontName, el.textSizeSp, el.textStrokeWidth, el.textStrokeColor)
+        TextProps(
+            el.x,
+            el.y,
+            el.width,
+            el.height,
+            el.rotation,
+            text,
+            el.textColor,
+            el.bgColor,
+            el.isBold,
+            el.fontName,
+            el.textSizeSp,
+            el.textStrokeWidth,
+            el.textStrokeColor,
+            wrap = false
+        )
 }

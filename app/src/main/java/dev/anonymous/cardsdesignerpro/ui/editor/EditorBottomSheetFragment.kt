@@ -63,7 +63,7 @@ class EditorBottomSheetFragment : Fragment() {
             when (frag) {
                 is ElementsListFragment -> frag.onUiStateChanged(state)
                 is PropertiesContainerFragment -> frag.onUiStateChanged(state)
-                is AddElementFragment -> frag.onUiStateChanged(state)
+                is AddElementFragment -> frag.onUiStateChanged()
             }
         }
     }

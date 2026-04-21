@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:layoutDirection="rtl">
+    android:layout_height="match_parent">
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
@@ -67,7 +67,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="—"
-                            android:textAppearance="?attr/textAppearanceTitleMedium" />
+                            android:textAppearance="?attr/textAppearanceTitleMedium"
+                            tools:ignore="HardcodedText" />
                     </LinearLayout>
 
                     <!-- 2: Total cards -->
@@ -89,7 +90,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="—"
-                            android:textAppearance="?attr/textAppearanceTitleMedium" />
+                            android:textAppearance="?attr/textAppearanceTitleMedium"
+                            tools:ignore="HardcodedText" />
                     </LinearLayout>
 
                     <!-- 3: Total pages (label changes in dual mode) -->
@@ -112,7 +114,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="—"
-                            android:textAppearance="?attr/textAppearanceTitleMedium" />
+                            android:textAppearance="?attr/textAppearanceTitleMedium"
+                            tools:ignore="HardcodedText" />
                     </LinearLayout>
 
                     <!-- 4: Total pages both sides — visible only when dual -->
@@ -136,7 +139,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="—"
-                            android:textAppearance="?attr/textAppearanceTitleMedium" />
+                            android:textAppearance="?attr/textAppearanceTitleMedium"
+                            tools:ignore="HardcodedText" />
                     </LinearLayout>
                 </LinearLayout>
 
@@ -397,37 +401,31 @@
 
                     <!-- H spacing -->
                     <TextView
+                        android:id="@+id/tv_h_spacing_label"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="4dp"
                         android:text="@string/label_horizontal_spacing"
                         android:textAppearance="?attr/textAppearanceTitleSmall" />
 
-                    <com.google.android.material.slider.Slider
-                        android:id="@+id/slider_h_spacing"
-                        android:layout_width="match_parent"
+                    <dev.anonymous.cardsdesignerpro.common.widget.StepperView
+                        android:id="@+id/stepper_h_spacing"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp"
-                        android:stepSize="1"
-                        android:valueFrom="0"
-                        android:valueTo="60" />
+                        android:layout_marginBottom="16dp" />
 
                     <!-- V spacing -->
                     <TextView
+                        android:id="@+id/tv_v_spacing_label"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="4dp"
                         android:text="@string/label_vertical_spacing"
                         android:textAppearance="?attr/textAppearanceTitleSmall" />
 
-                    <com.google.android.material.slider.Slider
-                        android:id="@+id/slider_v_spacing"
-                        android:layout_width="match_parent"
+                    <dev.anonymous.cardsdesignerpro.common.widget.StepperView
+                        android:id="@+id/stepper_v_spacing"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp"
-                        android:stepSize="1"
-                        android:valueFrom="0"
-                        android:valueTo="60" />
+                        android:layout_marginBottom="16dp" />
 
                     <!-- Page size -->
                     <TextView

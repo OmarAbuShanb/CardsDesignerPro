@@ -1,7 +1,10 @@
 package dev.anonymous.cardsdesignerpro.ui.editor
 
 import android.app.Application
-import android.net.Uri
+import android.graphics.Typeface
+import android.text.Layout
+import android.text.StaticLayout
+import android.text.TextPaint
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.anonymous.cardsdesignerpro.data.model.CardSide
@@ -9,11 +12,11 @@ import dev.anonymous.cardsdesignerpro.data.model.CardStyle
 import dev.anonymous.cardsdesignerpro.data.model.Template
 import dev.anonymous.cardsdesignerpro.data.model.TemplateElement
 import dev.anonymous.cardsdesignerpro.data.repository.TemplateRepository
+import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel.Companion.UNDO_DEBOUNCE_MS
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.io.File
 import java.util.UUID
 
 data class EditorUiState(
@@ -32,7 +35,11 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
 
     private val _uiState = MutableStateFlow(
         EditorUiState(
-            template = Template(id = "", name = "", card = dev.anonymous.cardsdesignerpro.data.model.CardStyle())
+            template = Template(
+                id = "",
+                name = "",
+                card = CardStyle()
+            )
         )
     )
     val uiState: StateFlow<EditorUiState> = _uiState.asStateFlow()
@@ -42,9 +49,12 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     /** Snapshot of the template as loaded from disk — used to restore on discard. */
     private var originalTemplate: Template? = null
 
+    private val typefaceCache = mutableMapOf<String, Typeface>()
+
     // ── Undo Stack ────────────────────────────────────────────────────────────
 
     private val undoStack = ArrayDeque<Template>()   // max UNDO_LIMIT snapshots
+
     /** System clock ms of the last checkpoint push — used for debounce. */
     private var lastCheckpointMs = 0L
 
@@ -70,12 +80,14 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         val selId = state.selectedElementId?.takeIf { id ->
             currentSideElements(prev).any { it.id == id }
         }
-        update(state.copy(
-            template = prev,
-            selectedElementId = selId,
-            hasUnsavedChanges = true,
-            canUndo = undoStack.isNotEmpty()
-        ))
+        update(
+            state.copy(
+                template = prev,
+                selectedElementId = selId,
+                hasUnsavedChanges = true,
+                canUndo = undoStack.isNotEmpty()
+            )
+        )
     }
 
     // ── Initialization ────────────────────────────────────────────────────────
@@ -111,7 +123,8 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             repo.save(templateToSave)
             originalTemplate = templateToSave
-            _uiState.value = uiState.value.copy(template = templateToSave, hasUnsavedChanges = false)
+            _uiState.value =
+                uiState.value.copy(template = templateToSave, hasUnsavedChanges = false)
             onComplete()
         }
     }
@@ -175,7 +188,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 backCard = if (nowEnabled && t.backCard == null) {
                     // Start with a clean white/neutral back — not a copy of the front
                     t.card.copy(
-                        backgroundColor     = "#FFFFFFFF",
+                        backgroundColor = "#FFFFFFFF",
                         backgroundImagePath = null,
                     )
                 } else {
@@ -196,12 +209,14 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     fun setActiveSide(side: CardSide) {
         if (uiState.value.template.activeSide == side) return
         val prev = uiState.value
-        update(prev.copy(
-            template = prev.template.copy(activeSide = side),
-            selectedElementId = null,
-            // hasUnsavedChanges intentionally NOT set — switching sides is not an edit
-            sideSwitched = true,
-        ))
+        update(
+            prev.copy(
+                template = prev.template.copy(activeSide = side),
+                selectedElementId = null,
+                // hasUnsavedChanges intentionally NOT set — switching sides is not an edit
+                sideSwitched = true,
+            )
+        )
     }
 
     /** Clears the sideSwitched flag after the fragment has consumed it. */
@@ -216,14 +231,14 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
 
     fun toggleShortNumbers(enabled: Boolean) {
         mutateTemplate { t ->
-            val newFront = if (!enabled) t.elements.filterNot { 
-                (it is TemplateElement.UsernameElement && it.isShortVariant) || 
-                (it is TemplateElement.PasswordElement && it.isShortVariant) 
+            val newFront = if (!enabled) t.elements.filterNot {
+                (it is TemplateElement.UsernameElement && it.isShortVariant) ||
+                        (it is TemplateElement.PasswordElement && it.isShortVariant)
             } else t.elements
 
             val newBack = if (!enabled && t.backElements != null) t.backElements.filterNot {
-                (it is TemplateElement.UsernameElement && it.isShortVariant) || 
-                (it is TemplateElement.PasswordElement && it.isShortVariant) 
+                (it is TemplateElement.UsernameElement && it.isShortVariant) ||
+                        (it is TemplateElement.PasswordElement && it.isShortVariant)
             } else t.backElements
 
             t.copy(isShortNumbersEnabled = enabled, elements = newFront, backElements = newBack)
@@ -277,7 +292,13 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
             fun resizeElements(elements: List<TemplateElement>) = elements.map { el ->
                 when (el) {
                     is TemplateElement.FrameElement ->
-                        el.copy(x = 0f, y = 0f, width = newCard.widthDp, height = newCard.widthDp * clamped)
+                        el.copy(
+                            x = 0f,
+                            y = 0f,
+                            width = newCard.widthDp,
+                            height = newCard.widthDp * clamped
+                        )
+
                     else -> el
                 }
             }
@@ -296,28 +317,84 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     private fun centerY(elH: Float) =
         (currentTemplate.card.widthDp * currentTemplate.card.heightRatio - elH) / 2f
 
-    fun addTextElement() = addElement(
-        TemplateElement.TextElement(
-            id = newId(), x = centerX(160f), y = centerY(40f), width = 160f, height = 40f,
-            text = getApplication<Application>().getString(dev.anonymous.cardsdesignerpro.R.string.default_text_placeholder)
-        )
-    )
+    /**
+     * Shows a dialog to collect text, then adds a TextElement sized to fit it.
+     * Call [addTextElement] with the user's input (called from AddElementFragment).
+     */
+    fun addTextElement(text: String) {
+        val safeText = text.trim()
+            .ifEmpty { getApplication<Application>().getString(dev.anonymous.cardsdesignerpro.R.string.default_text_placeholder) }
+        val card = currentTemplate.card
+        val cardW = card.widthDp
+        val density = getApplication<Application>().resources.displayMetrics.density
+        val defaultSizeSp = 15f
+        val PAD = TEXT_ELEMENT_PAD_DP   // padding inside element box
 
-    fun addUsernameElement(isShort: Boolean = false) = addElement(
-        TemplateElement.UsernameElement(
-            id = newId(), x = centerX(160f), y = centerY(40f), width = 160f, height = 40f,
-            isShortVariant = isShort,
-            digitCount = if (isShort) 5 else 12
-        )
-    )
+        val tp = TextPaint().apply {
+            textSize = defaultSizeSp * density
+            typeface = Typeface.DEFAULT
+        }
+        val singleLineMaxWPx = safeText.split('\n').maxOf { tp.measureText(it) }
+        val singleLineMaxWDp = singleLineMaxWPx / density
+        val fm = tp.fontMetrics
+        val lineHeightDp = (fm.descent - fm.ascent) / density
 
-    fun addPasswordElement(isShort: Boolean = false) = addElement(
-        TemplateElement.PasswordElement(
-            id = newId(), x = centerX(160f), y = centerY(40f), width = 160f, height = 40f,
-            isShortVariant = isShort,
-            digitCount = if (isShort) 5 else 6
+        val maxW = cardW / 2f
+        val elW: Float
+        val elH: Float
+
+        if (singleLineMaxWDp + PAD * 2 > maxW) {
+            // Text is wide — constrain to half card width and let it wrap
+            elW = maxW
+            val boxWPx = ((maxW - PAD * 2) * density).toInt().coerceAtLeast(1)
+            val layout = StaticLayout.Builder
+                .obtain(safeText, 0, safeText.length, tp, boxWPx)
+                .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                .setLineSpacing(0f, 1f)
+                .setIncludePad(false)
+                .build()
+            elH = (layout.height / density) + PAD * 2
+        } else {
+            // Short text — size box exactly to fit one line (per explicit \n)
+            elW = singleLineMaxWDp + PAD * 2
+            elH = lineHeightDp + PAD * 2
+        }
+
+        addElement(
+            TemplateElement.TextElement(
+                id = newId(),
+                x = centerX(elW), y = centerY(elH),
+                width = elW, height = elH,
+                text = safeText,
+            )
         )
-    )
+    }
+
+    fun addUsernameElement(isShort: Boolean = false) {
+        val digitCount = if (isShort) 5 else 12
+        val dummy = dummyDigits(digitCount)
+        val (w, h) = measureTextSize(dummy, 16f, "default", isBold = false)
+        addElement(
+            TemplateElement.UsernameElement(
+                id = newId(), x = centerX(w), y = centerY(h), width = w, height = h,
+                isShortVariant = isShort,
+                digitCount = digitCount
+            )
+        )
+    }
+
+    fun addPasswordElement(isShort: Boolean = false) {
+        val digitCount = if (isShort) 5 else 6
+        val dummy = dummyDigits(digitCount)
+        val (w, h) = measureTextSize(dummy, 16f, "default", isBold = false)
+        addElement(
+            TemplateElement.PasswordElement(
+                id = newId(), x = centerX(w), y = centerY(h), width = w, height = h,
+                isShortVariant = isShort,
+                digitCount = digitCount
+            )
+        )
+    }
 
     fun addQrElement() {
         val card = currentTemplate.card
@@ -333,9 +410,12 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
 
     fun addDateElement() {
         if (hasDateElement()) return
+        // Matches TemplateRenderer: use full date string for initial measurement
+        val dummy = "2024-12-31"
+        val (w, h) = measureTextSize(dummy, 16f, "default", isBold = false)
         addElement(
             TemplateElement.DateElement(
-                id = newId(), x = centerX(160f), y = centerY(40f), width = 160f, height = 40f
+                id = newId(), x = centerX(w), y = centerY(h), width = w, height = h
             )
         )
     }
@@ -352,7 +432,8 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun addShapeElement() {
-        val w = 80f; val h = 60f
+        val w = 80f;
+        val h = 60f
         addElement(
             TemplateElement.ShapeElement(
                 id = newId(), x = centerX(w), y = centerY(h), width = w, height = h,
@@ -360,24 +441,36 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         )
     }
 
+    /** Duplicates a [TemplateElement.ShapeElement] by id, places the copy slightly offset and selects it. */
+    fun duplicateShapeElement(id: String) {
+        val original =
+            currentElements.firstOrNull { it.id == id } as? TemplateElement.ShapeElement ?: return
+        val offset = 8f   // template-dp nudge so the copy is visibly offset from the original
+        val copy = original.copy(
+            id = newId(),
+            x = original.x + offset,
+            y = original.y + offset,
+        )
+        addElement(copy)
+    }
 
 
     fun addImageElement(imagePath: String, srcW: Int = 0, srcH: Int = 0) {
         val card = currentTemplate.card
         val cardW = card.widthDp
         val cardH = card.widthDp * card.heightRatio
-        
+
         val limitW = cardW * 0.5f
         val limitH = cardH * 0.5f
         var elW = srcW.toFloat()
         var elH = srcH.toFloat()
-        
+
         // If no src dimensions provided, fallback to half size
         if (elW <= 0f || elH <= 0f) {
             elW = limitW
             elH = limitH
         }
-        
+
         // As requested: if the image intrinsic size is bigger than the card template size itself, 
         // restrict it down to half the template size so it isn't overwhelmingly large.
         if (elW > cardW || elH > cardH) {
@@ -390,7 +483,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 elW = limitH * aspect
             }
         }
-        
+
         addElement(
             TemplateElement.ImageElement(
                 id = newId(),
@@ -408,26 +501,28 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         val newElements = currentSideElements(prev.template).filterNot { it.id == id }
         val newSelected = if (prev.selectedElementId == id)
             newElements.firstOrNull()?.id else prev.selectedElementId
-        update(prev.copy(
-            template = setSideElements(prev.template, newElements),
-            selectedElementId = newSelected,
-            hasUnsavedChanges = true
-        ))
+        update(
+            prev.copy(
+                template = setSideElements(prev.template, newElements),
+                selectedElementId = newSelected,
+                hasUnsavedChanges = true
+            )
+        )
     }
 
     fun toggleVisibility(id: String) {
         val wasVisible = currentElements.firstOrNull { it.id == id }?.isVisible ?: return
         mutateElement(id) { el ->
             when (el) {
-                is TemplateElement.TextElement       -> el.copy(isVisible = !el.isVisible)
-                is TemplateElement.UsernameElement   -> el.copy(isVisible = !el.isVisible)
-                is TemplateElement.PasswordElement   -> el.copy(isVisible = !el.isVisible)
-                is TemplateElement.ImageElement      -> el.copy(isVisible = !el.isVisible)
-                is TemplateElement.QrElement         -> el.copy(isVisible = !el.isVisible)
-                is TemplateElement.DateElement       -> el.copy(isVisible = !el.isVisible)
-                is TemplateElement.FrameElement      -> el.copy(isVisible = !el.isVisible)
-                is TemplateElement.ShapeElement      -> el.copy(isVisible = !el.isVisible)
-                is TemplateElement.CardBackground    -> el
+                is TemplateElement.TextElement -> el.copy(isVisible = !el.isVisible)
+                is TemplateElement.UsernameElement -> el.copy(isVisible = !el.isVisible)
+                is TemplateElement.PasswordElement -> el.copy(isVisible = !el.isVisible)
+                is TemplateElement.ImageElement -> el.copy(isVisible = !el.isVisible)
+                is TemplateElement.QrElement -> el.copy(isVisible = !el.isVisible)
+                is TemplateElement.DateElement -> el.copy(isVisible = !el.isVisible)
+                is TemplateElement.FrameElement -> el.copy(isVisible = !el.isVisible)
+                is TemplateElement.ShapeElement -> el.copy(isVisible = !el.isVisible)
+                is TemplateElement.CardBackground -> el
             }
         }
         if (wasVisible && uiState.value.selectedElementId == id) selectElement(null)
@@ -440,26 +535,29 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     fun updateElement(element: TemplateElement) {
         val prev = uiState.value
         pushCheckpoint()
-        val newList = currentSideElements(prev.template).map { if (it.id == element.id) element else it }
-        update(prev.copy(
-            template = setSideElements(prev.template, newList),
-            hasUnsavedChanges = true,
-            canUndo = undoStack.isNotEmpty()
-        ))
+        val newList =
+            currentSideElements(prev.template).map { if (it.id == element.id) element else it }
+        update(
+            prev.copy(
+                template = setSideElements(prev.template, newList),
+                hasUnsavedChanges = true,
+                canUndo = undoStack.isNotEmpty()
+            )
+        )
     }
 
     fun moveElement(id: String, dx: Float, dy: Float) {
         mutateElement(id) { el ->
             when (el) {
-                is TemplateElement.TextElement     -> el.copy(x = el.x + dx, y = el.y + dy)
+                is TemplateElement.TextElement -> el.copy(x = el.x + dx, y = el.y + dy)
                 is TemplateElement.UsernameElement -> el.copy(x = el.x + dx, y = el.y + dy)
                 is TemplateElement.PasswordElement -> el.copy(x = el.x + dx, y = el.y + dy)
-                is TemplateElement.ImageElement    -> el.copy(x = el.x + dx, y = el.y + dy)
-                is TemplateElement.QrElement       -> el.copy(x = el.x + dx, y = el.y + dy)
-                is TemplateElement.DateElement     -> el.copy(x = el.x + dx, y = el.y + dy)
-                is TemplateElement.FrameElement    -> el.copy(x = el.x + dx, y = el.y + dy)
-                is TemplateElement.ShapeElement    -> el.copy(x = el.x + dx, y = el.y + dy)
-                is TemplateElement.CardBackground  -> el
+                is TemplateElement.ImageElement -> el.copy(x = el.x + dx, y = el.y + dy)
+                is TemplateElement.QrElement -> el.copy(x = el.x + dx, y = el.y + dy)
+                is TemplateElement.DateElement -> el.copy(x = el.x + dx, y = el.y + dy)
+                is TemplateElement.FrameElement -> el.copy(x = el.x + dx, y = el.y + dy)
+                is TemplateElement.ShapeElement -> el.copy(x = el.x + dx, y = el.y + dy)
+                is TemplateElement.CardBackground -> el
             }
         }
     }
@@ -476,26 +574,56 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
             val oldCY = el.y + el.height / 2f
             when (el) {
                 is TemplateElement.TextElement ->
-                    el.copy(x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
+                    el.copy(
+                        x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
                         width = safeW, height = safeH,
-                        textSizeSp = (el.textSizeSp * scaleW).coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP))
+                        textSizeSp = (el.textSizeSp * scaleW).coerceIn(
+                            MIN_TEXT_SIZE_SP,
+                            MAX_TEXT_SIZE_SP
+                        )
+                    )
+
                 is TemplateElement.UsernameElement ->
-                    el.copy(x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
+                    el.copy(
+                        x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
                         width = safeW, height = safeH,
-                        textSizeSp = (el.textSizeSp * scaleW).coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP))
+                        textSizeSp = (el.textSizeSp * scaleW).coerceIn(
+                            MIN_TEXT_SIZE_SP,
+                            MAX_TEXT_SIZE_SP
+                        )
+                    )
+
                 is TemplateElement.PasswordElement ->
-                    el.copy(x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
+                    el.copy(
+                        x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
                         width = safeW, height = safeH,
-                        textSizeSp = (el.textSizeSp * scaleW).coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP))
+                        textSizeSp = (el.textSizeSp * scaleW).coerceIn(
+                            MIN_TEXT_SIZE_SP,
+                            MAX_TEXT_SIZE_SP
+                        )
+                    )
+
                 is TemplateElement.DateElement ->
-                    el.copy(x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
+                    el.copy(
+                        x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
                         width = safeW, height = safeH,
-                        textSizeSp = (el.textSizeSp * scaleW).coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP))
-                is TemplateElement.ImageElement    -> el.copy(width = safeW, height = safeH)
-                is TemplateElement.QrElement       -> el.copy(width = safeW, height = safeH)
-                is TemplateElement.FrameElement    -> el.copy(width = safeW, height = safeH)
-                is TemplateElement.ShapeElement    -> el.copy(x = oldCX - safeW / 2f, y = oldCY - safeH / 2f, width = safeW, height = safeH)
-                is TemplateElement.CardBackground  -> el
+                        textSizeSp = (el.textSizeSp * scaleW).coerceIn(
+                            MIN_TEXT_SIZE_SP,
+                            MAX_TEXT_SIZE_SP
+                        )
+                    )
+
+                is TemplateElement.ImageElement -> el.copy(width = safeW, height = safeH)
+                is TemplateElement.QrElement -> el.copy(width = safeW, height = safeH)
+                is TemplateElement.FrameElement -> el.copy(width = safeW, height = safeH)
+                is TemplateElement.ShapeElement -> el.copy(
+                    x = oldCX - safeW / 2f,
+                    y = oldCY - safeH / 2f,
+                    width = safeW,
+                    height = safeH
+                )
+
+                is TemplateElement.CardBackground -> el
             }
         }
     }
@@ -510,6 +638,130 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
     }
+
+    /**
+     * Right-center pill handle for TextElement: changes width and recalculates
+     * the element height so the box always wraps the text content exactly.
+     */
+    /**
+     * Right-center pill handle for TextElement: changes width and recalculates
+     * the element height so the box always wraps the text content exactly.
+     */
+    fun resizeTextWidth(id: String, newWidth: Float) {
+        val safeW = newWidth.coerceAtLeast(20f)
+        val el =
+            currentElements.firstOrNull { it.id == id } as? TemplateElement.TextElement ?: return
+        val (_, newH) = measureTextSize(el.text, el.textSizeSp, el.fontName, el.isBold, safeW)
+        val newEl = el.copy(width = safeW, height = newH)
+        val prev = uiState.value
+        val newList = currentSideElements(prev.template).map { if (it.id == id) newEl else it }
+        update(
+            prev.copy(
+                template = setSideElements(prev.template, newList),
+                hasUnsavedChanges = true
+            )
+        )
+    }
+
+    /** Recalculates and applies element height to fit text at current width (called after text/font changes). */
+    fun resizeTextElementToFit(el: TemplateElement.TextElement) {
+        val (_, newH) = measureTextSize(el.text, el.textSizeSp, el.fontName, el.isBold, el.width)
+        if (kotlin.math.abs(newH - el.height) > 1f) updateElement(el.copy(height = newH))
+    }
+
+    /**
+     * Bottom-right resize drag on TextElement: true uniform SCALE.
+     * Font size, width, and height all change by the same factor.
+     * Element center is kept fixed (same pattern as proportional resize for Image/QR).
+     */
+    /**
+     * Bottom-right resize drag on any text-based element: true uniform SCALE.
+     * Font size, width, and height all change by the same factor.
+     * Element center is kept fixed (same pattern as proportional resize for Image/QR).
+     */
+    fun scaleTextFontSize(id: String, newSizeSp: Float, newWidth: Float, newHeight: Float) {
+        val safeSp = newSizeSp.coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP)
+        val safeW = newWidth.coerceAtLeast(10f)
+        val safeH = newHeight.coerceAtLeast(8f)
+
+        mutateElement(id) { el ->
+            val oldCX = el.x + el.width / 2f
+            val oldCY = el.y + el.height / 2f
+            when (el) {
+                is TemplateElement.TextElement -> el.copy(
+                    x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
+                    width = safeW, height = safeH, textSizeSp = safeSp
+                )
+
+                is TemplateElement.UsernameElement -> el.copy(
+                    x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
+                    width = safeW, height = safeH, textSizeSp = safeSp
+                )
+
+                is TemplateElement.PasswordElement -> el.copy(
+                    x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
+                    width = safeW, height = safeH, textSizeSp = safeSp
+                )
+
+                is TemplateElement.DateElement -> el.copy(
+                    x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
+                    width = safeW, height = safeH, textSizeSp = safeSp
+                )
+
+                else -> el
+            }
+        }
+    }
+
+    /** Measures the rendered width and height (in template-dp) of [text] in the given style. */
+    private fun measureTextSize(
+        text: String, sizeSp: Float, fontName: String, isBold: Boolean, maxWidthDp: Float = 8192f
+    ): Pair<Float, Float> {
+        val density = getApplication<Application>().resources.displayMetrics.density
+        val PAD = TEXT_ELEMENT_PAD_DP
+        val tp = TextPaint().apply {
+            textSize = sizeSp * density
+            typeface = resolveTypeface(fontName, isBold)
+        }
+        val innerWPx = ((maxWidthDp - PAD * 2) * density).toInt().coerceAtLeast(1)
+        val layout = StaticLayout.Builder
+            .obtain(text.ifBlank { " " }, 0, text.ifBlank { " " }.length, tp, innerWPx)
+            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+            .setLineSpacing(0f, 1f)
+            .setIncludePad(false)
+            .build()
+        val textW =
+            (0 until layout.lineCount).maxOfOrNull { layout.getLineWidth(it) } ?: tp.measureText(
+                text
+            )
+        val textH = layout.height.toFloat()
+        return (textW / density + PAD * 2) to (textH / density + PAD * 2)
+    }
+
+    private fun resolveTypeface(fontName: String, isBold: Boolean): Typeface {
+        val key = "$fontName|$isBold"
+        return typefaceCache.getOrPut(key) {
+            val style = if (isBold) Typeface.BOLD else Typeface.NORMAL
+            val baseTypeface = when (fontName.lowercase()) {
+                "default", "" -> Typeface.DEFAULT
+                "serif" -> Typeface.SERIF
+                "monospace" -> Typeface.MONOSPACE
+                "sans-serif" -> Typeface.SANS_SERIF
+                else -> runCatching {
+                    val ctx = getApplication<Application>()
+                    val resId = ctx.resources.getIdentifier(fontName, "font", ctx.packageName)
+                    if (resId != 0) androidx.core.content.res.ResourcesCompat.getFont(ctx, resId)
+                        ?: Typeface.DEFAULT
+                    else Typeface.DEFAULT
+                }.getOrDefault(Typeface.DEFAULT)
+            }
+            Typeface.create(baseTypeface, style)
+        }
+    }
+
+    /** Must match TemplateRenderer.dummyDigits() exactly. */
+    private fun dummyDigits(count: Int): String =
+        (1..count).joinToString("") { (it % 10).toString() }
 
     /** Top-center handle: top edge moves, bottom edge stays fixed. */
     fun resizeShapeHeight(id: String, newY: Float, newHeight: Float) {
@@ -526,15 +778,15 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     fun rotateElement(id: String, angleDelta: Float) {
         mutateElement(id) { el ->
             when (el) {
-                is TemplateElement.TextElement     -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
+                is TemplateElement.TextElement -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
                 is TemplateElement.UsernameElement -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
                 is TemplateElement.PasswordElement -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
-                is TemplateElement.ImageElement    -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
-                is TemplateElement.QrElement       -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
-                is TemplateElement.DateElement     -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
-                is TemplateElement.FrameElement    -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
-                is TemplateElement.ShapeElement    -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
-                is TemplateElement.CardBackground  -> el
+                is TemplateElement.ImageElement -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
+                is TemplateElement.QrElement -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
+                is TemplateElement.DateElement -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
+                is TemplateElement.FrameElement -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
+                is TemplateElement.ShapeElement -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
+                is TemplateElement.CardBackground -> el
             }
         }
     }
@@ -544,29 +796,13 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         val elementMap = currentSideElements(prev.template).associateBy { it.id }
         val reordered = ids.mapNotNull { elementMap[it] }
         val extra = currentSideElements(prev.template).filter { it.id !in ids.toSet() }
-        update(prev.copy(
-            template = setSideElements(prev.template, reordered + extra),
-            hasUnsavedChanges = true
-        ))
+        update(
+            prev.copy(
+                template = setSideElements(prev.template, reordered + extra),
+                hasUnsavedChanges = true
+            )
+        )
         enforceLayerOrder()
-    }
-
-    fun reorderElements(from: Int, to: Int) {
-        val prev = uiState.value
-        val items = currentSideElements(prev.template)
-        val moving = items.getOrNull(from)
-        val target = items.getOrNull(to)
-        if (moving is TemplateElement.CardBackground
-            || moving is TemplateElement.FrameElement) return
-        if (target is TemplateElement.CardBackground
-            || target is TemplateElement.FrameElement) return
-        val mutable = items.toMutableList()
-        val item = mutable.removeAt(from)
-        mutable.add(to, item)
-        update(prev.copy(
-            template = setSideElements(prev.template, mutable),
-            hasUnsavedChanges = true
-        ))
     }
 
     // ── Computed helpers ──────────────────────────────────────────────────────
@@ -586,13 +822,21 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     val activeSide: CardSide get() = currentTemplate.activeSide
 
     // Side-aware uniqueness checks (scoped to active side only)
-    fun hasNormalUsernameElement() = currentElements.any { it is TemplateElement.UsernameElement && !it.isShortVariant }
-    fun hasShortUsernameElement()  = currentElements.any { it is TemplateElement.UsernameElement && it.isShortVariant }
-    fun hasNormalPasswordElement() = currentElements.any { it is TemplateElement.PasswordElement && !it.isShortVariant }
-    fun hasShortPasswordElement()  = currentElements.any { it is TemplateElement.PasswordElement && it.isShortVariant }
-    fun hasQrElement()        = currentElements.any { it is TemplateElement.QrElement }
-    fun hasDateElement()      = currentElements.any { it is TemplateElement.DateElement }
-    fun hasFrameElement()     = currentElements.any { it is TemplateElement.FrameElement }
+    fun hasNormalUsernameElement() =
+        currentElements.any { it is TemplateElement.UsernameElement && !it.isShortVariant }
+
+    fun hasShortUsernameElement() =
+        currentElements.any { it is TemplateElement.UsernameElement && it.isShortVariant }
+
+    fun hasNormalPasswordElement() =
+        currentElements.any { it is TemplateElement.PasswordElement && !it.isShortVariant }
+
+    fun hasShortPasswordElement() =
+        currentElements.any { it is TemplateElement.PasswordElement && it.isShortVariant }
+
+    fun hasQrElement() = currentElements.any { it is TemplateElement.QrElement }
+    fun hasDateElement() = currentElements.any { it is TemplateElement.DateElement }
+    fun hasFrameElement() = currentElements.any { it is TemplateElement.FrameElement }
 
 
     fun getImageDirForCurrentTemplate(): java.io.File =
@@ -617,32 +861,46 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     private fun addElement(el: TemplateElement) {
         val prev = uiState.value
         val newList = listOf(el) + currentSideElements(prev.template)
-        update(prev.copy(
-            template = setSideElements(prev.template, newList),
-            selectedElementId = el.id,
-            hasUnsavedChanges = true
-        ))
+        update(
+            prev.copy(
+                template = setSideElements(prev.template, newList),
+                selectedElementId = el.id,
+                hasUnsavedChanges = true
+            )
+        )
         enforceLayerOrder()
     }
 
     private fun mutateElement(id: String, transform: (TemplateElement) -> TemplateElement) {
         val prev = uiState.value
         pushCheckpoint()
-        val newList = currentSideElements(prev.template).map { if (it.id == id) transform(it) else it }
-        update(prev.copy(
-            template = setSideElements(prev.template, newList),
-            hasUnsavedChanges = true,
-            canUndo = undoStack.isNotEmpty()
-        ))
+        val newList =
+            currentSideElements(prev.template).map { if (it.id == id) transform(it) else it }
+        update(
+            prev.copy(
+                template = setSideElements(prev.template, newList),
+                hasUnsavedChanges = true,
+                canUndo = undoStack.isNotEmpty()
+            )
+        )
     }
 
     private fun mutateTemplate(transform: (Template) -> Template) {
         val prev = uiState.value
         pushCheckpoint()
-        update(prev.copy(template = transform(prev.template), hasUnsavedChanges = true, canUndo = undoStack.isNotEmpty()))
+        update(
+            prev.copy(
+                template = transform(prev.template),
+                hasUnsavedChanges = true,
+                canUndo = undoStack.isNotEmpty()
+            )
+        )
     }
 
-    private fun update(state: EditorUiState) { _uiState.value = state }
+    private fun update(state: EditorUiState) {
+        _uiState.value = state
+    }
+
     private fun newId() = UUID.randomUUID().toString()
 
     private fun enforceLayerOrder() {
@@ -662,23 +920,26 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
      * So Frame is drawn ON TOP of regular elements despite being below in the list.
      */
     private fun enforceOrder(elements: List<TemplateElement>): List<TemplateElement> {
-        val bg    = elements.filterIsInstance<TemplateElement.CardBackground>().firstOrNull()
+        val bg = elements.filterIsInstance<TemplateElement.CardBackground>().firstOrNull()
         val frame = elements.filterIsInstance<TemplateElement.FrameElement>().firstOrNull()
         val users = elements.filter {
             it !is TemplateElement.CardBackground &&
-            it !is TemplateElement.FrameElement
+                    it !is TemplateElement.FrameElement
         }
         val ordered = mutableListOf<TemplateElement>()
         ordered.addAll(users)
         if (frame != null) ordered.add(frame)
-        if (bg    != null) ordered.add(bg)
+        if (bg != null) ordered.add(bg)
         return ordered
     }
 
     companion object {
         const val MIN_TEXT_SIZE_SP = 10f
         const val MAX_TEXT_SIZE_SP = 100f
-        private const val UNDO_LIMIT        = 20    // max snapshots kept
-        private const val UNDO_DEBOUNCE_MS  = 1000L // changes within 1s = one checkpoint
+        private const val UNDO_LIMIT = 20    // max snapshots kept
+        private const val UNDO_DEBOUNCE_MS = 1000L // changes within 1s = one checkpoint
+
+        /** Padding (template-dp) inside TextElement box — must match TemplateRenderer.TEXT_PAD_DP. */
+        private const val TEXT_ELEMENT_PAD_DP = 6f
     }
 }

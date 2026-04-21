@@ -25,6 +25,8 @@ class ShapePropertiesFragment : Fragment(), PropertyFragment {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        b.stepperStrokeWidth.minValue = 0
+        b.stepperStrokeWidth.maxValue = 20
         val el = viewModel.selectedElement as? TemplateElement.ShapeElement ?: return
         populate(el)
         setupListeners()
@@ -33,19 +35,40 @@ class ShapePropertiesFragment : Fragment(), PropertyFragment {
     private fun populate(el: TemplateElement.ShapeElement) {
         updating = true
 
+        // Fill color
         if (b.cpvFillColor.colorHex != el.fillColor) b.cpvFillColor.colorHex = el.fillColor
         b.tvFillColorHex.text = el.fillColor
 
+        // Stroke color
         if (b.cpvStrokeColor.colorHex != el.strokeColor) b.cpvStrokeColor.colorHex = el.strokeColor
         b.tvStrokeColorHex.text = el.strokeColor
 
-        val strokeVal = el.strokeWidthDp.coerceIn(0f, 20f)
-        if (b.sliderStrokeWidth.value != strokeVal) b.sliderStrokeWidth.value = strokeVal
-        b.tvStrokeWidthLabel.text = getString(R.string.prop_shape_stroke_width) + ": ${strokeVal.toInt()}"
+        // Stroke width (StepperView)
+        val swVal = el.strokeWidthDp.toInt().coerceIn(0, 20)
+        if (b.stepperStrokeWidth.value != swVal) b.stepperStrokeWidth.value = swVal
 
+        // Corner radius
         val crVal = el.cornerRadiusDp.coerceIn(0f, 100f)
         if (b.sliderCornerRadius.value != crVal) b.sliderCornerRadius.value = crVal
         b.tvCornerRadiusLabel.text = getString(R.string.prop_shape_corner_radius) + ": ${crVal.toInt()}"
+
+        // Dashed
+        if (b.cbDashed.isChecked != el.isDashed) {
+            b.cbDashed.isChecked = el.isDashed
+            b.layoutDashOptions.visibility = if (el.isDashed) View.VISIBLE else View.GONE
+        } else {
+            b.layoutDashOptions.visibility = if (el.isDashed) View.VISIBLE else View.GONE
+        }
+
+        val dashLen = el.dashLengthDp.coerceIn(2f, 60f)
+        if (b.sliderDashLength.value != dashLen) b.sliderDashLength.value = dashLen
+        b.tvDashLengthLabel.text = getString(R.string.prop_frame_dash_length) + ": ${dashLen.toInt()}"
+
+        val dashGap = el.dashGapDp.coerceIn(0f, 40f)
+        if (b.sliderDashGap.value != dashGap) b.sliderDashGap.value = dashGap
+        b.tvDashGapLabel.text = getString(R.string.prop_frame_dash_gap) + ": ${dashGap.toInt()}"
+
+        if (b.cbDashRounded.isChecked != el.isDashRounded) b.cbDashRounded.isChecked = el.isDashRounded
 
         updating = false
     }
@@ -53,28 +76,42 @@ class ShapePropertiesFragment : Fragment(), PropertyFragment {
     private fun setupListeners() {
         b.cpvFillColor.onColorSelected = { hex ->
             b.tvFillColorHex.text = hex
-            val el = viewModel.selectedElement as? TemplateElement.ShapeElement
-            if (el != null) viewModel.updateElement(el.copy(fillColor = hex))
+            update { it.copy(fillColor = hex) }
         }
         b.cpvStrokeColor.onColorSelected = { hex ->
             b.tvStrokeColorHex.text = hex
-            val el = viewModel.selectedElement as? TemplateElement.ShapeElement
-            if (el != null) viewModel.updateElement(el.copy(strokeColor = hex))
+            update { it.copy(strokeColor = hex) }
         }
-        b.sliderStrokeWidth.addOnChangeListener { _, v, _ ->
-            b.tvStrokeWidthLabel.text = getString(R.string.prop_shape_stroke_width) + ": ${v.toInt()}"
-            if (!updating) {
-                val el = viewModel.selectedElement as? TemplateElement.ShapeElement
-                if (el != null && el.strokeWidthDp != v) viewModel.updateElement(el.copy(strokeWidthDp = v))
-            }
+        b.stepperStrokeWidth.onValueChanged = { v ->
+            update { it.copy(strokeWidthDp = v.toFloat()) }
         }
         b.sliderCornerRadius.addOnChangeListener { _, v, _ ->
             b.tvCornerRadiusLabel.text = getString(R.string.prop_shape_corner_radius) + ": ${v.toInt()}"
+            update { it.copy(cornerRadiusDp = v) }
+        }
+        b.cbDashed.setOnCheckedChangeListener { _, checked ->
             if (!updating) {
-                val el = viewModel.selectedElement as? TemplateElement.ShapeElement
-                if (el != null && el.cornerRadiusDp != v) viewModel.updateElement(el.copy(cornerRadiusDp = v))
+                update { it.copy(isDashed = checked) }
+                b.layoutDashOptions.visibility = if (checked) View.VISIBLE else View.GONE
             }
         }
+        b.sliderDashLength.addOnChangeListener { _, v, _ ->
+            b.tvDashLengthLabel.text = getString(R.string.prop_frame_dash_length) + ": ${v.toInt()}"
+            update { it.copy(dashLengthDp = v) }
+        }
+        b.sliderDashGap.addOnChangeListener { _, v, _ ->
+            b.tvDashGapLabel.text = getString(R.string.prop_frame_dash_gap) + ": ${v.toInt()}"
+            update { it.copy(dashGapDp = v) }
+        }
+        b.cbDashRounded.setOnCheckedChangeListener { _, checked ->
+            if (!updating) update { it.copy(isDashRounded = checked) }
+        }
+    }
+
+    private fun update(transform: (TemplateElement.ShapeElement) -> TemplateElement.ShapeElement) {
+        if (updating) return
+        val el = viewModel.selectedElement as? TemplateElement.ShapeElement ?: return
+        viewModel.updateElement(transform(el))
     }
 
     override fun onUiStateChanged(state: EditorUiState) {

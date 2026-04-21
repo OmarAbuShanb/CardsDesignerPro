@@ -18,6 +18,7 @@ class ElementAdapter(
     private val onVisibilityToggle: (String) -> Unit,
     private val onEdit: (String) -> Unit,
     private val onDelete: (String) -> Unit,
+    private val onDuplicate: (String) -> Unit,
 ) : ListAdapter<TemplateElement, ElementAdapter.VH>(DIFF) {
 
     var selectedId: String? = null
@@ -63,8 +64,12 @@ class ElementAdapter(
             )
             binding.btnVisibility.alpha = if (el.isVisible) 1f else 0.5f
 
+            val isShape    = el is TemplateElement.ShapeElement
+            binding.btnDuplicate.visibility  = if (isShape) View.VISIBLE else View.GONE
+
             binding.root.setOnClickListener { onSelect(el.id) }
             binding.btnVisibility.setOnClickListener { onVisibilityToggle(el.id) }
+            binding.btnDuplicate.setOnClickListener { onDuplicate(el.id) }
             binding.btnEdit.setOnClickListener { onEdit(el.id) }
             binding.btnDelete.setOnClickListener { onDelete(el.id) }
         }

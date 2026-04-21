@@ -16,6 +16,8 @@ import dev.anonymous.cardsdesignerpro.ui.editor.canvas.TemplateRenderer
 import dev.anonymous.cardsdesignerpro.util.PdfExporter
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.withSave
 
 /**
  * Renders a scaled-down preview of one PDF page.
@@ -61,7 +63,7 @@ class PagePreviewView @JvmOverloads constructor(
         /** Single background thread shared by all preview instances. */
         private val RENDER_EXECUTOR = Executors.newSingleThreadExecutor()
         /** Debounce delay — waits this long after the last bind() before rendering. */
-        private const val DEBOUNCE_MS = 120L
+        private const val DEBOUNCE_MS = 40L
     }
 
     /** Update renderer quality to match the user's selected export quality. */
@@ -111,8 +113,8 @@ class PagePreviewView @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        val t = template ?: return
-        val l = layout ?: return
+        template ?: return
+        layout ?: return
 
         val viewW = width.toFloat()
         val viewH = height.toFloat()
@@ -158,7 +160,7 @@ class PagePreviewView @JvmOverloads constructor(
             // Early exit if key already changed (a newer request is pending)
             if (currentKey != cacheKey) return@submit
             try {
-                val bmp = Bitmap.createBitmap(bmpW, bmpH, Bitmap.Config.ARGB_8888)
+                val bmp = createBitmap(bmpW, bmpH)
                 val offCanvas = Canvas(bmp)
                 val renderScale = bmpW.toFloat() / lCopy.pageWidthPt
 
@@ -180,12 +182,12 @@ class PagePreviewView @JvmOverloads constructor(
                         val cardW    = lCopy.cardWidthPt  * renderScale
                         val cardH    = lCopy.cardHeightPt * renderScale
 
-                        offCanvas.save()
-                        if (mirroredCopy && flipCopy == FlipEdge.SHORT_EDGE) {
-                            offCanvas.rotate(180f, cardLeft + cardW / 2f, cardTop + cardH / 2f)
+                        offCanvas.withSave {
+                            if (mirroredCopy && flipCopy == FlipEdge.SHORT_EDGE) {
+                                rotate(180f, cardLeft + cardW / 2f, cardTop + cardH / 2f)
+                            }
+                            previewRenderer.draw(this, tCopy, cardLeft, cardTop, cardW, cardH)
                         }
-                        previewRenderer.draw(offCanvas, tCopy, cardLeft, cardTop, cardW, cardH)
-                        offCanvas.restore()
                     }
                 }
                 previewRenderer.clearBitmapCache()

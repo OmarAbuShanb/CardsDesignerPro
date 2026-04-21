@@ -5,8 +5,7 @@
     android:layout_height="56dp"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:paddingHorizontal="12dp"
-    android:layoutDirection="rtl">
+    android:paddingHorizontal="12dp">
 
     <!-- Drag handle (hidden for card_background) -->
     <ImageView
@@ -35,6 +34,16 @@
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_visibility_24"
         android:contentDescription="@null" />
+
+    <!-- Duplicate (ShapeElement only) -->
+    <ImageButton
+        android:id="@+id/btn_duplicate"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_duplicate_24"
+        android:contentDescription="@null"
+        android:visibility="gone" />
 
     <!-- Edit properties -->
     <ImageButton

@@ -1,66 +1,145 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent" android:layout_height="match_parent" android:layoutDirection="rtl">
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="vertical" android:padding="16dp">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="@string/prop_frame_color" android:textAppearance="?attr/textAppearanceLabelMedium"
-            android:layout_marginBottom="6dp" />
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="14dp">
-            <dev.anonymous.cardsdesignerpro.common.widget.ColorPreviewView android:id="@+id/cpv_frame_color"
-                android:layout_width="40dp" android:layout_height="40dp" android:layout_marginEnd="12dp" />
-            <TextView android:id="@+id/tv_color_hex" android:layout_width="wrap_content"
-                android:layout_height="wrap_content" android:fontFamily="monospace"
-                android:textAppearance="?attr/textAppearanceBodyMedium" android:text="#000000" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="6dp"
+            android:text="@string/prop_frame_color"
+            android:textAppearance="?attr/textAppearanceLabelMedium" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <dev.anonymous.cardsdesignerpro.common.widget.ColorPreviewView
+                android:id="@+id/cpv_frame_color"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="12dp" />
+
+            <TextView
+                android:id="@+id/tv_color_hex"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:text="#000000"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                tools:ignore="HardcodedText" />
         </LinearLayout>
 
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="@string/prop_frame_thickness" android:textAppearance="?attr/textAppearanceLabelMedium"
-            android:layout_marginBottom="6dp" />
-        <dev.anonymous.cardsdesignerpro.common.widget.StepperView android:id="@+id/stepper_thickness"
-            android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="14dp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="6dp"
+            android:text="@string/prop_frame_thickness"
+            android:textAppearance="?attr/textAppearanceLabelMedium" />
 
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="@string/prop_frame_corner_radius" android:textAppearance="?attr/textAppearanceLabelMedium"
-            android:layout_marginBottom="0dp" />
-        <com.google.android.material.slider.Slider android:id="@+id/slider_corner_radius"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            app:labelBehavior="floating"
-            android:valueFrom="0" android:valueTo="100" android:stepSize="1" android:layout_marginBottom="14dp" />
+        <dev.anonymous.cardsdesignerpro.common.widget.StepperView
+            android:id="@+id/stepper_thickness"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp" />
 
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="@string/prop_frame_padding" android:textAppearance="?attr/textAppearanceLabelMedium"
-            android:layout_marginBottom="0dp" />
-        <com.google.android.material.slider.Slider android:id="@+id/slider_padding"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            app:labelBehavior="floating"
-            android:valueFrom="0" android:valueTo="60" android:stepSize="1" android:layout_marginBottom="14dp" />
+        <TextView
+            android:id="@+id/tv_corner_radius_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/prop_frame_corner_radius"
+            android:textAppearance="?attr/textAppearanceLabelMedium" />
 
-        <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/cb_dashed"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="@string/prop_frame_dashed" android:layout_marginBottom="8dp" />
+        <com.google.android.material.slider.Slider
+            android:id="@+id/slider_corner_radius"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="14dp"
+            android:stepSize="1"
+            android:valueFrom="0"
+            android:valueTo="100"
+            app:labelBehavior="floating" />
 
-        <LinearLayout android:id="@+id/layout_dash_options" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="@string/prop_frame_dash_length" android:textAppearance="?attr/textAppearanceLabelMedium"
-                android:layout_marginBottom="0dp" />
-            <com.google.android.material.slider.Slider android:id="@+id/slider_dash_length"
-                android:layout_width="match_parent" android:layout_height="wrap_content"
-                app:labelBehavior="floating"
-                android:valueFrom="2" android:valueTo="60" android:stepSize="1" android:layout_marginBottom="8dp" />
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="@string/prop_frame_dash_gap" android:textAppearance="?attr/textAppearanceLabelMedium"
-                android:layout_marginBottom="0dp" />
-            <com.google.android.material.slider.Slider android:id="@+id/slider_dash_gap"
-                android:layout_width="match_parent" android:layout_height="wrap_content"
-                app:labelBehavior="floating"
-                android:valueFrom="0" android:valueTo="40" android:stepSize="1" android:layout_marginBottom="8dp" />
-            <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/cb_dash_rounded"
-                android:layout_width="match_parent" android:layout_height="wrap_content"
+        <TextView
+            android:id="@+id/tv_padding_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/prop_frame_padding"
+            android:textAppearance="?attr/textAppearanceLabelMedium" />
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/slider_padding"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="14dp"
+            android:stepSize="1"
+            android:valueFrom="0"
+            android:valueTo="60"
+            app:labelBehavior="floating" />
+
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:id="@+id/cb_dashed"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="@string/prop_frame_dashed" />
+
+        <LinearLayout
+            android:id="@+id/layout_dash_options"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tv_dash_length_label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/prop_frame_dash_length"
+                android:textAppearance="?attr/textAppearanceLabelMedium" />
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slider_dash_length"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginVertical="8dp"
+                android:stepSize="1"
+                android:valueFrom="2"
+                android:valueTo="60"
+                app:labelBehavior="floating" />
+
+            <TextView
+                android:id="@+id/tv_dash_gap_label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/prop_frame_dash_gap"
+                android:textAppearance="?attr/textAppearanceLabelMedium" />
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slider_dash_gap"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginVertical="8dp"
+                android:stepSize="1"
+                android:valueFrom="0"
+                android:valueTo="40"
+                app:labelBehavior="floating" />
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/cb_dash_rounded"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:text="@string/prop_frame_dash_rounded" />
         </LinearLayout>
     </LinearLayout>

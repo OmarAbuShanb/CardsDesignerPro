@@ -1,10 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Brand colors -->
-    <color name="brand_primary">#FF5B4FF2</color>
-    <color name="brand_primary_dark">#FF3730CC</color>
-    <color name="brand_secondary">#FF00BFA5</color>
-    <color name="brand_accent">#FFFFAB40</color>
 
     <!-- Light theme -->
     <color name="md_theme_light_primary">#FF5B4FF2</color>
@@ -14,7 +9,6 @@
     <color name="md_theme_light_secondary">#FF00BFA5</color>
     <color name="md_theme_light_onSecondary">#FFFFFFFF</color>
     <color name="md_theme_light_background">#FFF8F7FF</color>
-    <color name="md_theme_light_onBackground">#FF1A1A2E</color>
     <color name="md_theme_light_surface">#FFFFFFFF</color>
     <color name="md_theme_light_onSurface">#FF1A1A2E</color>
     <color name="md_theme_light_surfaceVariant">#FFE8E5FF</color>
@@ -31,7 +25,6 @@
     <color name="md_theme_dark_secondary">#FF64FFDA</color>
     <color name="md_theme_dark_onSecondary">#FF003929</color>
     <color name="md_theme_dark_background">#FF0F0E1A</color>
-    <color name="md_theme_dark_onBackground">#FFE5E3FF</color>
     <color name="md_theme_dark_surface">#FF1A1A2E</color>
     <color name="md_theme_dark_onSurface">#FFE5E3FF</color>
     <color name="md_theme_dark_surfaceVariant">#FF29284A</color>
@@ -40,11 +33,4 @@
     <color name="md_theme_dark_error">#FFCF6679</color>
     <color name="md_theme_dark_onError">#FF680714</color>
 
-    <!-- Canvas / editor -->
-    <color name="canvas_background">#FFE8E5FF</color>
-    <color name="canvas_background_dark">#FF29284A</color>
-    <color name="selection_overlay_stroke">#FFFFFFFF</color>
-    <color name="selection_handle_bg">#FFFFFFFF</color>
-    <color name="selection_handle_icon">#FF1A1A2E</color>
-    <color name="transparent">#00000000</color>
 </resources>

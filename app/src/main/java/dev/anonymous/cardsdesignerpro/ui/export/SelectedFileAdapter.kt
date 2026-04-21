@@ -5,8 +5,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import dev.anonymous.cardsdesignerpro.R
 import dev.anonymous.cardsdesignerpro.databinding.ItemSelectedFileBinding
 
 class SelectedFileAdapter(
@@ -56,16 +56,21 @@ class SelectedFileAdapter(
         fun bind(item: SelectedFile) {
             b.tvFileName.text = item.displayName
             b.tvUnsupported.visibility = if (!item.isSupported) View.VISIBLE else View.GONE
-            val count = item.parseResult?.count
-            if (item.isSupported && !item.isParsing && count != null && count > 0) {
-                b.tvCardCount.text = b.root.context.getString(dev.anonymous.cardsdesignerpro.R.string.label_cards_count, count)
-                b.tvCardCount.visibility = View.VISIBLE
-            } else {
-                b.tvCardCount.visibility = View.GONE
+
+            // Always keep badge visible to prevent item height jumps; only change the text
+            b.tvCardCount.text = when {
+                !item.isSupported -> ""
+                item.isParsing   -> b.root.context.getString(R.string.label_file_parsing)
+                else -> {
+                    val count = item.parseResult?.count ?: 0
+                    if (count > 0) b.root.context.getString(R.string.label_cards_count, count) else ""
+                }
             }
-            b.root.alpha = if (item.isParsing) 0.5f else 1f
+            b.tvCardCount.alpha = if (item.isParsing) 0.6f else 1f
+
+            b.root.alpha = if (item.isParsing) 0.6f else 1f
             b.btnRemoveFile.setOnClickListener { onRemove(item.uri) }
-            
+
             b.ivDragHandle.setOnTouchListener { _, event ->
                 if (event.action == android.view.MotionEvent.ACTION_DOWN) {
                     onStartDrag?.invoke(this)

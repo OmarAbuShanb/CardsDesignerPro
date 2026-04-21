@@ -179,7 +179,8 @@
       "height": 40.0,
       "isVisible": true,
       "rotation": 90.0,
-      "imagePath": "pack:packs/icons/wifi_icon.svg"
+      "imagePath": "pack:packs/icons/wifi_icon.svg",
+      "tintColor": "#1A2228"
     },
     {
       "type": "image",
@@ -190,7 +191,8 @@
       "height": 30.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/avatar_icon.svg"
+      "imagePath": "pack:packs/icons/avatar_icon.svg",
+      "tintColor": "#1A2228"
     },
     {
       "type": "image",
@@ -201,7 +203,8 @@
       "height": 30.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/lock_icon.svg"
+      "imagePath": "pack:packs/icons/lock_icon.svg",
+      "tintColor": "#1A2228"
     },
     {
       "type": "image",
@@ -212,10 +215,11 @@
       "height": 30.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/phone_wifi_icon.svg"
+      "imagePath": "pack:packs/icons/phone_wifi_icon.svg",
+      "tintColor": "#1A2228"
     },
     {
-      "type": "image",
+      "type": "shape",
       "id": "username_bg",
       "x": 180.0,
       "y": 70.0,
@@ -223,10 +227,13 @@
       "height": 45.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/misc/input_field_gold.svg"
+      "fillColor": "",
+      "strokeColor": "#EEAA44",
+      "strokeWidthDp": 2.0,
+      "cornerRadiusDp": 10.0
     },
     {
-      "type": "image",
+      "type": "shape",
       "id": "password_bg",
       "x": 180.0,
       "y": 130.0,
@@ -234,73 +241,85 @@
       "height": 45.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/misc/input_field_gold.svg"
+      "fillColor": "",
+      "strokeColor": "#EEAA44",
+      "strokeWidthDp": 2.0,
+      "cornerRadiusDp": 10.0
     },
     {
-      "type": "image",
+      "type": "shape",
       "id": "top_divider",
       "x": 0.0,
       "y": 0.0,
       "width": 600.0,
-      "height": 5.0,
+      "height": 4.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/dividers/horizontal_divider_gold.svg"
+      "fillColor": "#EEAA44",
+      "strokeWidthDp": 0.0
     },
     {
-      "type": "image",
+      "type": "shape",
       "id": "title_bg",
       "x": 170.0,
-      "y": 40.0,
+      "y": 48.0,
       "width": 260.0,
-      "height": 10.0,
+      "height": 15.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/dividers/horizontal_divider_gold.svg"
+      "fillColor": "#EEAA44",
+      "strokeWidthDp": 0.0
     },
     {
-      "type": "image",
+      "type": "shape",
       "id": "bottom_divider",
       "x": 0.0,
-      "y": 230.0,
+      "y": 232.0,
       "width": 600.0,
-      "height": 10.0,
+      "height": 8.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/dividers/horizontal_divider_gold.svg"
+      "fillColor": "#EEAA44",
+      "strokeWidthDp": 0.0
     },
     {
-      "type": "image",
+      "type": "shape",
       "id": "left_box_price",
-      "x": 0.0,
+      "x": -20.0,
       "y": 15.0,
+      "width": 180.0,
+      "height": 55.0,
+      "isVisible": true,
+      "rotation": 0.0,
+      "fillColor": "#1A2228",
+      "strokeWidthDp": 0.0,
+      "cornerRadiusDp": 20.0
+    },
+    {
+      "type": "shape",
+      "id": "left_box_quota",
+      "x": -20.0,
+      "y": 80.0,
       "width": 160.0,
       "height": 55.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/misc/left_dark_box.svg"
+      "fillColor": "#1A2228",
+      "strokeWidthDp": 0.0,
+      "cornerRadiusDp": 20.0
     },
     {
-      "type": "image",
-      "id": "left_box_quota",
-      "x": 0.0,
-      "y": 80.0,
-      "width": 140.0,
-      "height": 55.0,
-      "isVisible": true,
-      "rotation": 0.0,
-      "imagePath": "pack:packs/misc/left_dark_box.svg"
-    },
-    {
-      "type": "image",
+      "type": "shape",
       "id": "left_box_validity",
-      "x": 0.0,
+      "x": -20.0,
       "y": 145.0,
-      "width": 150.0,
+      "width": 170.0,
       "height": 75.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/misc/left_dark_box.svg"
+      "fillColor": "#1A2228",
+      "strokeWidthDp": 0.0,
+      "cornerRadiusDp": 20.0
     },
     {
       "type": "image",

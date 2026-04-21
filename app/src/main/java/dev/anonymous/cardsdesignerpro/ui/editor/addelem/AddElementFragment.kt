@@ -9,8 +9,10 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.textfield.TextInputEditText
+import dev.anonymous.cardsdesignerpro.R
 import dev.anonymous.cardsdesignerpro.databinding.FragmentAddElementBinding
-import dev.anonymous.cardsdesignerpro.ui.editor.EditorUiState
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel
 import dev.anonymous.cardsdesignerpro.util.ImageUtils
 
@@ -39,7 +41,7 @@ class AddElementFragment : Fragment() {
     }
 
     private fun setupButtons() {
-        binding.btnAddText.setOnClickListener { viewModel.addTextElement() }
+        binding.btnAddText.setOnClickListener { showAddTextDialog() }
         binding.btnAddDate.setOnClickListener { viewModel.addDateElement() }
         binding.btnAddImage.setOnClickListener {
             pickImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
@@ -95,7 +97,30 @@ class AddElementFragment : Fragment() {
         }.getOrDefault(0 to 0)
     }
 
-    fun onUiStateChanged(state: EditorUiState) {
+    /** Inflates [R.layout.dialog_add_text] and shows a Material dialog for collecting new text. */
+    private fun showAddTextDialog() {
+        val dialogView = LayoutInflater.from(requireContext())
+            .inflate(R.layout.dialog_add_text, null, false)
+        val editText = dialogView.findViewById<TextInputEditText>(R.id.et_text_input)
+
+        val dialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.dialog_add_text_title)
+            .setView(dialogView)
+            .setNegativeButton(R.string.btn_cancel, null)
+            .setPositiveButton(R.string.btn_confirm) { _, _ ->
+                val text = editText.text?.toString()?.trim() ?: ""
+                viewModel.addTextElement(text)
+            }
+            .create()
+
+        dialog.window?.setSoftInputMode(
+            android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
+        )
+        dialog.show()
+        editText.requestFocus()
+    }
+
+    fun onUiStateChanged() {
         if (_binding == null) return
         updateButtonStates()
     }
