@@ -176,8 +176,7 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
                     // width and height scale proportionally so the text box keeps its shape.
                     val scaleFactor = size / el.textSizeSp.coerceAtLeast(0.1f)
                     val newW = el.width  * scaleFactor
-                    val newH = el.height * scaleFactor
-                    viewModel.scaleTextFontSize(el.id, size, newW, newH)
+                    viewModel.scaleTextFontSize(el.id, size, newW)
                 }
             }
         }

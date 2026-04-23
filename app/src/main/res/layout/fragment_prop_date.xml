@@ -59,7 +59,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="6dp"
-            android:text="لون خلفية النص"
+            android:text="@string/prop_text_bg_color"
             android:textAppearance="?attr/textAppearanceLabelMedium" />
 
         <LinearLayout
@@ -90,7 +90,7 @@
                 style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="مسح"
+                android:text="@string/btn_clear"
                 android:visibility="gone" />
         </LinearLayout>
 

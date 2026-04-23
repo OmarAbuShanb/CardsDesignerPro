@@ -83,6 +83,10 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
         get() = _isIntentProcessed
         set(value) { _isIntentProcessed = value }
 
+    enum class PendingExportMode { SINGLE_OR_DUAL, SEPARATE }
+
+    private var pendingExportMode: PendingExportMode? = null
+
     init {
         loadTemplates()
         observeExportManager()
@@ -333,6 +337,16 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
         )
 
         startExportService(template)
+    }
+
+    fun setPendingExportMode(mode: PendingExportMode) {
+        pendingExportMode = mode
+    }
+
+    fun consumePendingExportMode(): PendingExportMode? {
+        val mode = pendingExportMode
+        pendingExportMode = null
+        return mode
     }
 
     private fun startExportService(template: Template) {

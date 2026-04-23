@@ -45,7 +45,7 @@ class TemplateAdapter(
                 }
 
                 val actions = listOf(
-                    Triple(R.id.action_rename, R.string.menu_rename, R.drawable.ic_rename_24),
+                    Triple(R.id.action_rename, R.string.menu_rename, R.drawable.ic_edit_24),
                     Triple(R.id.action_duplicate, R.string.menu_duplicate, R.drawable.ic_duplicate_24),
                     Triple(R.id.action_delete, R.string.menu_delete, R.drawable.ic_delete_24)
                 )

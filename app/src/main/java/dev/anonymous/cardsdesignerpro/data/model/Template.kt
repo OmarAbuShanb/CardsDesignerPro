@@ -46,6 +46,8 @@ data class CardStyle(
     val backgroundImagePath: String? = null,
     /** "FIT_XY", "CENTER_CROP", "FIT_CENTER" etc. (persisted as String for forward config safety). */
     val backgroundImageScaleType: String = ImageScaleType.FIT_XY.name,
+    /** Whether Username and Password styles are kept fully in sync */
+    val linkCredentialsStyle: Boolean = false,
 )
 
 @Serializable

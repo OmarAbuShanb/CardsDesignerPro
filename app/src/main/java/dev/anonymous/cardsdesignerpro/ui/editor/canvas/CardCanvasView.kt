@@ -12,6 +12,7 @@ import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
 import android.util.AttributeSet
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import androidx.appcompat.content.res.AppCompatResources
@@ -56,10 +57,14 @@ class CardCanvasView @JvmOverloads constructor(
         fun onCardHeightDrag(deltaRatio: Float)
         fun onShapeWidthResized(id: String, newWidth: Float)
         fun onShapeHeightResized(id: String, newY: Float, newHeight: Float)
-        fun onTextWidthResized(id: String, newWidth: Float)
-        /** Called during bottom-right drag on a TextElement: all three values are absolute targets.
-         *  [newWidth] and [newHeight] are in template-dp; [newSizeSp] is the target font size. */
-        fun onTextFontScaled(id: String, newSizeSp: Float, newWidth: Float, newHeight: Float)
+        fun onTextWidthResized(id: String, newWidth: Float, pxPerDp: Float)
+        /** Called during bottom-right drag on a text element: all values are absolute targets.
+         *  [newWidth] is in template-dp; [newSizeSp] is the target font size.
+         *  [pxPerDp] must be the current canvas scale to keep wrap thresholds in sync with rendering. */
+        fun onTextFontScaled(id: String, newSizeSp: Float, newWidth: Float, pxPerDp: Float)
+        /** Corner-resize lifecycle for TextElement (to stabilize wrapping during drag). */
+        fun onTextCornerResizeStart(id: String, pxPerDp: Float)
+        fun onTextCornerResizeEnd(id: String, pxPerDp: Float)
     }
 
     var listener: Listener? = null
@@ -127,10 +132,10 @@ class CardCanvasView @JvmOverloads constructor(
     }
     // Pill handle fill (for shape width / height handles)
     private val pillFill = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
-    /** Vertical snap lines: X values in template-dp where alignment was detected. */
-    private val snapLinesX = mutableListOf<Float>()
-    /** Horizontal snap lines: Y values in template-dp where alignment was detected. */
-    private val snapLinesY = mutableListOf<Float>()
+    /** Vertical snap lines: (X in template-dp, isCardCenter). */
+    private val snapLinesX = mutableListOf<Pair<Float, Boolean>>()
+    /** Horizontal snap lines: (Y in template-dp, isCardCenter). */
+    private val snapLinesY = mutableListOf<Pair<Float, Boolean>>()
 
     // ── Text measurement (for overlay bounds) ────────────────────────────────
     private val overlayTextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG)
@@ -228,6 +233,7 @@ class CardCanvasView @JvmOverloads constructor(
     private var downX = 0f; private var downY = 0f
     private var lastX = 0f; private var lastY = 0f
     private var lastAngle = 0f
+    private var rotateStartTouchAngle = 0f // Touch angle at ROTATE drag start
     private var resizeStartW = 0f; private var resizeStartH = 0f
     private var resizeStartX = 0f; private var resizeStartY = 0f
     private var resizeStartVisualW = 0f
@@ -235,6 +241,8 @@ class CardCanvasView @JvmOverloads constructor(
     private var resizeStartRotation = 0f   // element rotation (degrees) at drag start
     private var resizeShapeStartElY = 0f   // el.y at RESIZE_H drag start (to keep bottom fixed)
     private var resizeStartTextSizeSp = 0f // TextElement font size at RESIZE drag start
+    // Tracks TextElement corner-resize lifecycle to notify VM (start/end session).
+    private var activeTextCornerResizeId: String? = null
     // Drag (MOVE) start tracking — used for absolute-position snap calculation
     private var dragStartElX    = 0f      // el.x at the moment DRAG mode was entered
     private var dragStartElY    = 0f      // el.y at the moment DRAG mode was entered
@@ -565,12 +573,18 @@ class CardCanvasView @JvmOverloads constructor(
     }
 
     private fun endGesture() {
+        // Finalize text resize session once per drag to restore natural wrapping at release.
+        activeTextCornerResizeId?.let { textId ->
+            listener?.onTextCornerResizeEnd(textId, scaleX)
+        }
+        activeTextCornerResizeId = null
         mode = Mode.NONE
         activePointerId = MotionEvent.INVALID_POINTER_ID
         snapLinesX.clear()
         snapLinesY.clear()
         shapeSquareSnapped = false   // reset square-snap state for next drag
         parent?.requestDisallowInterceptTouchEvent(false)
+        invalidate()
     }
 
     // ── Mode determination on ACTION_DOWN ─────────────────────────────────────
@@ -646,7 +660,9 @@ class CardCanvasView @JvmOverloads constructor(
         }
         if (dist(lx, ly, cx + hw + HANDLE_OFF, cy - hh - HANDLE_OFF) < HR * 2f) {   // rotate (top-right)
             mode = Mode.ROTATE
-            lastAngle = atan2((y - cy).toDouble(), (x - cx).toDouble()).toFloat(); return
+            rotateStartTouchAngle = atan2((y - cy).toDouble(), (x - cx).toDouble()).toFloat()
+            resizeStartRotation = el.rotation
+            return
         }
         if (dist(lx, ly, cx + hw + HANDLE_OFF, cy + hh + HANDLE_OFF) < HR * 2f) {   // resize (bottom-right)
             mode = Mode.RESIZE
@@ -670,6 +686,28 @@ class CardCanvasView @JvmOverloads constructor(
                 el is TemplateElement.ShapeElement ||
                 isTextEl(el) -> if (el.width > 0f) el.height / el.width else 1f
                 else -> 0f
+            }
+            // Start VM-side lock session only for free TextElement corner-resize.
+            if (el is TemplateElement.TextElement) {
+                activeTextCornerResizeId = id
+                listener?.onTextCornerResizeStart(id, scaleX)
+            } else {
+                activeTextCornerResizeId = null
+            }
+            if (el is TemplateElement.TextElement || isTextEl(el)) {
+                val kind = when (el) {
+                    is TemplateElement.TextElement -> "TextElement"
+                    is TemplateElement.UsernameElement -> "UsernameElement"
+                    is TemplateElement.PasswordElement -> "PasswordElement"
+                    is TemplateElement.DateElement -> "DateElement"
+                    else -> el::class.java.simpleName
+                }
+                Log.d(
+                    TAG,
+                    "DOWN corner-resize id=$id kind=$kind " +
+                        "startW=${resizeStartW} startH=${resizeStartH} startSp=$resizeStartTextSizeSp " +
+                        "scaleX=$scaleX"
+                )
             }
             return
         }
@@ -747,10 +785,28 @@ class CardCanvasView @JvmOverloads constructor(
                     val newSizeSp   = (resizeStartTextSizeSp * rawScale).coerceIn(10f, 100f)
                     val effectiveScale = if (resizeStartTextSizeSp > 0f) newSizeSp / resizeStartTextSizeSp else 1f
                     
-                    val newW = (resizeStartW * effectiveScale).coerceAtLeast(20f)
-                    val newH = (resizeStartH * effectiveScale).coerceAtLeast(8f)
-                    
-                    listener?.onTextFontScaled(id, newSizeSp, newW, newH)
+                    val newW = if (el is TemplateElement.TextElement) {
+                        // Keep the inner text box (excluding fixed 6dp padding on each side)
+                        // proportional to font scaling. This stabilizes wrapping on resize.
+                        val innerStartW = (resizeStartW - TEXT_PAD_DP * 2f).coerceAtLeast(1f)
+                        (innerStartW * effectiveScale + TEXT_PAD_DP * 2f).coerceAtLeast(20f)
+                    } else {
+                        (resizeStartW * effectiveScale).coerceAtLeast(20f)
+                    }
+
+                    val kind = when (el) {
+                        is TemplateElement.TextElement -> "TextElement"
+                        is TemplateElement.UsernameElement -> "UsernameElement"
+                        is TemplateElement.PasswordElement -> "PasswordElement"
+                        is TemplateElement.DateElement -> "DateElement"
+                        else -> el::class.java.simpleName
+                    }
+                    Log.d(
+                        TAG,
+                        "MOVE corner-resize id=$id kind=$kind " +
+                            "rawScale=$rawScale newSp=$newSizeSp newW=$newW localDx=$localDx scaleX=$scaleX"
+                    )
+                    listener?.onTextFontScaled(id, newSizeSp, newW, scaleX)
                 } else if (resizeStartAspect > 0f) {
                     // Aspect-locked: Image, QR — use X-axis movement
                     val minW = if (resizeStartAspect > 1f) 20f / resizeStartAspect else 20f
@@ -768,18 +824,35 @@ class CardCanvasView @JvmOverloads constructor(
                 val el = activeElements.firstOrNull { it.id == id } ?: return
                 val cx = (el.x + el.width  / 2) * scaleX
                 val cy = (el.y + el.height / 2) * scaleY
-                val angle = atan2((y - cy).toDouble(), (x - cx).toDouble()).toFloat()
-                // Snap to integer degrees — eliminates sub-degree jitter from small finger movement
-                val rawDelta = Math.toDegrees((angle - lastAngle).toDouble()).toFloat()
-                val snappedDelta = rawDelta.toInt().toFloat()  // truncate to whole degrees
-                if (snappedDelta != 0f) {
-                    // Haptic bump at 0 / 90 / 180 / 270 degrees
-                    val newAngle = ((el.rotation + snappedDelta) % 360f + 360f) % 360f
-                    if (isNearCardinalAngle(newAngle) && !isNearCardinalAngle(((el.rotation) % 360f + 360f) % 360f)) {
+                val currentAngle = atan2((y - cy).toDouble(), (x - cx).toDouble()).toFloat()
+                
+                // Calculate absolute proposed angle mapping based on start rotation and initial touch angle
+                val angleDeltaRaw = Math.toDegrees((currentAngle - rotateStartTouchAngle).toDouble()).toFloat()
+                var proposedRotation = (resizeStartRotation + angleDeltaRaw) % 360f
+                if (proposedRotation < 0) proposedRotation += 360f
+                
+                // Snap if near cardinal
+                val snapTolerance = 5f
+                val cardinals = floatArrayOf(0f, 90f, 180f, 270f, 360f)
+                var snappedRotation = proposedRotation
+                for (card in cardinals) {
+                    if (kotlin.math.abs(proposedRotation - card) < snapTolerance) {
+                        snappedRotation = card % 360f
+                        break
+                    }
+                }
+                
+                // Truncate to whole degrees to avoid jitter
+                snappedRotation = kotlin.math.round(snappedRotation)
+                
+                val rotationDeltaToApply = snappedRotation - el.rotation
+                
+                if (rotationDeltaToApply != 0f) {
+                    val newRotation = (el.rotation + rotationDeltaToApply) % 360f
+                    if (isNearCardinalAngle(newRotation) && !isNearCardinalAngle(el.rotation)) {
                         performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK)
                     }
-                    listener?.onElementRotated(id, snappedDelta)
-                    lastAngle = angle
+                    listener?.onElementRotated(id, rotationDeltaToApply)
                 }
             }
             Mode.HEIGHT_DRAG -> {
@@ -791,7 +864,11 @@ class CardCanvasView @JvmOverloads constructor(
                 val rawW = (resizeStartW + (x - resizeStartX) / scaleX).coerceAtLeast(10f)
                 if (el is TemplateElement.TextElement) {
                     // TextElement: no snap-to-square; height is auto-recalculated by ViewModel
-                    listener?.onTextWidthResized(id, rawW)
+                    Log.d(
+                        TAG,
+                        "MOVE width-resize id=$id kind=TextElement rawW=$rawW startW=$resizeStartW scaleX=$scaleX"
+                    )
+                    listener?.onTextWidthResized(id, rawW, scaleX)
                 } else {
                     // ShapeElement: snap to square
                     val newW = if (kotlin.math.abs(rawW - el.height) < SHAPE_SQUARE_SNAP) {
@@ -893,31 +970,31 @@ class CardCanvasView @JvmOverloads constructor(
         // Snap targets: card center + other elements' centers ONLY
         val cardW   = card.widthDp
         val cardH   = card.widthDp * card.heightRatio
-        val xTargets = mutableListOf(cardW / 2f)
-        val yTargets = mutableListOf(cardH / 2f)
+        val xTargets = mutableListOf(cardW / 2f to true)
+        val yTargets = mutableListOf(cardH / 2f to true)
         for (other in activeElements) {
             if (other.id == id || !other.isVisible
                 || other is TemplateElement.CardBackground
                 || other is TemplateElement.FrameElement) continue
-            xTargets += other.x + other.width  / 2f
-            yTargets += other.y + other.height / 2f
+            xTargets += (other.x + other.width  / 2f) to false
+            yTargets += (other.y + other.height / 2f) to false
         }
 
         val thrX = SNAP_THRESHOLD_PX / scaleX
         val thrY = SNAP_THRESHOLD_PX / scaleY
 
         // Snap element center-X to nearest target-X
-        var adjX = targetX; var snapX: Float? = null; var minDx = thrX
+        var adjX = targetX; var snapX: Pair<Float, Boolean>? = null; var minDx = thrX
         for (tgt in xTargets) {
-            val d = kotlin.math.abs(propCX - tgt)
-            if (d < minDx) { minDx = d; adjX = tgt - w / 2f; snapX = tgt }
+            val d = kotlin.math.abs(propCX - tgt.first)
+            if (d < minDx) { minDx = d; adjX = tgt.first - w / 2f; snapX = tgt }
         }
 
         // Snap element center-Y to nearest target-Y
-        var adjY = targetY; var snapY: Float? = null; var minDy = thrY
+        var adjY = targetY; var snapY: Pair<Float, Boolean>? = null; var minDy = thrY
         for (tgt in yTargets) {
-            val d = kotlin.math.abs(propCY - tgt)
-            if (d < minDy) { minDy = d; adjY = tgt - h / 2f; snapY = tgt }
+            val d = kotlin.math.abs(propCY - tgt.first)
+            if (d < minDy) { minDy = d; adjY = tgt.first - h / 2f; snapY = tgt }
         }
 
         snapX?.let { snapLinesX.add(it) }
@@ -929,8 +1006,15 @@ class CardCanvasView @JvmOverloads constructor(
 
     /** Draws cyan snap guidelines over the card. */
     private fun drawSnapLines(canvas: Canvas) {
-        for (xDp in snapLinesX) canvas.drawLine(xDp * scaleX, 0f, xDp * scaleX, cardHeightPx, snapPaint)
-        for (yDp in snapLinesY) canvas.drawLine(0f, yDp * scaleY, cardWidthPx, yDp * scaleY, snapPaint)
+        for ((xDp, isCenter) in snapLinesX) {
+            snapPaint.strokeWidth = if (isCenter) 6f else 1.5f
+            canvas.drawLine(xDp * scaleX, 0f, xDp * scaleX, cardHeightPx, snapPaint)
+        }
+        for ((yDp, isCenter) in snapLinesY) {
+            snapPaint.strokeWidth = if (isCenter) 6f else 1.5f
+            canvas.drawLine(0f, yDp * scaleY, cardWidthPx, yDp * scaleY, snapPaint)
+        }
+        snapPaint.strokeWidth = 1.5f // Reset to default
     }
 
     companion object {
@@ -938,5 +1022,6 @@ class CardCanvasView @JvmOverloads constructor(
         private val PREVIEW_EXECUTOR = java.util.concurrent.Executors.newSingleThreadExecutor()
         /** Snap threshold in screen pixels — keeps snap zone consistent at ~2mm regardless of zoom. */
         private const val SNAP_THRESHOLD_PX = 12f
+        private const val TAG = "TextResizeDiag.Canvas"
     }
 }

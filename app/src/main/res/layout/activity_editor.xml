@@ -54,8 +54,7 @@
                     <ImageView
                         android:layout_width="18dp"
                         android:layout_height="18dp"
-                        android:src="@drawable/ic_rename_24"
-                        app:tint="?attr/colorOnSurfaceVariant" />
+                        android:src="@drawable/ic_edit_24" />
                 </LinearLayout>
             </com.google.android.material.appbar.MaterialToolbar>
 

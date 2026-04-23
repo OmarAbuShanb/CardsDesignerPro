@@ -326,7 +326,7 @@ class TemplateRenderer(private val context: Context) {
         val b = t + p.height * sY
         val cx = (l + r) / 2f
         val cy = (t + b) / 2f
-        val elW = (r - l).toInt().coerceAtLeast(1)
+        val elW = r - l
 
         // Reuse the shared TextPaint instead of allocating a new one each draw
         textPaint.reset()
@@ -335,8 +335,8 @@ class TemplateRenderer(private val context: Context) {
         textPaint.textSize = p.textSizeSp * sX
         textPaint.typeface = resolveTypeface(p.fontName, p.isBold)
         textPaint.letterSpacing = 0f
-        textPaint.isLinearText =
-            true   // disables size-hinting → consistent metrics on screen vs PDF
+        textPaint.isLinearText = true   // disables size-hinting
+        textPaint.isSubpixelText = true // forces purely mathematical string bounds mapping
 
         // Map TextAlign → StaticLayout.Alignment
         val layoutAlign = when (p.textAlign) {
@@ -345,9 +345,14 @@ class TemplateRenderer(private val context: Context) {
             TextAlign.CENTER -> Layout.Alignment.ALIGN_CENTER
         }
 
+        val padPx = TEXT_PAD_DP * sX     // matches CardCanvasView selection box padding
+
         // If p.wrap is false (Username, Password, Date), use a huge boxW to prevent wrapping.
-        // If p.wrap is true (TextElement), use the actual element width.
-        val boxW = if (p.wrap) elW else 8192
+        // If p.wrap is true (TextElement), subtract padPx and add a dynamic subpixel slop
+        // equal to half a space character. This gives tiny scaled elements enough mathematical
+        // breathing room so Android's nonlinear text engine does not erroneously push words down.
+        val slopPx = textPaint.measureText(" ") * 0.5f
+        val boxW = if (p.wrap) kotlin.math.ceil(elW - padPx * 2 + slopPx).toInt().coerceAtLeast(1) else 8192
 
         // For non-wrapping text (Credentials), we handle alignment manually via 'tx'.
         // We MUST use ALIGN_NORMAL here so the layout starts at 0; otherwise, ALIGN_CENTER
@@ -370,13 +375,12 @@ class TemplateRenderer(private val context: Context) {
         }
         val tightW = if (maxR > minL) maxR - minL else 0f
         val actualTextH = layout.height.toFloat()
-        val padPx = TEXT_PAD_DP * sX     // matches CardCanvasView selection box padding
 
         // Translation logic:
-        // For wrapping text (TextElement), we anchor at 'l' and let StaticLayout handles alignment within boxW=elW.
-        // For non-wrapping (Credentials), we anchor such that the measured ink-bounds are centered/aligned relative to element 'cx'.
+        // For wrapping text (TextElement), anchor at 'l + padPx' so text is padded away from the element edge.
+        // For non-wrapping (Credentials), anchor such that the measured ink-bounds are centered/aligned relative to element 'cx'.
         val tx = if (p.wrap) {
-            l
+            l + padPx
         } else {
             val targetL = when (p.textAlign) {
                 TextAlign.START -> l
@@ -387,13 +391,19 @@ class TemplateRenderer(private val context: Context) {
         }
 
         canvas.withRotation(p.rotation, cx, cy) {
-            // Background rect — anchor to the actual ink-bounds relative to tx
+            // Background rect
             p.bgColor?.let { bg ->
                 paint.reset(); paint.color = parseColor(bg); paint.style = Paint.Style.FILL
-                tempRect.set(
-                    tx + minL - padPx, cy - actualTextH / 2 - padPx,
-                    tx + minL + tightW + padPx, cy + actualTextH / 2 + padPx
-                )
+                if (p.wrap) {
+                    // Wrapping text uses the full element bounds
+                    tempRect.set(l, t, r, b)
+                } else {
+                    // Non-wrapping text shrink-wraps to ink
+                    tempRect.set(
+                        tx + minL - padPx, cy - actualTextH / 2 - padPx,
+                        tx + minL + tightW + padPx, cy + actualTextH / 2 + padPx
+                    )
+                }
                 drawRoundRect(tempRect, padPx / 2, padPx / 2, paint)
             }
 
@@ -442,27 +452,19 @@ class TemplateRenderer(private val context: Context) {
             if (path.lowercase().endsWith(".svg")) {
                 val svg = loadSvg(path)
                 if (svg != null) {
-                    val aspectW = if (svg.documentWidth > 0f) svg.documentWidth else w
-                    val aspectH = if (svg.documentHeight > 0f) svg.documentHeight else h
                     withTranslation(l, t) {
                         if (el.tintColor != null) {
-                            // saveLayer(null, paint) causes AndroidSVG to use the full canvas clip
-                            // bounds as its viewport. On a PDF canvas (full A4 page) this makes the
-                            // SVG render at tiny natural size which is then up-scaled → very blurry.
-                            // Fix: rasterize SVG into a correctly-sized bitmap, then draw with tint.
-                            val bmpW = w.toInt().coerceAtLeast(1)
-                            val bmpH = h.toInt().coerceAtLeast(1)
-                            val tmp = createBitmap(bmpW, bmpH)
-                            Canvas(tmp).also { c ->
-                                c.scale(bmpW / aspectW, bmpH / aspectH)
-                                svg.renderToCanvas(c)
+                            // Keep tinted SVG sharp in PDF by rasterizing at export scale, not element px size.
+                            val bmpW = (w * renderScale * 4f).toInt().coerceIn(1, maxImageDim)
+                            val bmpH = (h * renderScale * 4f).toInt().coerceIn(1, maxImageDim)
+                            val tmp = loadSvgBitmap(path, bmpW, bmpH)
+                            if (tmp != null) {
+                                translate(-l, -t)
+                                drawBitmap(tmp, null, RectF(l, t, r, b), paint)
                             }
-                            // Undo the translation so we draw at the original (l, t) coords
-                            translate(-l, -t)
-                            drawBitmap(tmp, null, RectF(l, t, r, b), paint)
-                            tmp.recycle()
                         } else {
-                            scale(w / aspectW, h / aspectH)
+                            svg.documentWidth = w
+                            svg.documentHeight = h
                             svg.renderToCanvas(this)
                         }
                     }
@@ -700,6 +702,33 @@ class TemplateRenderer(private val context: Context) {
         }.getOrNull()
         svgCache[path] = svg
         return svg
+    }
+
+    private fun loadSvgBitmap(path: String, reqW: Int, reqH: Int): Bitmap? {
+        val safeW = reqW.coerceIn(1, maxImageDim)
+        val safeH = reqH.coerceIn(1, maxImageDim)
+        val cacheKey = "svg_exact|$path|$safeW|$safeH"
+        if (bitmapCache.containsKey(cacheKey)) return bitmapCache[cacheKey]
+
+        val bmp = runCatching {
+            val svg = loadSvg(path) ?: return null
+            val oldW = svg.documentWidth
+            val oldH = svg.documentHeight
+
+            val out = createBitmap(safeW, safeH)
+            val c = Canvas(out)
+            svg.documentWidth = safeW.toFloat()
+            svg.documentHeight = safeH.toFloat()
+            svg.renderToCanvas(c)
+
+            // Restore previous size to avoid affecting subsequent renders with different dimensions.
+            svg.documentWidth = oldW
+            svg.documentHeight = oldH
+            out
+        }.getOrNull()
+
+        if (bmp != null) bitmapCache[cacheKey] = bmp
+        return bmp
     }
 
     fun clearBitmapCache() {

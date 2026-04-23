@@ -66,6 +66,9 @@ abstract class CredentialPropertiesFragment : Fragment(), PropertyFragment {
 
     fun populateFrom(el: TemplateElement) {
         updating = true
+        
+        val isLinked = viewModel.activeCardStyle.linkCredentialsStyle
+        if (binding.switchLinkStyles.isChecked != isLinked) binding.switchLinkStyles.isChecked = isLinked
         val minDigits = if (el is TemplateElement.UsernameElement) {
             if (isShortVariant(el)) 3 else 4
         } else {
@@ -131,6 +134,11 @@ abstract class CredentialPropertiesFragment : Fragment(), PropertyFragment {
     }
 
     private fun setupListeners() {
+        binding.switchLinkStyles.setOnCheckedChangeListener { _, isChecked ->
+            if (!updating) {
+                viewModel.setLinkCredentialsStyle(isChecked)
+            }
+        }
         binding.stepperDigitCount.onValueChanged = {
             if (!updating) getElement()?.let { el -> viewModel.updateElement(copyWithDigitCount(el, it)) }
         }

@@ -51,7 +51,7 @@ class ElementsListFragment : Fragment() {
                     ?.switchToPropertiesTab()
             },
             onDelete = { id -> viewModel.deleteElement(id) },
-            onDuplicate = { id -> viewModel.duplicateShapeElement(id) },
+            onDuplicate = { id -> viewModel.duplicateElement(id) },
         )
         binding.rvElements.layoutManager = LinearLayoutManager(requireContext())
         binding.rvElements.adapter = adapter

@@ -96,6 +96,11 @@
     <string name="btn_open_pdf">Preview</string>
     <string name="btn_preview_pdf">Open With</string>
     <string name="export_failed_message">Failed to export file. Please try again.</string>
+    <string name="notification_permission_dialog_title">Allow notifications for export?</string>
+    <string name="notification_permission_dialog_message">To keep export running reliably in the background, Android expects a foreground notification. Allowing notifications lets you monitor progress even outside this screen.\n\nYou can still continue exporting without enabling notifications.</string>
+    <string name="notification_permission_dialog_allow">Allow Notifications</string>
+    <string name="notification_permission_dialog_export_anyway">Export Anyway</string>
+    <string name="notification_permission_denied_export_continues">Notifications are disabled. Export will continue without system notification progress.</string>
 
     <!-- Editor Screen -->
     <string name="editor_back_confirm_title">Discard Changes?</string>
@@ -147,6 +152,7 @@
     <string name="prop_stroke_color">Stroke Color</string>
     <string name="prop_text_stroke">Text Stroke Width</string>
     <string name="prop_digit_count">Digit Count</string>
+    <string name="prop_link_credentials_style">Link Username/Password Style</string>
     <string name="prop_host">Server Address (Host)</string>
     <string name="prop_qr_color">QR Color</string>
     <string name="prop_date_format">Date Format</string>
@@ -188,6 +194,13 @@
     <string name="elem_date">Date</string>
     <string name="elem_frame">Card Frame</string>
     <string name="elem_shape">Shape</string>
+    <string name="pdf_quality_warning">The file is displayed in reduced quality to prevent slowing down your old device and to protect memory.</string>
+    <string name="btn_change_image">Change Image</string>
+    <string name="btn_clear">Clear</string>
+    <string name="btn_remove">Remove</string>
+    <string name="label_none">None</string>
+    <string name="content_desc_template_options">Template Options</string>
+
 
     <!-- General -->
     <string name="btn_close">Close</string>

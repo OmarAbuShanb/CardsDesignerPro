@@ -1,6 +1,7 @@
 package dev.anonymous.cardsdesignerpro.ui.editor
 
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import androidx.activity.addCallback
 import androidx.activity.viewModels
@@ -19,6 +20,8 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
 
     companion object {
         const val EXTRA_TEMPLATE_ID = "extra_template_id"
+        private const val TAG = "TextResizeDiag.Activity"
+        private const val DEFAULT_BOTTOM_SHEET_RATIO = 0.45f
     }
 
     private lateinit var binding: ActivityEditorBinding
@@ -121,14 +124,15 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
 
         // Set initial height eagerly using screen height (before views are measured)
         val screenH = resources.displayMetrics.heightPixels
-        val initialRatio = if (bottomSheetHeightRatio > 0f) bottomSheetHeightRatio else 0.35f
+        val initialRatio =
+            if (bottomSheetHeightRatio > 0f) bottomSheetHeightRatio else DEFAULT_BOTTOM_SHEET_RATIO
         binding.bottomSheetHost.layoutParams.height = (screenH * initialRatio).toInt()
 
         // Setup drag handler immediately
         setupBottomSheetDrag()
 
         // Once layout is complete, refine with actual measurements
-        binding.bottomSheetHost.post { applyBottomSheetHeight() }
+        binding.root.post { applyBottomSheetHeight() }
 
         if (savedInstanceState == null) {
             bottomSheetFragment = EditorBottomSheetFragment()
@@ -154,11 +158,12 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
         return handleHeight + tabHeight
     }
 
-    /** Applies the stored ratio (or default 35%) as the sheet height, clamped to [min, max]. */
+    /** Applies the stored ratio (or default 45%) as the sheet height, clamped to [min, max]. */
     private fun applyBottomSheetHeight() {
         val minH = computeMinHeight()
         val maxH = binding.root.height - binding.appBar.height
-        val ratio = if (bottomSheetHeightRatio > 0f) bottomSheetHeightRatio else 0.35f
+        val ratio =
+            if (bottomSheetHeightRatio > 0f) bottomSheetHeightRatio else DEFAULT_BOTTOM_SHEET_RATIO
         val target = (binding.root.height * ratio).toInt().coerceIn(minH, maxH)
         val p = binding.bottomSheetHost.layoutParams
         p.height = target
@@ -382,11 +387,30 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
     override fun onShapeHeightResized(id: String, newY: Float, newHeight: Float) =
         viewModel.resizeShapeHeight(id, newY, newHeight)
 
-    override fun onTextWidthResized(id: String, newWidth: Float) =
-        viewModel.resizeTextWidth(id, newWidth)
+    override fun onTextWidthResized(id: String, newWidth: Float, pxPerDp: Float) =
+        viewModel.resizeTextWidth(id, newWidth, pxPerDp).also {
+            Log.d(TAG, "CALLBACK width-resize id=$id newW=$newWidth pxPerDp=$pxPerDp")
+        }
 
-    override fun onTextFontScaled(id: String, newSizeSp: Float, newWidth: Float, newHeight: Float) =
-        viewModel.scaleTextFontSize(id, newSizeSp, newWidth, newHeight)
+    override fun onTextFontScaled(id: String, newSizeSp: Float, newWidth: Float, pxPerDp: Float) =
+        viewModel.scaleTextFontSize(id, newSizeSp, newWidth, pxPerDp).also {
+            Log.d(
+                TAG,
+                "CALLBACK corner-resize id=$id newSp=$newSizeSp newW=$newWidth pxPerDp=$pxPerDp"
+            )
+        }
+
+    // Start drag session: VM locks wrapping bucket for jitter-free corner-resize.
+    override fun onTextCornerResizeStart(id: String, pxPerDp: Float) =
+        viewModel.beginTextCornerResize(id, pxPerDp).also {
+            Log.d(TAG, "CALLBACK corner-resize START id=$id pxPerDp=$pxPerDp")
+        }
+
+    // End drag session: VM applies one final natural wrap/height normalization.
+    override fun onTextCornerResizeEnd(id: String, pxPerDp: Float) =
+        viewModel.endTextCornerResize(id, pxPerDp).also {
+            Log.d(TAG, "CALLBACK corner-resize END id=$id pxPerDp=$pxPerDp")
+        }
 
     override fun onElementDeleteRequested(id: String) {
         viewModel.currentElements.firstOrNull { it.id == id } ?: return

@@ -29,7 +29,7 @@
         android:textSize="13sp"
         android:padding="8dp"
         android:textAlignment="center"
-        android:text="يتم عرض الملف بجودة مخففة لتجنب بطء جهازك القديم ولحماية الذاكرة."
+        android:text="@string/pdf_quality_warning"
         android:visibility="gone" />
 
     <FrameLayout

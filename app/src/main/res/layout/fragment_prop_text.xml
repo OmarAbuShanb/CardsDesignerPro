@@ -88,7 +88,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:fontFamily="monospace"
-                android:text="none"
+                android:text="@string/label_none"
                 android:textAppearance="?attr/textAppearanceBodyMedium" />
 
             <com.google.android.material.button.MaterialButton
@@ -96,7 +96,7 @@
                 style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="إزالة"
+                android:text="@string/btn_remove"
                 android:visibility="gone" />
         </LinearLayout>
 

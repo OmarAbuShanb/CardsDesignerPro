@@ -5,6 +5,7 @@ import android.graphics.Typeface
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.anonymous.cardsdesignerpro.data.model.CardSide
@@ -50,6 +51,8 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     private var originalTemplate: Template? = null
 
     private val typefaceCache = mutableMapOf<String, Typeface>()
+    // Active drag session used to freeze wrapping behavior during corner-resize.
+    private var textCornerResizeSession: TextCornerResizeSession? = null
 
     // ── Undo Stack ────────────────────────────────────────────────────────────
 
@@ -325,46 +328,18 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         val safeText = text.trim()
             .ifEmpty { getApplication<Application>().getString(dev.anonymous.cardsdesignerpro.R.string.default_text_placeholder) }
         val card = currentTemplate.card
-        val cardW = card.widthDp
-        val density = getApplication<Application>().resources.displayMetrics.density
+        val maxW = card.widthDp / 2f
         val defaultSizeSp = 15f
-        val PAD = TEXT_ELEMENT_PAD_DP   // padding inside element box
 
-        val tp = TextPaint().apply {
-            textSize = defaultSizeSp * density
-            typeface = Typeface.DEFAULT
-        }
-        val singleLineMaxWPx = safeText.split('\n').maxOf { tp.measureText(it) }
-        val singleLineMaxWDp = singleLineMaxWPx / density
-        val fm = tp.fontMetrics
-        val lineHeightDp = (fm.descent - fm.ascent) / density
-
-        val maxW = cardW / 2f
-        val elW: Float
-        val elH: Float
-
-        if (singleLineMaxWDp + PAD * 2 > maxW) {
-            // Text is wide — constrain to half card width and let it wrap
-            elW = maxW
-            val boxWPx = ((maxW - PAD * 2) * density).toInt().coerceAtLeast(1)
-            val layout = StaticLayout.Builder
-                .obtain(safeText, 0, safeText.length, tp, boxWPx)
-                .setAlignment(Layout.Alignment.ALIGN_CENTER)
-                .setLineSpacing(0f, 1f)
-                .setIncludePad(false)
-                .build()
-            elH = (layout.height / density) + PAD * 2
-        } else {
-            // Short text — size box exactly to fit one line (per explicit \n)
-            elW = singleLineMaxWDp + PAD * 2
-            elH = lineHeightDp + PAD * 2
-        }
+        val (naturalW, _) = measureTextSize(safeText, defaultSizeSp, "default", isBold = false, maxWidthDp = 8192f)
+        val finalW = minOf(naturalW, maxW)
+        val (_, finalH) = measureTextSize(safeText, defaultSizeSp, "default", isBold = false, maxWidthDp = finalW)
 
         addElement(
             TemplateElement.TextElement(
                 id = newId(),
-                x = centerX(elW), y = centerY(elH),
-                width = elW, height = elH,
+                x = centerX(finalW), y = centerY(finalH),
+                width = finalW, height = finalH,
                 text = safeText,
             )
         )
@@ -441,16 +416,18 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         )
     }
 
-    /** Duplicates a [TemplateElement.ShapeElement] by id, places the copy slightly offset and selects it. */
-    fun duplicateShapeElement(id: String) {
-        val original =
-            currentElements.firstOrNull { it.id == id } as? TemplateElement.ShapeElement ?: return
+    /** Duplicates an element by id, places the copy slightly offset and selects it. */
+    fun duplicateElement(id: String) {
+        val original = currentElements.firstOrNull { it.id == id } ?: return
         val offset = 8f   // template-dp nudge so the copy is visibly offset from the original
-        val copy = original.copy(
-            id = newId(),
-            x = original.x + offset,
-            y = original.y + offset,
-        )
+        
+        val newId = newId()
+        val copy = when (original) {
+            is TemplateElement.ShapeElement -> original.copy(id = newId, x = original.x + offset, y = original.y + offset)
+            is TemplateElement.TextElement  -> original.copy(id = newId, x = original.x + offset, y = original.y + offset)
+            is TemplateElement.ImageElement -> original.copy(id = newId, x = original.x + offset, y = original.y + offset)
+            else -> return // Only these elements are allowed to be duplicated
+        }
         addElement(copy)
     }
 
@@ -535,8 +512,15 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     fun updateElement(element: TemplateElement) {
         val prev = uiState.value
         pushCheckpoint()
-        val newList =
-            currentSideElements(prev.template).map { if (it.id == element.id) element else it }
+        
+        val newList = currentSideElements(prev.template).map { 
+            if (it.id == element.id) element else it
+        }.toMutableList()
+
+        if (activeCardStyle.linkCredentialsStyle) {
+            syncLinkedCredentials(newList, element)
+        }
+
         update(
             prev.copy(
                 template = setSideElements(prev.template, newList),
@@ -544,6 +528,20 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 canUndo = undoStack.isNotEmpty()
             )
         )
+    }
+
+    fun setLinkCredentialsStyle(link: Boolean) {
+        if (activeCardStyle.linkCredentialsStyle == link) return
+        
+        mutateActiveCardStyle { it.copy(linkCredentialsStyle = link) }
+        
+        if (link) {
+            val selected = currentElements.find { it.id == uiState.value.selectedElementId }
+            if (selected is TemplateElement.UsernameElement || selected is TemplateElement.PasswordElement) {
+                // Synchronize immediately using the selected element as the source of truth
+                updateElement(selected)
+            }
+        }
     }
 
     fun moveElement(id: String, dx: Float, dy: Float) {
@@ -573,48 +571,74 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
             val oldCX = el.x + el.width / 2f
             val oldCY = el.y + el.height / 2f
             when (el) {
-                is TemplateElement.TextElement ->
+                is TemplateElement.TextElement -> {
+                    val pad2 = TEXT_ELEMENT_PAD_DP * 2f
+                    val oldInnerW = (el.width - pad2).coerceAtLeast(1f)
+                    val newInnerW = (safeW - pad2).coerceAtLeast(1f)
+                    val scaleInnerW = newInnerW / oldInnerW
+                    val newTextSize = (el.textSizeSp * scaleInnerW).coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP)
+                    val (_, computedH) = measureTextSize(el.text, newTextSize, el.fontName, el.isBold, safeW)
                     el.copy(
-                        x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
-                        width = safeW, height = safeH,
-                        textSizeSp = (el.textSizeSp * scaleW).coerceIn(
-                            MIN_TEXT_SIZE_SP,
-                            MAX_TEXT_SIZE_SP
-                        )
+                        x = oldCX - safeW / 2f, y = oldCY - computedH / 2f,
+                        width = safeW, height = computedH,
+                        textSizeSp = newTextSize
                     )
+                }
 
-                is TemplateElement.UsernameElement ->
+                is TemplateElement.UsernameElement -> {
+                    val pad2 = TEXT_ELEMENT_PAD_DP * 2f
+                    val oldInnerW = (el.width - pad2).coerceAtLeast(1f)
+                    val newInnerW = (safeW - pad2).coerceAtLeast(1f)
+                    val scaleInnerW = newInnerW / oldInnerW
+                    val newTextSize = (el.textSizeSp * scaleInnerW).coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP)
+                    val pseudoText = dummyDigits(el.digitCount.coerceAtLeast(1))
+                    val (_, computedH) = measureTextSize(pseudoText, newTextSize, el.fontName, el.isBold, safeW)
                     el.copy(
-                        x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
-                        width = safeW, height = safeH,
-                        textSizeSp = (el.textSizeSp * scaleW).coerceIn(
-                            MIN_TEXT_SIZE_SP,
-                            MAX_TEXT_SIZE_SP
-                        )
+                        x = oldCX - safeW / 2f, y = oldCY - computedH / 2f,
+                        width = safeW, height = computedH,
+                        textSizeSp = newTextSize
                     )
+                }
 
-                is TemplateElement.PasswordElement ->
+                is TemplateElement.PasswordElement -> {
+                    val pad2 = TEXT_ELEMENT_PAD_DP * 2f
+                    val oldInnerW = (el.width - pad2).coerceAtLeast(1f)
+                    val newInnerW = (safeW - pad2).coerceAtLeast(1f)
+                    val scaleInnerW = newInnerW / oldInnerW
+                    val newTextSize = (el.textSizeSp * scaleInnerW).coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP)
+                    val pseudoText = dummyDigits(el.digitCount.coerceAtLeast(1))
+                    val (_, computedH) = measureTextSize(pseudoText, newTextSize, el.fontName, el.isBold, safeW)
                     el.copy(
-                        x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
-                        width = safeW, height = safeH,
-                        textSizeSp = (el.textSizeSp * scaleW).coerceIn(
-                            MIN_TEXT_SIZE_SP,
-                            MAX_TEXT_SIZE_SP
-                        )
+                        x = oldCX - safeW / 2f, y = oldCY - computedH / 2f,
+                        width = safeW, height = computedH,
+                        textSizeSp = newTextSize
                     )
+                }
 
-                is TemplateElement.DateElement ->
+                is TemplateElement.DateElement -> {
+                    val pad2 = TEXT_ELEMENT_PAD_DP * 2f
+                    val oldInnerW = (el.width - pad2).coerceAtLeast(1f)
+                    val newInnerW = (safeW - pad2).coerceAtLeast(1f)
+                    val scaleInnerW = newInnerW / oldInnerW
+                    val newTextSize = (el.textSizeSp * scaleInnerW).coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP)
+                    val (_, computedH) = measureTextSize("12/12/2026", newTextSize, el.fontName, el.isBold, safeW)
                     el.copy(
-                        x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
-                        width = safeW, height = safeH,
-                        textSizeSp = (el.textSizeSp * scaleW).coerceIn(
-                            MIN_TEXT_SIZE_SP,
-                            MAX_TEXT_SIZE_SP
-                        )
+                        x = oldCX - safeW / 2f, y = oldCY - computedH / 2f,
+                        width = safeW, height = computedH,
+                        textSizeSp = newTextSize
                     )
+                }
 
-                is TemplateElement.ImageElement -> el.copy(width = safeW, height = safeH)
-                is TemplateElement.QrElement -> el.copy(width = safeW, height = safeH)
+                is TemplateElement.ImageElement -> el.copy(
+                    x = oldCX - safeW / 2f,
+                    y = oldCY - safeH / 2f,
+                    width = safeW, height = safeH
+                )
+                is TemplateElement.QrElement -> el.copy(
+                    x = oldCX - safeW / 2f,
+                    y = oldCY - safeH / 2f,
+                    width = safeW, height = safeH
+                )
                 is TemplateElement.FrameElement -> el.copy(width = safeW, height = safeH)
                 is TemplateElement.ShapeElement -> el.copy(
                     x = oldCX - safeW / 2f,
@@ -647,12 +671,33 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
      * Right-center pill handle for TextElement: changes width and recalculates
      * the element height so the box always wraps the text content exactly.
      */
-    fun resizeTextWidth(id: String, newWidth: Float) {
+    fun resizeTextWidth(id: String, newWidth: Float, pxPerDp: Float? = null) {
         val safeW = newWidth.coerceAtLeast(20f)
         val el =
             currentElements.firstOrNull { it.id == id } as? TemplateElement.TextElement ?: return
-        val (_, newH) = measureTextSize(el.text, el.textSizeSp, el.fontName, el.isBold, safeW)
-        val newEl = el.copy(width = safeW, height = newH)
+        val before = measureTextMetrics(
+            text = el.text,
+            sizeSp = el.textSizeSp,
+            fontName = el.fontName,
+            isBold = el.isBold,
+            maxWidthDp = el.width,
+            pxPerDp = pxPerDp
+        )
+        val after = measureTextMetrics(
+            text = el.text,
+            sizeSp = el.textSizeSp,
+            fontName = el.fontName,
+            isBold = el.isBold,
+            maxWidthDp = safeW,
+            pxPerDp = pxPerDp
+        )
+        Log.d(
+            TAG,
+            "VM width-resize id=$id " +
+                "w:${el.width}->$safeW h:${el.height}->${after.heightDp} sp=${el.textSizeSp} " +
+                "lines:${before.lineCount}->${after.lineCount} pxPerDp=${pxPerDp ?: -1f}"
+        )
+        val newEl = el.copy(width = safeW, height = after.heightDp)
         val prev = uiState.value
         val newList = currentSideElements(prev.template).map { if (it.id == id) newEl else it }
         update(
@@ -669,61 +714,365 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         if (kotlin.math.abs(newH - el.height) > 1f) updateElement(el.copy(height = newH))
     }
 
+    /** Starts a corner-resize session for TextElement and locks its current line count. */
+    fun beginTextCornerResize(id: String, pxPerDp: Float? = null) {
+        val el = currentElements.firstOrNull { it.id == id } as? TemplateElement.TextElement ?: return
+        val metrics = measureTextMetrics(
+            text = el.text,
+            sizeSp = el.textSizeSp,
+            fontName = el.fontName,
+            isBold = el.isBold,
+            maxWidthDp = el.width,
+            pxPerDp = pxPerDp
+        )
+        textCornerResizeSession = TextCornerResizeSession(
+            elementId = id,
+            lockedLineCount = metrics.lineCount.coerceAtLeast(1),
+            pxPerDp = pxPerDp
+        )
+        Log.d(
+            TAG,
+            "VM corner-resize START id=$id lockLines=${metrics.lineCount} pxPerDp=${pxPerDp ?: -1f}"
+        )
+    }
+
     /**
-     * Bottom-right resize drag on TextElement: true uniform SCALE.
-     * Font size, width, and height all change by the same factor.
-     * Element center is kept fixed (same pattern as proportional resize for Image/QR).
+     * Ends a corner-resize session and normalizes TextElement height once using
+     * natural wrapping (one-time jump is acceptable; jitter during drag is not).
      */
+    fun endTextCornerResize(id: String, pxPerDp: Float? = null) {
+        val session = textCornerResizeSession
+        textCornerResizeSession = null
+        if (session?.elementId != id) return
+
+        val effectivePxPerDp = pxPerDp ?: session.pxPerDp
+        mutateElement(id) { el ->
+            if (el is TemplateElement.TextElement) {
+                val finalMetrics = measureTextMetrics(
+                    text = el.text,
+                    sizeSp = el.textSizeSp,
+                    fontName = el.fontName,
+                    isBold = el.isBold,
+                    maxWidthDp = el.width,
+                    pxPerDp = effectivePxPerDp
+                )
+                val oldCY = el.y + el.height / 2f
+                el.copy(
+                    y = oldCY - finalMetrics.heightDp / 2f,
+                    height = finalMetrics.heightDp
+                )
+            } else el
+        }
+        Log.d(
+            TAG,
+            "VM corner-resize END id=$id pxPerDp=${effectivePxPerDp ?: -1f}"
+        )
+    }
+
     /**
-     * Bottom-right resize drag on any text-based element: true uniform SCALE.
-     * Font size, width, and height all change by the same factor.
-     * Element center is kept fixed (same pattern as proportional resize for Image/QR).
+     * Bottom-right corner-resize for text-based elements.
+     * During active drag we keep wrapping stable and update geometry around the same center.
      */
-    fun scaleTextFontSize(id: String, newSizeSp: Float, newWidth: Float, newHeight: Float) {
+    fun scaleTextFontSize(id: String, newSizeSp: Float, newWidth: Float, pxPerDp: Float? = null) {
         val safeSp = newSizeSp.coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP)
         val safeW = newWidth.coerceAtLeast(10f)
-        val safeH = newHeight.coerceAtLeast(8f)
 
         mutateElement(id) { el ->
             val oldCX = el.x + el.width / 2f
             val oldCY = el.y + el.height / 2f
             when (el) {
-                is TemplateElement.TextElement -> el.copy(
-                    x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
-                    width = safeW, height = safeH, textSizeSp = safeSp
-                )
+                is TemplateElement.TextElement -> {
+                    val resizeSession = textCornerResizeSession?.takeIf { it.elementId == id }
+                    val lockedLines = resizeSession?.lockedLineCount
+                    // Lock width to the same wrapping bucket while dragging (prevents 2<->3 flips).
+                    val enforcedW = if (lockedLines != null) {
+                        adjustWidthForLockedLineCount(
+                            text = el.text,
+                            sizeSp = safeSp,
+                            fontName = el.fontName,
+                            isBold = el.isBold,
+                            targetWidthDp = safeW,
+                            desiredLineCount = lockedLines,
+                            pxPerDp = pxPerDp
+                        )
+                    } else {
+                        safeW
+                    }
+                    val before = measureTextMetrics(
+                        text = el.text,
+                        sizeSp = el.textSizeSp,
+                        fontName = el.fontName,
+                        isBold = el.isBold,
+                        maxWidthDp = el.width,
+                        pxPerDp = pxPerDp
+                    )
+                    val after = measureTextMetrics(
+                        text = el.text,
+                        sizeSp = safeSp,
+                        fontName = el.fontName,
+                        isBold = el.isBold,
+                        maxWidthDp = enforcedW,
+                        pxPerDp = pxPerDp
+                    )
+                    // Hysteresis is used only outside lock mode (safety fallback path).
+                    val stableAfter = if (lockedLines != null) {
+                        after
+                    } else {
+                        stabilizeTextResizeMetrics(
+                            text = el.text,
+                            sizeSp = safeSp,
+                            fontName = el.fontName,
+                            isBold = el.isBold,
+                            targetWidthDp = enforcedW,
+                            beforeLineCount = before.lineCount,
+                            candidate = after,
+                            pxPerDp = pxPerDp
+                        )
+                    }
+                    // Height uses a continuous metric with a fixed line count while dragging.
+                    val lineCountForHeight = (lockedLines ?: stableAfter.lineCount).coerceAtLeast(1)
+                    val smoothHeight = measureContinuousTextHeightDp(
+                        sizeSp = safeSp,
+                        fontName = el.fontName,
+                        isBold = el.isBold,
+                        lineCount = lineCountForHeight,
+                        pxPerDp = pxPerDp
+                    )
+                    Log.d(
+                        TAG,
+                        "VM corner-resize id=$id " +
+                            "w:${el.width}->req:$safeW->applied:$enforcedW h:${el.height}->raw:${stableAfter.heightDp}->smooth:$smoothHeight " +
+                            "sp:${el.textSizeSp}->$safeSp lines:${before.lineCount}->raw:${after.lineCount}->stable:${stableAfter.lineCount}->used:$lineCountForHeight " +
+                            "pxPerDp=${pxPerDp ?: -1f}"
+                    )
+                    el.copy(
+                        x = oldCX - enforcedW / 2f, y = oldCY - smoothHeight / 2f,
+                        width = enforcedW, height = smoothHeight, textSizeSp = safeSp
+                    )
+                }
 
-                is TemplateElement.UsernameElement -> el.copy(
-                    x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
-                    width = safeW, height = safeH, textSizeSp = safeSp
-                )
+                is TemplateElement.UsernameElement -> {
+                    val pseudoText = dummyDigits(el.digitCount.coerceAtLeast(1))
+                    val (_, computedH) = measureTextSize(
+                        text = pseudoText,
+                        sizeSp = safeSp,
+                        fontName = el.fontName,
+                        isBold = el.isBold,
+                        maxWidthDp = safeW,
+                        pxPerDp = pxPerDp
+                    )
+                    el.copy(
+                        x = oldCX - safeW / 2f, y = oldCY - computedH / 2f,
+                        width = safeW, height = computedH, textSizeSp = safeSp
+                    )
+                }
 
-                is TemplateElement.PasswordElement -> el.copy(
-                    x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
-                    width = safeW, height = safeH, textSizeSp = safeSp
-                )
+                is TemplateElement.PasswordElement -> {
+                    val pseudoText = dummyDigits(el.digitCount.coerceAtLeast(1))
+                    val (_, computedH) = measureTextSize(
+                        text = pseudoText,
+                        sizeSp = safeSp,
+                        fontName = el.fontName,
+                        isBold = el.isBold,
+                        maxWidthDp = safeW,
+                        pxPerDp = pxPerDp
+                    )
+                    el.copy(
+                        x = oldCX - safeW / 2f, y = oldCY - computedH / 2f,
+                        width = safeW, height = computedH, textSizeSp = safeSp
+                    )
+                }
 
-                is TemplateElement.DateElement -> el.copy(
-                    x = oldCX - safeW / 2f, y = oldCY - safeH / 2f,
-                    width = safeW, height = safeH, textSizeSp = safeSp
-                )
+                is TemplateElement.DateElement -> {
+                    val (_, computedH) = measureTextSize(
+                        text = "12/12/2026",
+                        sizeSp = safeSp,
+                        fontName = el.fontName,
+                        isBold = el.isBold,
+                        maxWidthDp = safeW,
+                        pxPerDp = pxPerDp
+                    )
+                    el.copy(
+                        x = oldCX - safeW / 2f, y = oldCY - computedH / 2f,
+                        width = safeW, height = computedH, textSizeSp = safeSp
+                    )
+                }
 
                 else -> el
             }
         }
     }
 
-    /** Measures the rendered width and height (in template-dp) of [text] in the given style. */
-    private fun measureTextSize(
-        text: String, sizeSp: Float, fontName: String, isBold: Boolean, maxWidthDp: Float = 8192f
-    ): Pair<Float, Float> {
+    /**
+     * Adds a small hysteresis band around text wrap thresholds during corner-resize.
+     * This prevents rapid 2↔3 line flapping (visual jitter) when width/size move by tiny steps.
+     */
+    private fun stabilizeTextResizeMetrics(
+        text: String,
+        sizeSp: Float,
+        fontName: String,
+        isBold: Boolean,
+        targetWidthDp: Float,
+        beforeLineCount: Int,
+        candidate: TextMetrics,
+        pxPerDp: Float?
+    ): TextMetrics {
+        if (candidate.lineCount == beforeLineCount) return candidate
+
+        val probeWidthDp = if (candidate.lineCount < beforeLineCount) {
+            // Expanding text box (e.g. 3->2): require the lower line-count to survive
+            // at a slightly narrower width before committing.
+            (targetWidthDp - TEXT_RESIZE_LINE_HYSTERESIS_DP).coerceAtLeast(10f)
+        } else {
+            // Shrinking text box (e.g. 2->3): require the higher line-count to survive
+            // at a slightly wider width before committing.
+            targetWidthDp + TEXT_RESIZE_LINE_HYSTERESIS_DP
+        }
+
+        val probe = measureTextMetrics(
+            text = text,
+            sizeSp = sizeSp,
+            fontName = fontName,
+            isBold = isBold,
+            maxWidthDp = probeWidthDp,
+            pxPerDp = pxPerDp
+        )
+
+        return if (candidate.lineCount < beforeLineCount) {
+            if (probe.lineCount <= candidate.lineCount) candidate else probe
+        } else {
+            if (probe.lineCount >= candidate.lineCount) candidate else probe
+        }
+    }
+
+    /**
+     * Continuous (non-step) text box height for interactive resize.
+     * We still use StaticLayout to decide line count, but height comes from font metrics
+     * to avoid integer-jump jitter while dragging.
+     */
+    private fun measureContinuousTextHeightDp(
+        sizeSp: Float,
+        fontName: String,
+        isBold: Boolean,
+        lineCount: Int,
+        pxPerDp: Float?
+    ): Float {
         val density = getApplication<Application>().resources.displayMetrics.density
+        val effectivePxPerDp = pxPerDp?.takeIf { it > 0f } ?: density
+        val tp = TextPaint().apply {
+            isAntiAlias = true
+            textSize = sizeSp * effectivePxPerDp
+            typeface = resolveTypeface(fontName, isBold)
+            isLinearText = true
+            isSubpixelText = true
+        }
+        val safeLines = lineCount.coerceAtLeast(1)
+        val textHeightDp = (tp.fontSpacing * safeLines) / effectivePxPerDp
+        return textHeightDp + TEXT_ELEMENT_PAD_DP * 2f
+    }
+
+    /**
+     * Keeps TextElement width on the same wrapped-line bucket during active corner-resize.
+     * This prevents visible 2↔3 line flapping while dragging.
+     */
+    private fun adjustWidthForLockedLineCount(
+        text: String,
+        sizeSp: Float,
+        fontName: String,
+        isBold: Boolean,
+        targetWidthDp: Float,
+        desiredLineCount: Int,
+        pxPerDp: Float?
+    ): Float {
+        val minW = 20f
+        val maxW = activeCardStyle.widthDp.coerceAtLeast(minW)
+        val target = targetWidthDp.coerceIn(minW, maxW)
+        val desired = desiredLineCount.coerceAtLeast(1)
+
+        fun linesAt(w: Float): Int = measureTextMetrics(
+            text = text,
+            sizeSp = sizeSp,
+            fontName = fontName,
+            isBold = isBold,
+            maxWidthDp = w,
+            pxPerDp = pxPerDp
+        ).lineCount
+
+        val targetLines = linesAt(target)
+        if (targetLines == desired) return target
+
+        return if (targetLines < desired) {
+            // Need narrower width to increase line count
+            var lo = minW
+            var hi = target
+            if (linesAt(lo) < desired) return target // impossible to reach desired
+
+            repeat(TEXT_RESIZE_WIDTH_SEARCH_STEPS) {
+                val mid = (lo + hi) / 2f
+                val lines = linesAt(mid)
+                if (lines >= desired) lo = mid else hi = mid
+            }
+
+            val loLines = linesAt(lo)
+            val hiLines = linesAt(hi)
+            when {
+                loLines == desired -> lo
+                hiLines == desired -> hi
+                else -> lo // prefer keeping width slightly narrower to avoid dropping lines
+            }
+        } else {
+            // Need wider width to reduce line count
+            var lo = target
+            var hi = maxW
+            if (linesAt(hi) > desired) return target // impossible to reach desired
+
+            repeat(TEXT_RESIZE_WIDTH_SEARCH_STEPS) {
+                val mid = (lo + hi) / 2f
+                val lines = linesAt(mid)
+                if (lines > desired) lo = mid else hi = mid
+            }
+
+            val loLines = linesAt(lo)
+            val hiLines = linesAt(hi)
+            when {
+                hiLines == desired -> hi
+                loLines == desired -> lo
+                else -> hi // prefer slightly wider to avoid overflow line jumps
+            }
+        }
+    }
+
+    private data class TextCornerResizeSession(
+        val elementId: String,
+        val lockedLineCount: Int,
+        val pxPerDp: Float?
+    )
+
+    private data class TextMetrics(val widthDp: Float, val heightDp: Float, val lineCount: Int)
+
+    private fun measureTextMetrics(
+        text: String,
+        sizeSp: Float,
+        fontName: String,
+        isBold: Boolean,
+        maxWidthDp: Float = 8192f,
+        pxPerDp: Float? = null
+    ): TextMetrics {
+        val density = getApplication<Application>().resources.displayMetrics.density
+        val effectivePxPerDp = pxPerDp?.takeIf { it > 0f } ?: density
         val PAD = TEXT_ELEMENT_PAD_DP
         val tp = TextPaint().apply {
-            textSize = sizeSp * density
+            isAntiAlias = true
+            textSize = sizeSp * effectivePxPerDp
             typeface = resolveTypeface(fontName, isBold)
+            isLinearText = true
+            isSubpixelText = true
         }
-        val innerWPx = ((maxWidthDp - PAD * 2) * density).toInt().coerceAtLeast(1)
+        val slopPx = tp.measureText(" ") * 0.5f
+        val innerWPx =
+            kotlin.math.ceil((maxWidthDp - PAD * 2) * effectivePxPerDp + slopPx)
+                .toInt()
+                .coerceAtLeast(1)
         val layout = StaticLayout.Builder
             .obtain(text.ifBlank { " " }, 0, text.ifBlank { " " }.length, tp, innerWPx)
             .setAlignment(Layout.Alignment.ALIGN_NORMAL)
@@ -735,7 +1084,26 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 text
             )
         val textH = layout.height.toFloat()
-        return (textW / density + PAD * 2) to (textH / density + PAD * 2)
+        // Provide 1dp of anti-truncation slop to ensure scaled bounding boxes remain
+        // mathematically wide enough for the sub-pixel font layout phase at all scales
+        return TextMetrics(
+            widthDp = textW / effectivePxPerDp + PAD * 2 + 1f,
+            heightDp = textH / effectivePxPerDp + PAD * 2,
+            lineCount = layout.lineCount
+        )
+    }
+
+    /** Measures the rendered width and height (in template-dp) of [text] in the given style. */
+    private fun measureTextSize(
+        text: String,
+        sizeSp: Float,
+        fontName: String,
+        isBold: Boolean,
+        maxWidthDp: Float = 8192f,
+        pxPerDp: Float? = null
+    ): Pair<Float, Float> {
+        val metrics = measureTextMetrics(text, sizeSp, fontName, isBold, maxWidthDp, pxPerDp)
+        return metrics.widthDp to metrics.heightDp
     }
 
     private fun resolveTypeface(fontName: String, isBold: Boolean): Typeface {
@@ -874,8 +1242,20 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     private fun mutateElement(id: String, transform: (TemplateElement) -> TemplateElement) {
         val prev = uiState.value
         pushCheckpoint()
-        val newList =
-            currentSideElements(prev.template).map { if (it.id == id) transform(it) else it }
+        
+        var mutatedElement: TemplateElement? = null
+        val newList = currentSideElements(prev.template).map {
+            if (it.id == id) {
+                val newEl = transform(it)
+                mutatedElement = newEl
+                newEl
+            } else it
+        }.toMutableList()
+
+        if (activeCardStyle.linkCredentialsStyle && mutatedElement != null) {
+            syncLinkedCredentials(newList, mutatedElement!!)
+        }
+
         update(
             prev.copy(
                 template = setSideElements(prev.template, newList),
@@ -883,6 +1263,40 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 canUndo = undoStack.isNotEmpty()
             )
         )
+    }
+
+    private fun syncLinkedCredentials(list: MutableList<TemplateElement>, primary: TemplateElement) {
+        if (primary is TemplateElement.UsernameElement) {
+            val idx = list.indexOfFirst { it is TemplateElement.PasswordElement }
+            if (idx != -1) {
+                val peer = list[idx] as TemplateElement.PasswordElement
+                val oldCX = peer.x + peer.width / 2f
+                val oldCY = peer.y + peer.height / 2f
+                list[idx] = peer.copy(
+                    width = primary.width, height = primary.height,
+                    x = oldCX - primary.width / 2f, y = oldCY - primary.height / 2f,
+                    rotation = primary.rotation, textSizeSp = primary.textSizeSp,
+                    textColor = primary.textColor, bgColor = primary.bgColor,
+                    fontName = primary.fontName, isBold = primary.isBold,
+                    textStrokeColor = primary.textStrokeColor, textStrokeWidth = primary.textStrokeWidth
+                )
+            }
+        } else if (primary is TemplateElement.PasswordElement) {
+            val idx = list.indexOfFirst { it is TemplateElement.UsernameElement }
+            if (idx != -1) {
+                val peer = list[idx] as TemplateElement.UsernameElement
+                val oldCX = peer.x + peer.width / 2f
+                val oldCY = peer.y + peer.height / 2f
+                list[idx] = peer.copy(
+                    width = primary.width, height = primary.height,
+                    x = oldCX - primary.width / 2f, y = oldCY - primary.height / 2f,
+                    rotation = primary.rotation, textSizeSp = primary.textSizeSp,
+                    textColor = primary.textColor, bgColor = primary.bgColor,
+                    fontName = primary.fontName, isBold = primary.isBold,
+                    textStrokeColor = primary.textStrokeColor, textStrokeWidth = primary.textStrokeWidth
+                )
+            }
+        }
     }
 
     private fun mutateTemplate(transform: (Template) -> Template) {
@@ -934,6 +1348,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     companion object {
+        private const val TAG = "TextResizeDiag.VM"
         const val MIN_TEXT_SIZE_SP = 10f
         const val MAX_TEXT_SIZE_SP = 100f
         private const val UNDO_LIMIT = 20    // max snapshots kept
@@ -941,5 +1356,8 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
 
         /** Padding (template-dp) inside TextElement box — must match TemplateRenderer.TEXT_PAD_DP. */
         private const val TEXT_ELEMENT_PAD_DP = 6f
+        /** Wrap-threshold hysteresis for corner-resize to avoid line-count oscillation jitter. */
+        private const val TEXT_RESIZE_LINE_HYSTERESIS_DP = 1.5f
+        private const val TEXT_RESIZE_WIDTH_SEARCH_STEPS = 10
     }
 }

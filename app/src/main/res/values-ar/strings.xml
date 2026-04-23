@@ -147,6 +147,7 @@
     <string name="prop_stroke_color">لون الحواف</string>
     <string name="prop_text_stroke">سُمك حواف النص</string>
     <string name="prop_digit_count">عدد الأرقام</string>
+    <string name="prop_link_credentials_style">توحيد خصائص اسم المستخدم وكلمة المرور</string>
     <string name="prop_host">عنوان الخادم (Host)</string>
     <string name="prop_qr_color">لون QR</string>
     <string name="prop_date_format">شكل التاريخ</string>
@@ -188,6 +189,13 @@
     <string name="elem_date">تاريخ</string>
     <string name="elem_frame">إطار البطاقة</string>
     <string name="elem_shape">شكل هندسي</string>
+    <string name="pdf_quality_warning">يتم عرض الملف بجودة مخففة لتجنب بطء جهازك القديم ولحماية الذاكرة.</string>
+    <string name="btn_change_image">تغيير الصورة</string>
+    <string name="btn_clear">مسح</string>
+    <string name="btn_remove">إزالة</string>
+    <string name="label_none">بدون</string>
+    <string name="content_desc_template_options">خيارات القالب</string>
+
 
     <!-- General -->
     <string name="btn_close">إغلاق</string>
@@ -288,4 +296,9 @@
     <string name="alias_pdf_preview">معاينة PDF</string>
     <string name="alias_export_cards">تصدير البطاقات</string>
 
+    <string name="notification_permission_dialog_title">السماح بإشعارات التصدير؟</string>
+    <string name="notification_permission_dialog_message">لكي يستمر التصدير بشكل موثوق في الخلفية، يتوقع نظام أندرويد وجود إشعار للخدمة الأمامية. عند السماح بالإشعارات ستتمكن من متابعة نسبة التقدم حتى خارج هذه الشاشة.\n\nيمكنك أيضا متابعة التصدير بدون تفعيل الإشعارات.</string>
+    <string name="notification_permission_dialog_allow">السماح بالإشعارات</string>
+    <string name="notification_permission_dialog_export_anyway">تصدير على أي حال</string>
+    <string name="notification_permission_denied_export_continues">الإشعارات معطلة. سيستمر التصدير بدون عرض التقدم في إشعارات النظام.</string>
 </resources>

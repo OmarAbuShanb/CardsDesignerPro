@@ -1,7 +1,10 @@
 package dev.anonymous.cardsdesignerpro.ui.export
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.OpenableColumns
 import android.view.View
@@ -10,6 +13,8 @@ import android.widget.ArrayAdapter
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -27,7 +32,6 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import androidx.core.net.toUri
 
 class ExportCardsActivity : AppCompatActivity() {
 
@@ -35,6 +39,25 @@ class ExportCardsActivity : AppCompatActivity() {
     private val viewModel: ExportCardsViewModel by viewModels()
     private lateinit var fileAdapter: SelectedFileAdapter
     private lateinit var shortFileAdapter: SelectedFileAdapter
+    private val exportPrefs by lazy { getSharedPreferences("export_prefs", MODE_PRIVATE) }
+
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ ->
+        val pendingMode = viewModel.consumePendingExportMode() ?: return@registerForActivityResult
+        if (!hasNotificationPermission()) {
+            Snackbar.make(
+                binding.root,
+                R.string.notification_permission_denied_export_continues,
+                Snackbar.LENGTH_LONG
+            ).show()
+        }
+        doLaunchExport(pendingMode == ExportCardsViewModel.PendingExportMode.SEPARATE)
+    }
+
+    companion object {
+        private const val PREF_NOTIFICATION_PERMISSION_REQUESTED = "pref_notification_permission_requested"
+    }
 
     // ── File pickers ──────────────────────────────────────────────────────────
 
@@ -127,6 +150,7 @@ class ExportCardsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityExportCardsBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        setupNotificationPermissionFlow()
 
         setupToolbar()
         setupBottomSheetDrag()
@@ -414,6 +438,79 @@ class ExportCardsActivity : AppCompatActivity() {
         binding.btnExportSeparate.setOnClickListener { handleExportClick(isSeparate = true) }
     }
 
+    private fun setupNotificationPermissionFlow() {
+        supportFragmentManager.setFragmentResultListener(
+            NotificationPermissionRationaleDialogFragment.REQUEST_KEY,
+            this
+        ) { _, bundle ->
+            supportFragmentManager.clearFragmentResult(NotificationPermissionRationaleDialogFragment.REQUEST_KEY)
+            val action = bundle.getString(NotificationPermissionRationaleDialogFragment.RESULT_ACTION)
+                ?: return@setFragmentResultListener
+            val isSeparate =
+                bundle.getBoolean(NotificationPermissionRationaleDialogFragment.RESULT_IS_SEPARATE, false)
+
+            when (action) {
+                NotificationPermissionRationaleDialogFragment.ACTION_REQUEST_PERMISSION ->
+                    requestNotificationPermissionThenExport(isSeparate)
+
+                NotificationPermissionRationaleDialogFragment.ACTION_EXPORT_ANYWAY ->
+                    doLaunchExport(isSeparate)
+            }
+        }
+    }
+
+    private fun launchExportWithNotificationPermissionGate(isSeparate: Boolean) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || hasNotificationPermission()) {
+            doLaunchExport(isSeparate)
+            return
+        }
+
+        if (!shouldShowNotificationPermissionDialog()) {
+            doLaunchExport(isSeparate)
+            return
+        }
+
+        if (supportFragmentManager.findFragmentByTag(NotificationPermissionRationaleDialogFragment.TAG) != null) {
+            return
+        }
+
+        NotificationPermissionRationaleDialogFragment.newInstance(isSeparate)
+            .show(supportFragmentManager, NotificationPermissionRationaleDialogFragment.TAG)
+    }
+
+    private fun requestNotificationPermissionThenExport(isSeparate: Boolean) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || hasNotificationPermission()) {
+            doLaunchExport(isSeparate)
+            return
+        }
+
+        exportPrefs.edit()
+            .putBoolean(PREF_NOTIFICATION_PERMISSION_REQUESTED, true)
+            .apply()
+
+        viewModel.setPendingExportMode(
+            if (isSeparate) {
+                ExportCardsViewModel.PendingExportMode.SEPARATE
+            } else {
+                ExportCardsViewModel.PendingExportMode.SINGLE_OR_DUAL
+            }
+        )
+        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+    private fun hasNotificationPermission(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
+        return ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun shouldShowNotificationPermissionDialog(): Boolean {
+        val hasRequestedBefore = exportPrefs.getBoolean(PREF_NOTIFICATION_PERMISSION_REQUESTED, false)
+        return !hasRequestedBefore || shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
+    }
+
     /**
      * Shared guard logic for both export buttons:
      * 1. Block if any file is still being parsed.
@@ -453,11 +550,11 @@ class ExportCardsActivity : AppCompatActivity() {
         // Guard 4: digit-length mismatch — show dialog but allow the user to continue anyway
         val mismatches = viewModel.validateDigitLengths()
         if (mismatches.isNotEmpty()) {
-            showMismatchDialog(mismatches) { doLaunchExport(isSeparate) }
+            showMismatchDialog(mismatches) { launchExportWithNotificationPermissionGate(isSeparate) }
             return
         }
 
-        doLaunchExport(isSeparate)
+        launchExportWithNotificationPermissionGate(isSeparate)
     }
 
     /** Launches the appropriate PDF saver picker without any extra checks. */

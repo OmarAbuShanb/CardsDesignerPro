@@ -10,7 +10,7 @@
             style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="تغيير الصورة"
+            android:text="@string/btn_change_image"
             android:layout_marginBottom="16dp" />
 
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -23,13 +23,13 @@
                 android:layout_width="40dp" android:layout_height="40dp" android:layout_marginEnd="12dp" />
             <TextView android:id="@+id/tv_tint_hex" android:layout_width="wrap_content"
                 android:layout_height="wrap_content" android:fontFamily="monospace"
-                android:textAppearance="?attr/textAppearanceBodyMedium" android:text="none" />
+                android:textAppearance="?attr/textAppearanceBodyMedium" android:text="@string/label_none" />
             <Space android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1" />
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_clear_tint"
                 style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="مسح" />
+                android:text="@string/btn_clear" />
         </LinearLayout>
     </LinearLayout>
 </ScrollView>

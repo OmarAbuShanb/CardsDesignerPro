@@ -1,10 +1,10 @@
-<svg width="160" height="205" viewBox="0 0 160 205" xmlns="http://www.w3.org/2000/svg">
+<svg width="160" height="240" viewBox="0 0 160 240" xmlns="http://www.w3.org/2000/svg">
   <path fill="#1976D2" d="
     M0 0
     H130
-    C155 28, 155 72, 132 102
-    C108 132, 108 170, 132 205
-    L132 205
+    C155 33, 155 84, 132 119
+    C108 154, 108 199, 132 240
+    L132 240
     H0
     Z
   "/>

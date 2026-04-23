@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -16,16 +15,16 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="6dp"
             android:text="@string/prop_background_color"
-            android:textAppearance="?attr/textAppearanceLabelMedium"
-            android:layout_marginBottom="6dp" />
+            android:textAppearance="?attr/textAppearanceLabelMedium" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
+            android:layout_marginBottom="16dp"
             android:gravity="center_vertical"
-            android:layout_marginBottom="16dp">
+            android:orientation="horizontal">
 
             <dev.anonymous.cardsdesignerpro.common.widget.ColorPreviewView
                 android:id="@+id/cpv_bg_color"
@@ -37,9 +36,9 @@
                 android:id="@+id/tv_bg_color_hex"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textAppearance="?attr/textAppearanceBodyMedium"
                 android:fontFamily="monospace"
                 android:text="#FFFFFF"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
                 tools:ignore="HardcodedText" />
         </LinearLayout>
 
@@ -47,9 +46,9 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="6dp"
             android:text="@string/prop_background_image"
-            android:textAppearance="?attr/textAppearanceLabelMedium"
-            android:layout_marginBottom="6dp" />
+            android:textAppearance="?attr/textAppearanceLabelMedium" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_choose_bg_image"
@@ -62,9 +61,9 @@
             android:id="@+id/layout_image_info"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
             android:layout_marginTop="4dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
             android:visibility="gone">
 
             <TextView
@@ -72,10 +71,10 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textAppearance="?attr/textAppearanceBodySmall"
-                android:textColor="?attr/colorOnSurfaceVariant"
+                android:ellipsize="start"
                 android:maxLines="1"
-                android:ellipsize="start" />
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="?attr/colorOnSurfaceVariant" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_delete_bg_image"
@@ -83,26 +82,28 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/prop_remove_image"
-                app:icon="@drawable/ic_delete"
-                app:iconGravity="textStart"
-                android:textColor="?attr/colorError" />
+                android:textColor="?attr/colorError"
+                app:icon="@drawable/ic_delete_24"
+                app:iconGravity="textStart" />
         </LinearLayout>
 
         <com.google.android.material.button.MaterialButtonToggleGroup
             android:id="@+id/toggle_bg_scale"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
             android:layout_gravity="center_horizontal"
-            app:singleSelection="true"
+            android:layout_marginTop="12dp"
+            android:visibility="gone"
             app:selectionRequired="true"
-            android:visibility="gone">
+            app:singleSelection="true">
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_scale_fit"
                 style="?attr/materialButtonOutlinedStyle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/prop_bg_scale_fit" />
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_scale_crop"
                 style="?attr/materialButtonOutlinedStyle"

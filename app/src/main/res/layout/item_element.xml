@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="56dp"
     android:orientation="horizontal"
@@ -33,7 +34,8 @@
         android:layout_height="36dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_visibility_24"
-        android:contentDescription="@null" />
+        android:contentDescription="@null"
+        app:tint="?attr/colorControlNormal" />
 
     <!-- Duplicate (ShapeElement only) -->
     <ImageButton
@@ -51,8 +53,8 @@
         android:layout_width="36dp"
         android:layout_height="36dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@android:drawable/ic_menu_edit"
-        android:contentDescription="@null" />
+        android:src="@drawable/ic_edit_24"
+        android:contentDescription="@null"/>
 
     <!-- Delete -->
     <ImageButton
@@ -60,7 +62,7 @@
         android:layout_width="36dp"
         android:layout_height="36dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@android:drawable/ic_menu_delete"
+        android:src="@drawable/ic_delete_24"
         android:contentDescription="@null" />
 
 </LinearLayout>
