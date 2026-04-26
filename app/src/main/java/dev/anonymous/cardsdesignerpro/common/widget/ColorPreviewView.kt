@@ -42,6 +42,10 @@ class ColorPreviewView @JvmOverloads constructor(
         }
 
     var onColorSelected: ((String) -> Unit)? = null
+    /** Optional click callback used when [openPickerOnClick] is disabled. */
+    var onPreviewClick: (() -> Unit)? = null
+    /** When false, tapping the swatch won't open the picker dialog. */
+    var openPickerOnClick: Boolean = true
 
     /** Guard: prevents showing the dialog twice on a fast double-tap. */
     private var isPickerShowing = false
@@ -55,7 +59,9 @@ class ColorPreviewView @JvmOverloads constructor(
         elevation = 3 * resources.displayMetrics.density
         // Initialize the visual appearance
         colorHex = "#FFFFFF"
-        setOnClickListener { showPicker() }
+        setOnClickListener {
+            if (openPickerOnClick) showPicker() else onPreviewClick?.invoke()
+        }
     }
 
     private fun showPicker() {

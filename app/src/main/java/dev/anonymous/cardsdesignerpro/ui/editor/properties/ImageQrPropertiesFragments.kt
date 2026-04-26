@@ -15,6 +15,7 @@ import dev.anonymous.cardsdesignerpro.R
 import dev.anonymous.cardsdesignerpro.data.model.TemplateElement
 import dev.anonymous.cardsdesignerpro.databinding.FragmentPropImageBinding
 import dev.anonymous.cardsdesignerpro.databinding.FragmentPropQrBinding
+import dev.anonymous.cardsdesignerpro.ui.common.ColorHexDialogSupport
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorUiState
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel
 import dev.anonymous.cardsdesignerpro.util.ImageUtils
@@ -40,22 +41,22 @@ class ImagePropertiesFragment : Fragment(), PropertyFragment {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        ColorHexDialogSupport.registerResultListener(
+            fragment = this,
+            owner = viewLifecycleOwner,
+            requestKey = REQ_IMAGE_TINT_HEX
+        ) { hex ->
+            applyTintColor(hex)
+        }
         val el = viewModel.selectedElement as? TemplateElement.ImageElement ?: return
         binding.cpvTint.colorHex = el.tintColor ?: "#FFFFFF"
-        binding.tvTintHex.text = el.tintColor ?: getString(R.string.prop_tint_none)
+        binding.fieldTintHex.text = el.tintColor ?: getString(R.string.prop_tint_none)
         binding.btnClearTint.visibility = if (el.tintColor != null) View.VISIBLE else View.GONE
 
-        binding.cpvTint.onColorSelected = { hex ->
-            binding.tvTintHex.text = hex
-            binding.btnClearTint.visibility = View.VISIBLE
-            val e = viewModel.selectedElement as? TemplateElement.ImageElement
-            if (e != null) viewModel.updateElement(e.copy(tintColor = hex))
-        }
+        binding.cpvTint.onColorSelected = { hex -> applyTintColor(hex) }
+        binding.fieldTintHex.setOnClickListener { openTintHexDialog() }
         binding.btnClearTint.setOnClickListener {
-            val e = viewModel.selectedElement as? TemplateElement.ImageElement ?: return@setOnClickListener
-            viewModel.updateElement(e.copy(tintColor = null))
-            binding.tvTintHex.text = getString(R.string.prop_tint_none)
-            binding.btnClearTint.visibility = View.GONE
+            clearTintColor()
         }
         binding.btnChangeImage.setOnClickListener {
             val e = viewModel.selectedElement as? TemplateElement.ImageElement ?: return@setOnClickListener
@@ -158,11 +159,44 @@ class ImagePropertiesFragment : Fragment(), PropertyFragment {
         val el = state.template.elements.firstOrNull { it.id == state.selectedElementId }
             as? TemplateElement.ImageElement ?: return
         binding.cpvTint.colorHex = el.tintColor ?: "#FFFFFF"
-        binding.tvTintHex.text = el.tintColor ?: getString(R.string.prop_tint_none)
+        binding.fieldTintHex.text = el.tintColor ?: getString(R.string.prop_tint_none)
         binding.btnClearTint.visibility = if (el.tintColor != null) View.VISIBLE else View.GONE
     }
 
     override fun onDestroyView() { super.onDestroyView(); _binding = null }
+
+    private fun openTintHexDialog() {
+        val el = viewModel.selectedElement as? TemplateElement.ImageElement ?: return
+        ColorHexDialogSupport.showDialog(
+            fragment = this,
+            requestKey = REQ_IMAGE_TINT_HEX,
+            dialogTag = IMAGE_TINT_DIALOG_TAG,
+            initialHex = el.tintColor ?: binding.cpvTint.colorHex,
+            enableAlpha = binding.cpvTint.enableAlpha
+        )
+    }
+
+    private fun applyTintColor(hex: String) {
+        binding.fieldTintHex.text = hex
+        binding.btnClearTint.visibility = View.VISIBLE
+        if (binding.cpvTint.colorHex != hex) binding.cpvTint.colorHex = hex
+        val e = viewModel.selectedElement as? TemplateElement.ImageElement ?: return
+        if (e.tintColor != hex) viewModel.updateElement(e.copy(tintColor = hex))
+    }
+
+    private fun clearTintColor() {
+        val e = viewModel.selectedElement as? TemplateElement.ImageElement ?: return
+        if (e.tintColor == null) return
+        viewModel.updateElement(e.copy(tintColor = null))
+        binding.cpvTint.colorHex = "#FFFFFF"
+        binding.fieldTintHex.text = getString(R.string.prop_tint_none)
+        binding.btnClearTint.visibility = View.GONE
+    }
+
+    companion object {
+        private const val REQ_IMAGE_TINT_HEX = "req_image_tint_hex"
+        private const val IMAGE_TINT_DIALOG_TAG = "image_tint_hex_dialog"
+    }
 }
 
 // ── QR Properties ────────────────────────────────────────────────────────────
@@ -188,6 +222,21 @@ class QrPropertiesFragment : Fragment(), PropertyFragment {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        ColorHexDialogSupport.registerResultListener(
+            fragment = this,
+            owner = viewLifecycleOwner,
+            requestKey = REQ_QR_COLOR_HEX
+        ) { hex ->
+            applyQrColor(hex)
+        }
+        ColorHexDialogSupport.registerResultListener(
+            fragment = this,
+            owner = viewLifecycleOwner,
+            requestKey = REQ_QR_BG_COLOR_HEX
+        ) { hex ->
+            applyQrBgColor(hex)
+        }
 
         val pixelLabels = resources.getStringArray(R.array.qr_pixel_shapes)
         val eyeLabels   = resources.getStringArray(R.array.qr_eye_shapes)
@@ -219,16 +268,10 @@ class QrPropertiesFragment : Fragment(), PropertyFragment {
         }
 
         // Colors
-        binding.cpvQrColor.onColorSelected = { hex ->
-            binding.tvQrColorHex.text = hex
-            val e = viewModel.selectedElement as? TemplateElement.QrElement
-            if (e != null) viewModel.updateElement(e.copy(qrColor = hex))
-        }
-        binding.cpvQrBgColor.onColorSelected = { hex ->
-            binding.tvQrBgColorHex.text = hex
-            val e = viewModel.selectedElement as? TemplateElement.QrElement
-            if (e != null) viewModel.updateElement(e.copy(backgroundColor = hex))
-        }
+        binding.cpvQrColor.onColorSelected = { hex -> applyQrColor(hex) }
+        binding.fieldQrColorHex.setOnClickListener { openQrColorHexDialog() }
+        binding.cpvQrBgColor.onColorSelected = { hex -> applyQrBgColor(hex) }
+        binding.fieldQrBgColorHex.setOnClickListener { openQrBgColorHexDialog() }
 
         // Pixel shape spinner
         binding.spinnerPixelShape.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
@@ -297,9 +340,9 @@ class QrPropertiesFragment : Fragment(), PropertyFragment {
         updating = true
         binding.etHost.setText(el.host)
         binding.cpvQrColor.colorHex = el.qrColor
-        binding.tvQrColorHex.text = el.qrColor
+        binding.fieldQrColorHex.text = el.qrColor
         binding.cpvQrBgColor.colorHex = el.backgroundColor
-        binding.tvQrBgColorHex.text = el.backgroundColor
+        binding.fieldQrBgColorHex.text = el.backgroundColor
         binding.spinnerPixelShape.setSelection(pixelShapeValues.indexOf(el.pixelShape).coerceAtLeast(0))
         binding.spinnerEyeShape.setSelection(eyeShapeValues.indexOf(el.eyeShape).coerceAtLeast(0))
         val logoVal = (el.logoSizeFraction * 100f).coerceIn(5f, 33f)
@@ -348,4 +391,47 @@ class QrPropertiesFragment : Fragment(), PropertyFragment {
     }
 
     override fun onDestroyView() { super.onDestroyView(); _binding = null }
+
+    private fun openQrColorHexDialog() {
+        val e = viewModel.selectedElement as? TemplateElement.QrElement ?: return
+        ColorHexDialogSupport.showDialog(
+            fragment = this,
+            requestKey = REQ_QR_COLOR_HEX,
+            dialogTag = QR_COLOR_DIALOG_TAG,
+            initialHex = e.qrColor,
+            enableAlpha = binding.cpvQrColor.enableAlpha
+        )
+    }
+
+    private fun openQrBgColorHexDialog() {
+        val e = viewModel.selectedElement as? TemplateElement.QrElement ?: return
+        ColorHexDialogSupport.showDialog(
+            fragment = this,
+            requestKey = REQ_QR_BG_COLOR_HEX,
+            dialogTag = QR_BG_COLOR_DIALOG_TAG,
+            initialHex = e.backgroundColor,
+            enableAlpha = binding.cpvQrBgColor.enableAlpha
+        )
+    }
+
+    private fun applyQrColor(hex: String) {
+        binding.fieldQrColorHex.text = hex
+        if (binding.cpvQrColor.colorHex != hex) binding.cpvQrColor.colorHex = hex
+        val e = viewModel.selectedElement as? TemplateElement.QrElement ?: return
+        if (e.qrColor != hex) viewModel.updateElement(e.copy(qrColor = hex))
+    }
+
+    private fun applyQrBgColor(hex: String) {
+        binding.fieldQrBgColorHex.text = hex
+        if (binding.cpvQrBgColor.colorHex != hex) binding.cpvQrBgColor.colorHex = hex
+        val e = viewModel.selectedElement as? TemplateElement.QrElement ?: return
+        if (e.backgroundColor != hex) viewModel.updateElement(e.copy(backgroundColor = hex))
+    }
+
+    companion object {
+        private const val REQ_QR_COLOR_HEX = "req_qr_color_hex"
+        private const val REQ_QR_BG_COLOR_HEX = "req_qr_bg_color_hex"
+        private const val QR_COLOR_DIALOG_TAG = "qr_color_hex_dialog"
+        private const val QR_BG_COLOR_DIALOG_TAG = "qr_bg_color_hex_dialog"
+    }
 }

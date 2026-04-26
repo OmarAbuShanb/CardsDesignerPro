@@ -4,11 +4,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import dev.anonymous.cardsdesignerpro.data.model.Template
 import dev.anonymous.cardsdesignerpro.databinding.ItemTemplateSelectionBinding
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class SelectionItem(
-    val template: Template,
+    val id: String,
+    val name: String,
     var isSelected: Boolean = true,
     val statusText: String? = null
 )
@@ -33,7 +35,7 @@ class TemplateSelectionAdapter(
         }
 
         fun bind(item: SelectionItem) {
-            binding.tvTemplateName.text = item.template.name
+            binding.tvTemplateName.text = item.name
             binding.checkbox.isChecked = item.isSelected
             if (item.statusText != null) {
                 binding.tvTemplateStatus.visibility = View.VISIBLE
@@ -49,6 +51,6 @@ class TemplateSelectionAdapter(
 
     override fun onBindViewHolder(holder: VH, position: Int) = holder.bind(items[position])
     override fun getItemCount() = items.size
-    
-    fun getSelectedIds(): Set<String> = items.filter { it.isSelected }.map { it.template.id }.toSet()
+
+    fun getSelectedIds(): Set<String> = items.filter { it.isSelected }.map { it.id }.toSet()
 }

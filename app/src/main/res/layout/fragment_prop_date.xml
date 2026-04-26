@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -44,17 +43,12 @@
                 android:layout_height="40dp"
                 android:layout_marginEnd="12dp" />
 
-            <TextView
-                android:id="@+id/tv_color_hex"
+            <dev.anonymous.cardsdesignerpro.common.widget.ColorHexFieldView
+                android:id="@+id/field_text_color_hex"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="monospace"
-                android:text="#000000"
-                android:textAppearance="?attr/textAppearanceBodyMedium"
-                tools:ignore="HardcodedText" />
+                android:layout_height="wrap_content" />
         </LinearLayout>
 
-        <!-- Background color -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -75,15 +69,11 @@
                 android:layout_height="40dp"
                 android:layout_marginEnd="12dp" />
 
-            <TextView
-                android:id="@+id/tv_bg_color_hex"
-                android:layout_width="0dp"
+            <dev.anonymous.cardsdesignerpro.common.widget.ColorHexFieldView
+                android:id="@+id/field_bg_color_hex"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:fontFamily="monospace"
-                android:text="—"
-                android:textAppearance="?attr/textAppearanceBodyMedium"
-                tools:ignore="HardcodedText" />
+                android:layout_marginEnd="8dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_clear_bg_color"
@@ -131,7 +121,6 @@
             android:valueTo="100.0"
             app:labelBehavior="floating" />
 
-        <!-- Text stroke -->
         <com.google.android.material.checkbox.MaterialCheckBox
             android:id="@+id/cb_text_stroke"
             android:layout_width="match_parent"
@@ -166,14 +155,10 @@
                     android:layout_height="40dp"
                     android:layout_marginEnd="12dp" />
 
-                <TextView
-                    android:id="@+id/tv_stroke_color_hex"
+                <dev.anonymous.cardsdesignerpro.common.widget.ColorHexFieldView
+                    android:id="@+id/field_stroke_color_hex"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="monospace"
-                    android:text="#000000"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
-                    tools:ignore="HardcodedText" />
+                    android:layout_height="wrap_content" />
             </LinearLayout>
 
             <TextView

@@ -9,9 +9,10 @@ import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import dev.anonymous.cardsdesignerpro.R
-import dev.anonymous.cardsdesignerpro.databinding.FragmentPropTextBinding
 import dev.anonymous.cardsdesignerpro.data.model.TemplateElement
 import dev.anonymous.cardsdesignerpro.data.model.TextAlign
+import dev.anonymous.cardsdesignerpro.databinding.FragmentPropTextBinding
+import dev.anonymous.cardsdesignerpro.ui.common.ColorHexDialogSupport
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorUiState
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel.Companion.MAX_TEXT_SIZE_SP
@@ -50,9 +51,34 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupColorHexDialogResultListeners()
         setupFontSpinner()
         populateFrom(viewModel.selectedElement as? TemplateElement.TextElement ?: return)
         setupListeners()
+    }
+
+    private fun setupColorHexDialogResultListeners() {
+        ColorHexDialogSupport.registerResultListener(
+            fragment = this,
+            owner = viewLifecycleOwner,
+            requestKey = REQ_TEXT_COLOR_HEX
+        ) { hex ->
+            applyTextColor(hex)
+        }
+        ColorHexDialogSupport.registerResultListener(
+            fragment = this,
+            owner = viewLifecycleOwner,
+            requestKey = REQ_BG_COLOR_HEX
+        ) { hex ->
+            applyBgColor(hex)
+        }
+        ColorHexDialogSupport.registerResultListener(
+            fragment = this,
+            owner = viewLifecycleOwner,
+            requestKey = REQ_STROKE_COLOR_HEX
+        ) { hex ->
+            applyStrokeColor(hex)
+        }
     }
 
     private fun setupFontSpinner() {
@@ -62,70 +88,59 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
 
     private fun populateFrom(el: TemplateElement.TextElement) {
         updating = true
-        // Text: only update if changed (setText triggers re-measure → scroll reset)
+
         val showText = if (el.text == getString(R.string.default_text_placeholder)) "" else el.text
         if (binding.etText.text.toString() != showText) {
             binding.etText.setText(showText)
             binding.etText.setSelection(showText.length)
         }
-        // Text color
-        if (binding.cpvTextColor.colorHex != el.textColor) binding.cpvTextColor.colorHex = el.textColor
-        binding.tvTextColorHex.text = el.textColor
 
-        // Background color — null means "no background"
+        if (binding.cpvTextColor.colorHex != el.textColor) binding.cpvTextColor.colorHex = el.textColor
+        binding.fieldTextColorHex.text = el.textColor
+
         if (el.bgColor != null) {
             if (binding.cpvBgColor.colorHex != el.bgColor) binding.cpvBgColor.colorHex = el.bgColor
-            binding.tvBgColorHex.text = el.bgColor
+            binding.fieldBgColorHex.text = el.bgColor
             binding.btnClearBgColor.visibility = View.VISIBLE
         } else {
-            // Show opaque white in the picker (so alpha starts at 255 when user opens it)
-            // but visually communicate "no color" via text.
             binding.cpvBgColor.colorHex = "#FFFFFFFF"
-            binding.tvBgColorHex.text = getString(R.string.prop_no_bg_color)
+            binding.fieldBgColorHex.text = getString(R.string.prop_no_bg_color)
             binding.btnClearBgColor.visibility = View.GONE
         }
 
-        // Bold: guard to avoid spurious setOnCheckedChangeListener → requestLayout
         if (binding.cbBold.isChecked != el.isBold) binding.cbBold.isChecked = el.isBold
 
-        // Slider: guard setValue (also fires listener which could loop)
-        val targetSize = kotlin.math.round(el.textSizeSp)
-            .coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP)
+        val targetSize = kotlin.math.round(el.textSizeSp).coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP)
         if (binding.sliderFontSize.value != targetSize) {
             binding.sliderFontSize.value = targetSize
         }
         binding.tvFontSizeLabel.text = getString(R.string.prop_font_size) + ": ${targetSize.toInt()}"
-        
-        // Text stroke
+
         val hasStroke = el.textStrokeWidth > 0f
         if (binding.cbTextStroke.isChecked != hasStroke) binding.cbTextStroke.isChecked = hasStroke
         binding.layoutTextStrokeOptions.visibility = if (hasStroke) View.VISIBLE else View.GONE
-        
+
         val targetStroke = el.textStrokeWidth.coerceAtLeast(1f).coerceAtMost(10f)
         if (binding.sliderTextStroke.value != targetStroke) {
             binding.sliderTextStroke.value = targetStroke
         }
         binding.tvStrokeSizeLabel.text = getString(R.string.prop_text_stroke) + ": ${targetStroke.toInt()}"
         if (binding.cpvStrokeColor.colorHex != el.textStrokeColor) binding.cpvStrokeColor.colorHex = el.textStrokeColor
-        binding.tvStrokeColorHex.text = el.textStrokeColor
+        binding.fieldStrokeColorHex.text = el.textStrokeColor
 
-        // Update Font Adapter preview
         val previewStr = if (showText.isBlank()) "نص تجريبي" else showText
         if (fontAdapter?.previewText != previewStr) {
             fontAdapter?.previewText = previewStr
             fontAdapter?.notifyDataSetChanged()
         }
 
-        // Spinner: Spinner.setSelection() ALWAYS calls requestLayout() even for same pos.
-        // Guard it so we only call setSelection when position truly changes → no scroll reset.
         val fontIdx = getAvailableFonts(requireContext()).indexOfFirst { it.second == el.fontName }.coerceAtLeast(0)
         if (binding.spinnerFont.selectedItemPosition != fontIdx) binding.spinnerFont.setSelection(fontIdx)
 
-        // Text alignment toggle
         val alignBtnId = when (el.textAlign) {
-            TextAlign.START  -> R.id.btn_align_start
+            TextAlign.START -> R.id.btn_align_start
             TextAlign.CENTER -> R.id.btn_align_center
-            TextAlign.END    -> R.id.btn_align_end
+            TextAlign.END -> R.id.btn_align_end
         }
         if (binding.toggleTextAlign.checkedButtonId != alignBtnId) {
             binding.toggleTextAlign.check(alignBtnId)
@@ -142,44 +157,38 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
             if (updating) return@doAfterTextChanged
             val el = viewModel.selectedElement as? TemplateElement.TextElement ?: return@doAfterTextChanged
             val newText = text.toString().ifEmpty { getString(R.string.default_text_placeholder) }
-            if (el.text == newText) return@doAfterTextChanged   // no real change
+            if (el.text == newText) return@doAfterTextChanged
             val updated = el.copy(text = newText)
             viewModel.updateElement(updated)
             viewModel.resizeTextElementToFit(updated)
         }
-        binding.cpvTextColor.onColorSelected = { hex ->
-            binding.tvTextColorHex.text = hex
-            val el = viewModel.selectedElement as? TemplateElement.TextElement
-            if (el != null && el.textColor != hex) viewModel.updateElement(el.copy(textColor = hex))
-        }
-        binding.cpvBgColor.onColorSelected = { hex ->
-            binding.tvBgColorHex.text = hex
-            val el = viewModel.selectedElement as? TemplateElement.TextElement
-            if (el != null && el.bgColor != hex) viewModel.updateElement(el.copy(bgColor = hex))
-        }
-        binding.btnClearBgColor.setOnClickListener {
-            val el = viewModel.selectedElement as? TemplateElement.TextElement ?: return@setOnClickListener
-            viewModel.updateElement(el.copy(bgColor = null))
-        }
+
+        binding.cpvTextColor.onColorSelected = { hex -> applyTextColor(hex) }
+        binding.fieldTextColorHex.setOnClickListener { openTextColorHexDialog() }
+
+        binding.cpvBgColor.onColorSelected = { hex -> applyBgColor(hex) }
+        binding.fieldBgColorHex.setOnClickListener { openBgColorHexDialog() }
+        binding.btnClearBgColor.setOnClickListener { clearBgColor() }
+
         binding.cbBold.setOnCheckedChangeListener { _, isChecked ->
             if (updating) return@setOnCheckedChangeListener
             val el = viewModel.selectedElement as? TemplateElement.TextElement ?: return@setOnCheckedChangeListener
             if (el.isBold == isChecked) return@setOnCheckedChangeListener
             viewModel.updateElement(el.copy(isBold = isChecked))
         }
+
         binding.sliderFontSize.addOnChangeListener { _, size, _ ->
             binding.tvFontSizeLabel.text = getString(R.string.prop_font_size) + ": ${size.toInt()}"
             if (!updating) {
                 val el = viewModel.selectedElement as? TemplateElement.TextElement
                 if (el != null && el.textSizeSp != size) {
-                    // Uniform scale — same behavior as the bottom-right resize handle:
-                    // width and height scale proportionally so the text box keeps its shape.
                     val scaleFactor = size / el.textSizeSp.coerceAtLeast(0.1f)
-                    val newW = el.width  * scaleFactor
+                    val newW = el.width * scaleFactor
                     viewModel.scaleTextFontSize(el.id, size, newW)
                 }
             }
         }
+
         binding.cbTextStroke.setOnCheckedChangeListener { _, isChecked ->
             if (updating) return@setOnCheckedChangeListener
             val el = viewModel.selectedElement as? TemplateElement.TextElement ?: return@setOnCheckedChangeListener
@@ -188,38 +197,41 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
                 viewModel.updateElement(el.copy(textStrokeWidth = newStroke))
             }
         }
-        binding.cpvStrokeColor.onColorSelected = { hex ->
-            binding.tvStrokeColorHex.text = hex
-            val el = viewModel.selectedElement as? TemplateElement.TextElement
-            if (el != null && el.textStrokeColor != hex) viewModel.updateElement(el.copy(textStrokeColor = hex))
-        }
+
+        binding.cpvStrokeColor.onColorSelected = { hex -> applyStrokeColor(hex) }
+        binding.fieldStrokeColorHex.setOnClickListener { openStrokeColorHexDialog() }
+
         binding.sliderTextStroke.addOnChangeListener { _, size, _ ->
             binding.tvStrokeSizeLabel.text = getString(R.string.prop_text_stroke) + ": ${size.toInt()}"
             if (!updating && binding.cbTextStroke.isChecked) {
                 val el = viewModel.selectedElement as? TemplateElement.TextElement
-                if (el != null && el.textStrokeWidth != size)
+                if (el != null && el.textStrokeWidth != size) {
                     viewModel.updateElement(el.copy(textStrokeWidth = size))
+                }
             }
         }
+
         binding.spinnerFont.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
                 if (updating) return
                 val el = viewModel.selectedElement as? TemplateElement.TextElement ?: return
                 val newFont = getAvailableFonts(requireContext())[pos].second
-                if (el.fontName == newFont) return   // spurious fire from setSelection()
+                if (el.fontName == newFont) return
                 val updated = el.copy(fontName = newFont)
                 viewModel.updateElement(updated)
                 viewModel.resizeTextElementToFit(updated)
             }
+
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
+
         binding.toggleTextAlign.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (!isChecked || updating) return@addOnButtonCheckedListener
             val el = viewModel.selectedElement as? TemplateElement.TextElement ?: return@addOnButtonCheckedListener
             val newAlign = when (checkedId) {
-                R.id.btn_align_start  -> TextAlign.START
-                R.id.btn_align_end    -> TextAlign.END
-                else                  -> TextAlign.CENTER
+                R.id.btn_align_start -> TextAlign.START
+                R.id.btn_align_end -> TextAlign.END
+                else -> TextAlign.CENTER
             }
             if (el.textAlign != newAlign) viewModel.updateElement(el.copy(textAlign = newAlign))
         }
@@ -236,5 +248,78 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    private fun openTextColorHexDialog() {
+        val el = viewModel.selectedElement as? TemplateElement.TextElement ?: return
+        ColorHexDialogSupport.showDialog(
+            fragment = this,
+            requestKey = REQ_TEXT_COLOR_HEX,
+            dialogTag = TEXT_COLOR_DIALOG_TAG,
+            initialHex = el.textColor,
+            enableAlpha = binding.cpvTextColor.enableAlpha
+        )
+    }
+
+    private fun openBgColorHexDialog() {
+        val el = viewModel.selectedElement as? TemplateElement.TextElement ?: return
+        ColorHexDialogSupport.showDialog(
+            fragment = this,
+            requestKey = REQ_BG_COLOR_HEX,
+            dialogTag = BG_COLOR_DIALOG_TAG,
+            initialHex = el.bgColor ?: binding.cpvBgColor.colorHex,
+            enableAlpha = binding.cpvBgColor.enableAlpha
+        )
+    }
+
+    private fun openStrokeColorHexDialog() {
+        val el = viewModel.selectedElement as? TemplateElement.TextElement ?: return
+        ColorHexDialogSupport.showDialog(
+            fragment = this,
+            requestKey = REQ_STROKE_COLOR_HEX,
+            dialogTag = STROKE_COLOR_DIALOG_TAG,
+            initialHex = el.textStrokeColor,
+            enableAlpha = binding.cpvStrokeColor.enableAlpha
+        )
+    }
+
+    private fun applyTextColor(hex: String) {
+        binding.fieldTextColorHex.text = hex
+        if (binding.cpvTextColor.colorHex != hex) binding.cpvTextColor.colorHex = hex
+        val el = viewModel.selectedElement as? TemplateElement.TextElement
+        if (el != null && el.textColor != hex) viewModel.updateElement(el.copy(textColor = hex))
+    }
+
+    private fun applyBgColor(hex: String) {
+        binding.fieldBgColorHex.text = hex
+        binding.btnClearBgColor.visibility = View.VISIBLE
+        if (binding.cpvBgColor.colorHex != hex) binding.cpvBgColor.colorHex = hex
+        val el = viewModel.selectedElement as? TemplateElement.TextElement
+        if (el != null && el.bgColor != hex) viewModel.updateElement(el.copy(bgColor = hex))
+    }
+
+    private fun clearBgColor() {
+        val el = viewModel.selectedElement as? TemplateElement.TextElement ?: return
+        if (el.bgColor == null) return
+        viewModel.updateElement(el.copy(bgColor = null))
+        binding.cpvBgColor.colorHex = "#FFFFFFFF"
+        binding.fieldBgColorHex.text = getString(R.string.prop_no_bg_color)
+        binding.btnClearBgColor.visibility = View.GONE
+    }
+
+    private fun applyStrokeColor(hex: String) {
+        binding.fieldStrokeColorHex.text = hex
+        if (binding.cpvStrokeColor.colorHex != hex) binding.cpvStrokeColor.colorHex = hex
+        val el = viewModel.selectedElement as? TemplateElement.TextElement
+        if (el != null && el.textStrokeColor != hex) viewModel.updateElement(el.copy(textStrokeColor = hex))
+    }
+
+    companion object {
+        private const val REQ_TEXT_COLOR_HEX = "req_text_color_hex"
+        private const val REQ_BG_COLOR_HEX = "req_text_bg_color_hex"
+        private const val REQ_STROKE_COLOR_HEX = "req_text_stroke_color_hex"
+        private const val TEXT_COLOR_DIALOG_TAG = "text_color_hex_dialog"
+        private const val BG_COLOR_DIALOG_TAG = "text_bg_color_hex_dialog"
+        private const val STROKE_COLOR_DIALOG_TAG = "text_stroke_color_hex_dialog"
     }
 }

@@ -12,7 +12,6 @@ import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
 import android.util.AttributeSet
-import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import androidx.appcompat.content.res.AppCompatResources
@@ -694,21 +693,6 @@ class CardCanvasView @JvmOverloads constructor(
             } else {
                 activeTextCornerResizeId = null
             }
-            if (el is TemplateElement.TextElement || isTextEl(el)) {
-                val kind = when (el) {
-                    is TemplateElement.TextElement -> "TextElement"
-                    is TemplateElement.UsernameElement -> "UsernameElement"
-                    is TemplateElement.PasswordElement -> "PasswordElement"
-                    is TemplateElement.DateElement -> "DateElement"
-                    else -> el::class.java.simpleName
-                }
-                Log.d(
-                    TAG,
-                    "DOWN corner-resize id=$id kind=$kind " +
-                        "startW=${resizeStartW} startH=${resizeStartH} startSp=$resizeStartTextSizeSp " +
-                        "scaleX=$scaleX"
-                )
-            }
             return
         }
         // Shape-only pill handles: use a NARROW RECTANGULAR hit zone along each edge
@@ -794,18 +778,6 @@ class CardCanvasView @JvmOverloads constructor(
                         (resizeStartW * effectiveScale).coerceAtLeast(20f)
                     }
 
-                    val kind = when (el) {
-                        is TemplateElement.TextElement -> "TextElement"
-                        is TemplateElement.UsernameElement -> "UsernameElement"
-                        is TemplateElement.PasswordElement -> "PasswordElement"
-                        is TemplateElement.DateElement -> "DateElement"
-                        else -> el::class.java.simpleName
-                    }
-                    Log.d(
-                        TAG,
-                        "MOVE corner-resize id=$id kind=$kind " +
-                            "rawScale=$rawScale newSp=$newSizeSp newW=$newW localDx=$localDx scaleX=$scaleX"
-                    )
                     listener?.onTextFontScaled(id, newSizeSp, newW, scaleX)
                 } else if (resizeStartAspect > 0f) {
                     // Aspect-locked: Image, QR — use X-axis movement
@@ -864,10 +836,6 @@ class CardCanvasView @JvmOverloads constructor(
                 val rawW = (resizeStartW + (x - resizeStartX) / scaleX).coerceAtLeast(10f)
                 if (el is TemplateElement.TextElement) {
                     // TextElement: no snap-to-square; height is auto-recalculated by ViewModel
-                    Log.d(
-                        TAG,
-                        "MOVE width-resize id=$id kind=TextElement rawW=$rawW startW=$resizeStartW scaleX=$scaleX"
-                    )
                     listener?.onTextWidthResized(id, rawW, scaleX)
                 } else {
                     // ShapeElement: snap to square
@@ -1022,6 +990,5 @@ class CardCanvasView @JvmOverloads constructor(
         private val PREVIEW_EXECUTOR = java.util.concurrent.Executors.newSingleThreadExecutor()
         /** Snap threshold in screen pixels — keeps snap zone consistent at ~2mm regardless of zoom. */
         private const val SNAP_THRESHOLD_PX = 12f
-        private const val TAG = "TextResizeDiag.Canvas"
     }
 }

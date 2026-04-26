@@ -1,8 +1,8 @@
 package dev.anonymous.cardsdesignerpro.ui.editor
 
 import android.os.Bundle
-import android.util.Log
 import android.view.View
+import android.view.ViewGroup
 import androidx.activity.addCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -13,6 +13,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dev.anonymous.cardsdesignerpro.R
 import dev.anonymous.cardsdesignerpro.data.model.CardSide
 import dev.anonymous.cardsdesignerpro.databinding.ActivityEditorBinding
+import dev.anonymous.cardsdesignerpro.ui.common.TemplateNameDialogFragment
 import dev.anonymous.cardsdesignerpro.ui.editor.canvas.CardCanvasView
 import kotlinx.coroutines.launch
 
@@ -20,7 +21,6 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
 
     companion object {
         const val EXTRA_TEMPLATE_ID = "extra_template_id"
-        private const val TAG = "TextResizeDiag.Activity"
         private const val DEFAULT_BOTTOM_SHEET_RATIO = 0.45f
     }
 
@@ -96,6 +96,25 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
 
     private fun setupCanvas() {
         binding.cardCanvas.listener = this
+        configureCanvasFlipBounds()
+    }
+
+    /**
+     * The side-flip animation rotates the canvas in 3D and briefly lifts its Z value.
+     * Without disabling clipping on ancestor containers, parts of the card can be cut off
+     * while the transformed bounds exceed the normal layout slot.
+     *
+     * Applied on every Activity recreation to stay correct across configuration changes.
+     */
+    private fun configureCanvasFlipBounds() {
+        var parent = binding.cardCanvas.parent
+        while (parent is ViewGroup) {
+            parent.clipChildren = false
+            parent.clipToPadding = false
+            parent = parent.parent
+        }
+        // Reduce perspective distortion so the flip doesn't appear to "grow" excessively.
+        binding.cardCanvas.cameraDistance = 12000f * resources.displayMetrics.density
     }
 
     private fun setupBackSideSwitch() {
@@ -388,35 +407,24 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
         viewModel.resizeShapeHeight(id, newY, newHeight)
 
     override fun onTextWidthResized(id: String, newWidth: Float, pxPerDp: Float) =
-        viewModel.resizeTextWidth(id, newWidth, pxPerDp).also {
-            Log.d(TAG, "CALLBACK width-resize id=$id newW=$newWidth pxPerDp=$pxPerDp")
-        }
+        viewModel.resizeTextWidth(id, newWidth, pxPerDp)
 
     override fun onTextFontScaled(id: String, newSizeSp: Float, newWidth: Float, pxPerDp: Float) =
-        viewModel.scaleTextFontSize(id, newSizeSp, newWidth, pxPerDp).also {
-            Log.d(
-                TAG,
-                "CALLBACK corner-resize id=$id newSp=$newSizeSp newW=$newWidth pxPerDp=$pxPerDp"
-            )
-        }
+        viewModel.scaleTextFontSize(id, newSizeSp, newWidth, pxPerDp)
 
     // Start drag session: VM locks wrapping bucket for jitter-free corner-resize.
     override fun onTextCornerResizeStart(id: String, pxPerDp: Float) =
-        viewModel.beginTextCornerResize(id, pxPerDp).also {
-            Log.d(TAG, "CALLBACK corner-resize START id=$id pxPerDp=$pxPerDp")
-        }
+        viewModel.beginTextCornerResize(id, pxPerDp)
 
     // End drag session: VM applies one final natural wrap/height normalization.
     override fun onTextCornerResizeEnd(id: String, pxPerDp: Float) =
-        viewModel.endTextCornerResize(id, pxPerDp).also {
-            Log.d(TAG, "CALLBACK corner-resize END id=$id pxPerDp=$pxPerDp")
-        }
+        viewModel.endTextCornerResize(id, pxPerDp)
 
     override fun onElementDeleteRequested(id: String) {
         viewModel.currentElements.firstOrNull { it.id == id } ?: return
         MaterialAlertDialogBuilder(this)
-            .setTitle("حذف العنصر")
-            .setMessage("هل تريد حذف هذا العنصر؟")
+            .setTitle(R.string.editor_delete_element_title)
+            .setMessage(R.string.editor_delete_element_message)
             .setNegativeButton(R.string.btn_cancel, null)
             .setPositiveButton(R.string.btn_delete) { _, _ ->
                 viewModel.deleteElement(id)
@@ -432,13 +440,13 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
             val name = bundle.getString("name")
             if (!name.isNullOrEmpty()) viewModel.renameTemplate(name)
         }
-        if (supportFragmentManager.findFragmentByTag(dev.anonymous.cardsdesignerpro.ui.common.TemplateNameDialogFragment.TAG) == null) {
-            dev.anonymous.cardsdesignerpro.ui.common.TemplateNameDialogFragment.newInstance(
+        if (supportFragmentManager.findFragmentByTag(TemplateNameDialogFragment.TAG) == null) {
+            TemplateNameDialogFragment.newInstance(
                 titleRes = R.string.dialog_rename_template_title,
                 positiveBtnRes = R.string.btn_save,
                 initialName = viewModel.currentTemplate.name,
                 requestKey = reqKey
-            ).show(supportFragmentManager, dev.anonymous.cardsdesignerpro.ui.common.TemplateNameDialogFragment.TAG)
+            ).show(supportFragmentManager, TemplateNameDialogFragment.TAG)
         }
     }
 

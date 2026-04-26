@@ -56,7 +56,8 @@ class ExportCardsActivity : AppCompatActivity() {
     }
 
     companion object {
-        private const val PREF_NOTIFICATION_PERMISSION_REQUESTED = "pref_notification_permission_requested"
+        private const val PREF_NOTIFICATION_PERMISSION_REQUESTED =
+            "pref_notification_permission_requested"
     }
 
     // ── File pickers ──────────────────────────────────────────────────────────
@@ -159,12 +160,13 @@ class ExportCardsActivity : AppCompatActivity() {
         setupLayoutSpinner()
         setupSpacingSliders()
         setupPageSizeSpinner()
+        setupPageNumbersCheckbox()
         setupQualitySpinner()
         setupFlipEdgeToggle()
         setupFrontOnlyCheckbox()
         setupExportButtons()
         observeViewModel()
-        
+
         checkIntentForDualPreview(intent)
         handleIncomingFileIntent(intent)
     }
@@ -194,7 +196,7 @@ class ExportCardsActivity : AppCompatActivity() {
     private fun setupBottomSheetDrag() {
         var initialDragY = 0f
         var initialHeight = 0
-        
+
         // Adjust initial height in landscape to prevent obscuring the whole screen
         if (resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
             binding.dragHeaderArea.post {
@@ -228,10 +230,12 @@ class ExportCardsActivity : AppCompatActivity() {
     private fun setupFileList() {
         fileAdapter = SelectedFileAdapter { uri -> viewModel.removeFile(uri) }
         shortFileAdapter = SelectedFileAdapter { uri -> viewModel.removeFile(uri, isShort = true) }
-        
-        val touchHelper = androidx.recyclerview.widget.ItemTouchHelper(object : androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(
-            androidx.recyclerview.widget.ItemTouchHelper.UP or androidx.recyclerview.widget.ItemTouchHelper.DOWN, 0
-        ) {
+
+        val touchHelper = androidx.recyclerview.widget.ItemTouchHelper(object :
+            androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(
+                androidx.recyclerview.widget.ItemTouchHelper.UP or androidx.recyclerview.widget.ItemTouchHelper.DOWN,
+                0
+            ) {
             override fun onMove(
                 recyclerView: androidx.recyclerview.widget.RecyclerView,
                 viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder,
@@ -244,8 +248,12 @@ class ExportCardsActivity : AppCompatActivity() {
                 return true
             }
 
-            override fun onSwiped(viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder, direction: Int) {}
-            
+            override fun onSwiped(
+                viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder,
+                direction: Int
+            ) {
+            }
+
             override fun clearView(
                 recyclerView: androidx.recyclerview.widget.RecyclerView,
                 viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder
@@ -255,14 +263,14 @@ class ExportCardsActivity : AppCompatActivity() {
             }
         })
 
-        fileAdapter.onStartDrag = { 
+        fileAdapter.onStartDrag = {
             fileAdapter.startDragSession()
-            touchHelper.startDrag(it) 
+            touchHelper.startDrag(it)
         }
         fileAdapter.onDropCommit = { newOrder ->
             viewModel.setFilesOrder(newOrder)
         }
-        
+
         binding.rvSelectedFiles.apply {
             adapter = fileAdapter
             layoutManager = LinearLayoutManager(this@ExportCardsActivity)
@@ -270,9 +278,11 @@ class ExportCardsActivity : AppCompatActivity() {
             touchHelper.attachToRecyclerView(this)
         }
 
-        val touchHelperShort = androidx.recyclerview.widget.ItemTouchHelper(object : androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(
-            androidx.recyclerview.widget.ItemTouchHelper.UP or androidx.recyclerview.widget.ItemTouchHelper.DOWN, 0
-        ) {
+        val touchHelperShort = androidx.recyclerview.widget.ItemTouchHelper(object :
+            androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(
+                androidx.recyclerview.widget.ItemTouchHelper.UP or androidx.recyclerview.widget.ItemTouchHelper.DOWN,
+                0
+            ) {
             override fun onMove(
                 recyclerView: androidx.recyclerview.widget.RecyclerView,
                 viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder,
@@ -285,8 +295,12 @@ class ExportCardsActivity : AppCompatActivity() {
                 return true
             }
 
-            override fun onSwiped(viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder, direction: Int) {}
-            
+            override fun onSwiped(
+                viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder,
+                direction: Int
+            ) {
+            }
+
             override fun clearView(
                 recyclerView: androidx.recyclerview.widget.RecyclerView,
                 viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder
@@ -296,14 +310,14 @@ class ExportCardsActivity : AppCompatActivity() {
             }
         })
 
-        shortFileAdapter.onStartDrag = { 
+        shortFileAdapter.onStartDrag = {
             shortFileAdapter.startDragSession()
-            touchHelperShort.startDrag(it) 
+            touchHelperShort.startDrag(it)
         }
         shortFileAdapter.onDropCommit = { newOrder ->
             viewModel.setFilesOrder(newOrder, isShort = true)
         }
-        
+
         binding.rvSelectedShortFiles.apply {
             adapter = shortFileAdapter
             layoutManager = LinearLayoutManager(this@ExportCardsActivity)
@@ -338,7 +352,8 @@ class ExportCardsActivity : AppCompatActivity() {
     private fun setupLayoutSpinner() {
         val presets = CardLayoutPreset.ALL
         val labels = presets.map { preset ->
-            val suffix = if (preset.isRecommended) getString(R.string.label_recommended_suffix) else ""
+            val suffix =
+                if (preset.isRecommended) getString(R.string.label_recommended_suffix) else ""
             getString(
                 R.string.layout_preset_format,
                 preset.totalCards,
@@ -355,6 +370,7 @@ class ExportCardsActivity : AppCompatActivity() {
                 override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
                     viewModel.updateCardLayout(pos)
                 }
+
                 override fun onNothingSelected(p: AdapterView<*>?) {}
             }
     }
@@ -397,17 +413,24 @@ class ExportCardsActivity : AppCompatActivity() {
                 override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
                     viewModel.updateQuality(qualities[pos])
                 }
+
                 override fun onNothingSelected(p: AdapterView<*>?) {}
             }
     }
 
+    private fun setupPageNumbersCheckbox() {
+        binding.checkboxPageNumbers.setOnCheckedChangeListener { _, checked ->
+            viewModel.updateShowPageNumbers(checked)
+        }
+    }
+
     /** Maps each [ExportQuality] to its string resource. */
     private fun ExportQuality.labelRes(): Int = when (this) {
-        ExportQuality.FULL   -> R.string.quality_full
-        ExportQuality.HIGH   -> R.string.quality_high
-        ExportQuality.GOOD   -> R.string.quality_good
+        ExportQuality.FULL -> R.string.quality_full
+        ExportQuality.HIGH -> R.string.quality_high
+        ExportQuality.GOOD -> R.string.quality_good
         ExportQuality.MEDIUM -> R.string.quality_medium
-        ExportQuality.LOW    -> R.string.quality_low
+        ExportQuality.LOW -> R.string.quality_low
     }
 
     private fun setupFlipEdgeToggle() {
@@ -444,10 +467,14 @@ class ExportCardsActivity : AppCompatActivity() {
             this
         ) { _, bundle ->
             supportFragmentManager.clearFragmentResult(NotificationPermissionRationaleDialogFragment.REQUEST_KEY)
-            val action = bundle.getString(NotificationPermissionRationaleDialogFragment.RESULT_ACTION)
-                ?: return@setFragmentResultListener
+            val action =
+                bundle.getString(NotificationPermissionRationaleDialogFragment.RESULT_ACTION)
+                    ?: return@setFragmentResultListener
             val isSeparate =
-                bundle.getBoolean(NotificationPermissionRationaleDialogFragment.RESULT_IS_SEPARATE, false)
+                bundle.getBoolean(
+                    NotificationPermissionRationaleDialogFragment.RESULT_IS_SEPARATE,
+                    false
+                )
 
             when (action) {
                 NotificationPermissionRationaleDialogFragment.ACTION_REQUEST_PERMISSION ->
@@ -507,7 +534,8 @@ class ExportCardsActivity : AppCompatActivity() {
     }
 
     private fun shouldShowNotificationPermissionDialog(): Boolean {
-        val hasRequestedBefore = exportPrefs.getBoolean(PREF_NOTIFICATION_PERMISSION_REQUESTED, false)
+        val hasRequestedBefore =
+            exportPrefs.getBoolean(PREF_NOTIFICATION_PERMISSION_REQUESTED, false)
         return !hasRequestedBefore || shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
     }
 
@@ -523,7 +551,8 @@ class ExportCardsActivity : AppCompatActivity() {
 
         // Guard 1: file still being parsed
         if (state.isParsingFile) {
-            Snackbar.make(binding.root, R.string.error_file_still_parsing, Snackbar.LENGTH_SHORT).show()
+            Snackbar.make(binding.root, R.string.error_file_still_parsing, Snackbar.LENGTH_SHORT)
+                .show()
             return
         }
 
@@ -560,7 +589,7 @@ class ExportCardsActivity : AppCompatActivity() {
     /** Launches the appropriate PDF saver picker without any extra checks. */
     private fun doLaunchExport(isSeparate: Boolean) {
         val state = viewModel.uiState.value
-        val name  = viewModel.selectedTemplate?.name ?: "cards"
+        val name = viewModel.selectedTemplate?.name ?: "cards"
         if (isSeparate) {
             frontPdfSaver.launch("${name}_${getString(R.string.front_filename)}_${timestamp()}.pdf")
         } else {
@@ -581,27 +610,31 @@ class ExportCardsActivity : AppCompatActivity() {
 
         // Build description based on which fields have mismatches
         viewModel.uiState.value
-        val template     = viewModel.selectedTemplate
-        val userEl       = template?.elements
+        val template = viewModel.selectedTemplate
+        val userEl = template?.elements
             ?.filterIsInstance<dev.anonymous.cardsdesignerpro.data.model.TemplateElement.UsernameElement>()
             ?.firstOrNull { !it.isShortVariant }
-        val passEl       = template?.elements
+        val passEl = template?.elements
             ?.filterIsInstance<dev.anonymous.cardsdesignerpro.data.model.TemplateElement.PasswordElement>()
             ?.firstOrNull { !it.isShortVariant }
-        val hasUserEl    = userEl != null
-        val hasPassEl    = passEl != null
+        val hasUserEl = userEl != null
+        val hasPassEl = passEl != null
         val desc = when {
             hasUserEl && hasPassEl ->
                 getString(R.string.dialog_mismatch_desc, userEl.digitCount, passEl.digitCount)
+
             hasUserEl ->
                 getString(R.string.dialog_mismatch_desc_user_only, userEl.digitCount)
+
             hasPassEl ->
                 getString(R.string.dialog_mismatch_desc_pass_only, passEl.digitCount)
+
             else -> ""
         }
         dialogView.findViewById<android.widget.TextView>(R.id.tv_mismatch_desc).text = desc
 
-        val rv = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rv_mismatched)
+        val rv =
+            dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rv_mismatched)
         rv.layoutManager = LinearLayoutManager(this)
         rv.adapter = MismatchedRecordAdapter(mismatches)
 
@@ -633,10 +666,14 @@ class ExportCardsActivity : AppCompatActivity() {
             binding.layoutShortFilePicker.visibility = View.VISIBLE
             val shortParse = state.combinedShortParseResult
             val normalParse = state.combinedParseResult
-            
+
             if (shortParse != null && normalParse != null && shortParse.count > 0 && normalParse.count > 0 && shortParse.count != normalParse.count) {
                 binding.tvShortRecordsWarning.visibility = View.VISIBLE
-                binding.tvShortRecordsWarning.text = getString(R.string.short_numbers_warning_format, normalParse.count, shortParse.count)
+                binding.tvShortRecordsWarning.text = getString(
+                    R.string.short_numbers_warning_format,
+                    normalParse.count,
+                    shortParse.count
+                )
             } else {
                 binding.tvShortRecordsWarning.visibility = View.GONE
             }
@@ -675,9 +712,10 @@ class ExportCardsActivity : AppCompatActivity() {
         binding.stepperHSpacing.minValue = 0
         binding.stepperHSpacing.maxValue = 60
         if (binding.stepperHSpacing.value != state.settings.horizontalSpacingDp.toInt())
-            binding.stepperHSpacing.value = state.settings.horizontalSpacingDp.toInt().coerceIn(0, 60)
+            binding.stepperHSpacing.value =
+                state.settings.horizontalSpacingDp.toInt().coerceIn(0, 60)
         binding.tvHSpacingLabel.text = getString(R.string.label_horizontal_spacing)
-            
+
         binding.stepperVSpacing.minValue = 0
         binding.stepperVSpacing.maxValue = 60
         if (binding.stepperVSpacing.value != state.settings.verticalSpacingDp.toInt())
@@ -687,6 +725,12 @@ class ExportCardsActivity : AppCompatActivity() {
         val psIdx = PageSize.entries.indexOf(state.settings.pageSize).coerceAtLeast(0)
         if (binding.spinnerPageSize.selectedItemPosition != psIdx)
             binding.spinnerPageSize.setSelection(psIdx)
+
+        binding.checkboxPageNumbers.setOnCheckedChangeListener(null)
+        binding.checkboxPageNumbers.isChecked = state.settings.showPageNumbers
+        binding.checkboxPageNumbers.setOnCheckedChangeListener { _, checked ->
+            viewModel.updateShowPageNumbers(checked)
+        }
 
         // Quality
         val qIdx = ExportQuality.entries.indexOf(state.settings.quality).coerceAtLeast(0)
@@ -704,6 +748,7 @@ class ExportCardsActivity : AppCompatActivity() {
                         val path = el.imagePath
                         !path.startsWith("pack:") && !path.lowercase().endsWith(".svg")
                     }
+
                     else -> false
                 }
             }
@@ -752,7 +797,11 @@ class ExportCardsActivity : AppCompatActivity() {
         binding.pagePreviewBack.setQuality(state.settings.quality)
 
         // Front preview (not mirrored)
-        binding.pagePreview.bind(state.templates.getOrNull(state.selectedTemplateIndex), layout)
+        binding.pagePreview.bind(
+            template = state.templates.getOrNull(state.selectedTemplateIndex),
+            layout = layout,
+            showPageNumberPreview = state.settings.showPageNumbers
+        )
 
         // Back preview — mirrored + flipEdge
         binding.layoutBackSidePreview.visibility = if (showDual) View.VISIBLE else View.GONE
@@ -763,7 +812,8 @@ class ExportCardsActivity : AppCompatActivity() {
                 template = backT,
                 layout = state.backLayout,
                 isMirrored = true,
-                flipEdge = state.settings.flipEdge
+                flipEdge = state.settings.flipEdge,
+                showPageNumberPreview = state.settings.showPageNumbers
             )
         }
         updateFlipHint(state.settings.flipEdge)
@@ -809,6 +859,7 @@ class ExportCardsActivity : AppCompatActivity() {
                         R.string.export_failed_message,
                         Snackbar.LENGTH_SHORT
                     ).show()
+
                 is ExportEvent.Idle -> {}
             }
             viewModel.consumeEvent()
@@ -882,31 +933,32 @@ class ExportCardsActivity : AppCompatActivity() {
         val incomingType = intent.type
         val uris = when (action) {
             Intent.ACTION_VIEW -> intent.data?.let { listOf(it) }
-            
+
             Intent.ACTION_SEND -> {
-                val uri = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU)
+                val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
                     intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
                 else
                     @Suppress("DEPRECATION") intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
                 uri?.let { listOf(it) }
             }
-            
+
             Intent.ACTION_SEND_MULTIPLE -> {
-                val list = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU)
+                val list = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
                     intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java)
                 else
-                    @Suppress("DEPRECATION") intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)
+                    @Suppress("DEPRECATION") intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM)
 
                 if (!list.isNullOrEmpty()) {
                     list
                 } else {
-                    val single = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU)
+                    val single = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
                         intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
                     else
-                        @Suppress("DEPRECATION") intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+                        @Suppress("DEPRECATION") intent.getParcelableExtra(Intent.EXTRA_STREAM)
                     single?.let { listOf(it) }
                 }
             }
+
             else -> null
         } ?: return
 
@@ -915,7 +967,8 @@ class ExportCardsActivity : AppCompatActivity() {
         if (validUris.isEmpty()) return
 
         // 2. Persistent Permission with masked flags
-        val takeFlags = intent.flags and (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+        val takeFlags =
+            intent.flags and (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
         validUris.forEach { uri ->
             if (uri.scheme == "content") {
                 runCatching {
@@ -948,7 +1001,7 @@ class ExportCardsActivity : AppCompatActivity() {
 
         val name = queryFileName(uri) ?: return false
         return name.endsWith(".csv", true) ||
-               name.endsWith(".xls", true) ||
-               name.endsWith(".xlsx", true)
+                name.endsWith(".xls", true) ||
+                name.endsWith(".xlsx", true)
     }
 }

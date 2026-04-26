@@ -72,6 +72,7 @@
     <string name="label_horizontal_spacing">المسافة الأفقية</string>
     <string name="label_vertical_spacing">المسافة العمودية</string>
     <string name="label_page_size">حجم الصفحة</string>
+    <string name="label_page_numbers">ترقيم الصفحات</string>
 
     <!-- Editor and Default Templates -->
     <string name="flip_long_edge_desc">القلب على الحافة الطويلة</string>
@@ -139,6 +140,12 @@
     <string name="prop_bg_scale_crop">توسيط الأبعاد مع القص</string>
     <string name="prop_text_content">محتوى النص</string>
     <string name="prop_text_color">لون النص</string>
+    <string name="color_hex_dialog_title">تعديل كود اللون</string>
+    <string name="color_hex_dialog_quick_colors">ألوان جاهزة</string>
+    <string name="color_hex_dialog_hint">كود اللون (مثال: #FF5722)</string>
+    <string name="color_hex_dialog_invalid">كود اللون غير صحيح</string>
+    <string name="color_hex_dialog_color_item_cd">اختيار اللون %1$s</string>
+    <string name="color_hex_dialog_edit_icon_cd">تعديل كود اللون</string>
     <string name="prop_text_bg_color">لون خلفية النص</string>
     <string name="prop_bold">نص غامق</string>
     <string name="prop_font">نوع الخط</string>
@@ -301,4 +308,6 @@
     <string name="notification_permission_dialog_allow">السماح بالإشعارات</string>
     <string name="notification_permission_dialog_export_anyway">تصدير على أي حال</string>
     <string name="notification_permission_denied_export_continues">الإشعارات معطلة. سيستمر التصدير بدون عرض التقدم في إشعارات النظام.</string>
+    <string name="editor_delete_element_title">حذف العنصر</string>
+    <string name="editor_delete_element_message">هل تريد حذف هذا العنصر؟</string>
 </resources>

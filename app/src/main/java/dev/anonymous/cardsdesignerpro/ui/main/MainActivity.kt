@@ -9,6 +9,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -77,9 +78,40 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
 
+        setupDialogResults()
         setupRecyclerView()
         setupButtons()
         observeViewModel()
+    }
+
+    private fun setupDialogResults() {
+        supportFragmentManager.setFragmentResultListener(
+            ExportTemplatesDialogFragment.REQUEST_KEY,
+            this
+        ) { _, bundle ->
+            val selectedIds =
+                bundle.getStringArrayList(ExportTemplatesDialogFragment.RESULT_SELECTED_IDS)
+                    ?.filter { it.isNotBlank() }
+                    .orEmpty()
+            if (selectedIds.isEmpty()) return@setFragmentResultListener
+            pendingExportTemplateIds = selectedIds
+            exportLauncher.launch("CardsDesignerProTemplates.templates")
+        }
+
+        supportFragmentManager.setFragmentResultListener(
+            ImportTemplatesDialogFragment.REQUEST_KEY,
+            this
+        ) { _, bundle ->
+            val uriString = bundle.getString(ImportTemplatesDialogFragment.RESULT_URI)
+                ?: return@setFragmentResultListener
+            val selectedIds =
+                bundle.getStringArrayList(ImportTemplatesDialogFragment.RESULT_SELECTED_IDS)
+                    ?.filter { it.isNotBlank() }
+                    ?.toSet()
+                    .orEmpty()
+            if (selectedIds.isEmpty()) return@setFragmentResultListener
+            viewModel.confirmImport(Uri.parse(uriString), selectedIds)
+        }
     }
 
     private fun setupRecyclerView() {
@@ -225,96 +257,56 @@ class MainActivity : AppCompatActivity() {
 
     private fun showExportDialog() {
         val allTemplates = viewModel.templates.value
-        if (allTemplates == null || allTemplates.isEmpty()) {
+        if (allTemplates.isNullOrEmpty()) {
             snack(getString(R.string.no_templates_to_export))
             return
         }
 
-        var onSelectionUpdated: (() -> Unit)? = null
-        val items = allTemplates.map { SelectionItem(it, isSelected = true) }
-        val selectionAdapter = TemplateSelectionAdapter(items) {
-            onSelectionUpdated?.invoke()
+        val items = allTemplates.map { template ->
+            SelectionItem(
+                id = template.id,
+                name = template.name
+            )
         }
 
-        val view = layoutInflater.inflate(R.layout.dialog_select_templates, null)
-        val rv =
-            view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rv_select_templates)
-        rv.layoutManager = LinearLayoutManager(this)
-        rv.adapter = selectionAdapter
-
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.dialog_export_templates_title)
-            .setView(view)
-            .setNegativeButton(R.string.btn_cancel, null)
-            .setPositiveButton(R.string.btn_export_selected_templates) { _, _ ->
-                val selected = selectionAdapter.getSelectedIds()
-                if (selected.isNotEmpty()) {
-                    pendingExportTemplateIds = selected.toList()
-                    exportLauncher.launch("CardsDesignerProTemplates.templates")
-                }
-            }
-            .create()
-
-        dialog.show()
-        val btnPositive = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-        onSelectionUpdated = {
-            btnPositive.isEnabled = selectionAdapter.getSelectedIds().isNotEmpty()
+        showDialogOnce(ExportTemplatesDialogFragment.TAG) {
+            ExportTemplatesDialogFragment.newInstance(items)
         }
     }
 
     private fun showImportDialog(uri: Uri, zippedTemplates: List<Template>) {
-        val currentTemplates = viewModel.templates.value ?: emptyList()
+        val currentTemplates = (viewModel.templates.value ?: emptyList()).associateBy { it.id }
         val items = zippedTemplates.map { zipped ->
-            val current = currentTemplates.find { it.id == zipped.id }
+            val current = currentTemplates[zipped.id]
             val status = when {
                 current == null -> null // New, the user requested no text
                 zipped.version > current.version -> getString(R.string.status_newer_version)
                 zipped.version < current.version -> getString(R.string.status_older_version)
                 else -> getString(R.string.status_same_version)
             }
-            SelectionItem(zipped, isSelected = true, statusText = status)
+            SelectionItem(
+                id = zipped.id,
+                name = zipped.name,
+                statusText = status
+            )
         }
 
-        var onSelectionUpdated: (() -> Unit)? = null
-        val selectionAdapter = TemplateSelectionAdapter(items) {
-            onSelectionUpdated?.invoke()
+        showDialogOnce(ImportTemplatesDialogFragment.TAG) {
+            ImportTemplatesDialogFragment.newInstance(
+                uri = uri.toString(),
+                items = items
+            )
         }
-        val view = layoutInflater.inflate(R.layout.dialog_select_templates, null)
-        val rv =
-            view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rv_select_templates)
-        rv.layoutManager = LinearLayoutManager(this)
-        rv.adapter = selectionAdapter
+    }
 
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.dialog_import_templates_title)
-            .setView(view)
-            .setNegativeButton(R.string.btn_cancel, null)
-            .setPositiveButton(R.string.btn_import_selected_templates) { _, _ ->
-                val selected = selectionAdapter.getSelectedIds()
-                if (selected.isNotEmpty()) {
-                    // Check for overrides
-                    val hasOverrides = items.any { it.isSelected && it.statusText != null }
-                    if (hasOverrides) {
-                        MaterialAlertDialogBuilder(this)
-                            .setTitle(R.string.import_warning_title)
-                            .setMessage(R.string.import_warning_message)
-                            .setNegativeButton(R.string.btn_cancel, null)
-                            .setPositiveButton(R.string.btn_confirm) { _, _ ->
-                                viewModel.confirmImport(uri, selected)
-                            }
-                            .show()
-                    } else {
-                        viewModel.confirmImport(uri, selected)
-                    }
-                }
-            }
-            .create()
-
-        dialog.show()
-        val btnPositive = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-        onSelectionUpdated = {
-            btnPositive.isEnabled = selectionAdapter.getSelectedIds().isNotEmpty()
+    private fun showDialogOnce(tag: String, createDialog: () -> DialogFragment) {
+        if (supportFragmentManager.isStateSaved) return
+        supportFragmentManager.executePendingTransactions()
+        if (supportFragmentManager.findFragmentByTag(tag) != null) {
+            return
         }
+        createDialog().show(supportFragmentManager, tag)
+        supportFragmentManager.executePendingTransactions()
     }
 
     private var progressDialog: AlertDialog? = null

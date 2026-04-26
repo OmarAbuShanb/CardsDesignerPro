@@ -9,6 +9,7 @@ import androidx.fragment.app.activityViewModels
 import dev.anonymous.cardsdesignerpro.R
 import dev.anonymous.cardsdesignerpro.data.model.TemplateElement
 import dev.anonymous.cardsdesignerpro.databinding.FragmentPropShapeBinding
+import dev.anonymous.cardsdesignerpro.ui.common.ColorHexDialogSupport
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorUiState
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel
 
@@ -20,13 +21,30 @@ class ShapePropertiesFragment : Fragment(), PropertyFragment {
     private var updating = false
 
     override fun onCreateView(i: LayoutInflater, c: ViewGroup?, s: Bundle?): View {
-        _b = FragmentPropShapeBinding.inflate(i, c, false); return b.root
+        _b = FragmentPropShapeBinding.inflate(i, c, false)
+        return b.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         b.stepperStrokeWidth.minValue = 0
         b.stepperStrokeWidth.maxValue = 20
+
+        ColorHexDialogSupport.registerResultListener(
+            fragment = this,
+            owner = viewLifecycleOwner,
+            requestKey = REQ_SHAPE_FILL_COLOR_HEX
+        ) { hex ->
+            applyFillColor(hex)
+        }
+        ColorHexDialogSupport.registerResultListener(
+            fragment = this,
+            owner = viewLifecycleOwner,
+            requestKey = REQ_SHAPE_STROKE_COLOR_HEX
+        ) { hex ->
+            applyStrokeColor(hex)
+        }
+
         val el = viewModel.selectedElement as? TemplateElement.ShapeElement ?: return
         populate(el)
         setupListeners()
@@ -35,24 +53,19 @@ class ShapePropertiesFragment : Fragment(), PropertyFragment {
     private fun populate(el: TemplateElement.ShapeElement) {
         updating = true
 
-        // Fill color
         if (b.cpvFillColor.colorHex != el.fillColor) b.cpvFillColor.colorHex = el.fillColor
-        b.tvFillColorHex.text = el.fillColor
+        b.fieldFillColorHex.text = el.fillColor
 
-        // Stroke color
         if (b.cpvStrokeColor.colorHex != el.strokeColor) b.cpvStrokeColor.colorHex = el.strokeColor
-        b.tvStrokeColorHex.text = el.strokeColor
+        b.fieldStrokeColorHex.text = el.strokeColor
 
-        // Stroke width (StepperView)
         val swVal = el.strokeWidthDp.toInt().coerceIn(0, 20)
         if (b.stepperStrokeWidth.value != swVal) b.stepperStrokeWidth.value = swVal
 
-        // Corner radius
         val crVal = el.cornerRadiusDp.coerceIn(0f, 100f)
         if (b.sliderCornerRadius.value != crVal) b.sliderCornerRadius.value = crVal
         b.tvCornerRadiusLabel.text = getString(R.string.prop_shape_corner_radius) + ": ${crVal.toInt()}"
 
-        // Dashed
         if (b.cbDashed.isChecked != el.isDashed) {
             b.cbDashed.isChecked = el.isDashed
             b.layoutDashOptions.visibility = if (el.isDashed) View.VISIBLE else View.GONE
@@ -74,14 +87,12 @@ class ShapePropertiesFragment : Fragment(), PropertyFragment {
     }
 
     private fun setupListeners() {
-        b.cpvFillColor.onColorSelected = { hex ->
-            b.tvFillColorHex.text = hex
-            update { it.copy(fillColor = hex) }
-        }
-        b.cpvStrokeColor.onColorSelected = { hex ->
-            b.tvStrokeColorHex.text = hex
-            update { it.copy(strokeColor = hex) }
-        }
+        b.cpvFillColor.onColorSelected = { hex -> applyFillColor(hex) }
+        b.fieldFillColorHex.setOnClickListener { openFillColorHexDialog() }
+
+        b.cpvStrokeColor.onColorSelected = { hex -> applyStrokeColor(hex) }
+        b.fieldStrokeColorHex.setOnClickListener { openStrokeColorHexDialog() }
+
         b.stepperStrokeWidth.onValueChanged = { v ->
             update { it.copy(strokeWidthDp = v.toFloat()) }
         }
@@ -108,6 +119,40 @@ class ShapePropertiesFragment : Fragment(), PropertyFragment {
         }
     }
 
+    private fun openFillColorHexDialog() {
+        val el = viewModel.selectedElement as? TemplateElement.ShapeElement ?: return
+        ColorHexDialogSupport.showDialog(
+            fragment = this,
+            requestKey = REQ_SHAPE_FILL_COLOR_HEX,
+            dialogTag = SHAPE_FILL_COLOR_DIALOG_TAG,
+            initialHex = el.fillColor,
+            enableAlpha = b.cpvFillColor.enableAlpha
+        )
+    }
+
+    private fun openStrokeColorHexDialog() {
+        val el = viewModel.selectedElement as? TemplateElement.ShapeElement ?: return
+        ColorHexDialogSupport.showDialog(
+            fragment = this,
+            requestKey = REQ_SHAPE_STROKE_COLOR_HEX,
+            dialogTag = SHAPE_STROKE_COLOR_DIALOG_TAG,
+            initialHex = el.strokeColor,
+            enableAlpha = b.cpvStrokeColor.enableAlpha
+        )
+    }
+
+    private fun applyFillColor(hex: String) {
+        b.fieldFillColorHex.text = hex
+        if (b.cpvFillColor.colorHex != hex) b.cpvFillColor.colorHex = hex
+        update { it.copy(fillColor = hex) }
+    }
+
+    private fun applyStrokeColor(hex: String) {
+        b.fieldStrokeColorHex.text = hex
+        if (b.cpvStrokeColor.colorHex != hex) b.cpvStrokeColor.colorHex = hex
+        update { it.copy(strokeColor = hex) }
+    }
+
     private fun update(transform: (TemplateElement.ShapeElement) -> TemplateElement.ShapeElement) {
         if (updating) return
         val el = viewModel.selectedElement as? TemplateElement.ShapeElement ?: return
@@ -125,5 +170,12 @@ class ShapePropertiesFragment : Fragment(), PropertyFragment {
     override fun onDestroyView() {
         super.onDestroyView()
         _b = null
+    }
+
+    companion object {
+        private const val REQ_SHAPE_FILL_COLOR_HEX = "req_shape_fill_color_hex"
+        private const val REQ_SHAPE_STROKE_COLOR_HEX = "req_shape_stroke_color_hex"
+        private const val SHAPE_FILL_COLOR_DIALOG_TAG = "shape_fill_color_hex_dialog"
+        private const val SHAPE_STROKE_COLOR_DIALOG_TAG = "shape_stroke_color_hex_dialog"
     }
 }

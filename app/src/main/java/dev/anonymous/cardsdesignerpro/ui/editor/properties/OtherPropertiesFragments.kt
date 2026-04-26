@@ -14,12 +14,11 @@ import dev.anonymous.cardsdesignerpro.data.model.TemplateElement
 import dev.anonymous.cardsdesignerpro.databinding.FragmentPropDateBinding
 import dev.anonymous.cardsdesignerpro.databinding.FragmentPropFrameBinding
 import dev.anonymous.cardsdesignerpro.databinding.FragmentPropNoSelectionBinding
+import dev.anonymous.cardsdesignerpro.ui.common.ColorHexDialogSupport
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorUiState
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel.Companion.MAX_TEXT_SIZE_SP
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel.Companion.MIN_TEXT_SIZE_SP
-
-// ── Date Properties ──────────────────────────────────────────────────────────
 
 class DatePropertiesFragment : Fragment(), PropertyFragment {
     private var _b: FragmentPropDateBinding? = null
@@ -29,18 +28,45 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
     private var fontAdapter: FontSpinnerAdapter? = null
 
     override fun onCreateView(i: LayoutInflater, c: ViewGroup?, s: Bundle?): View {
-        _b = FragmentPropDateBinding.inflate(i, c, false); return b.root
+        _b = FragmentPropDateBinding.inflate(i, c, false)
+        return b.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        ColorHexDialogSupport.registerResultListener(
+            fragment = this,
+            owner = viewLifecycleOwner,
+            requestKey = REQ_DATE_TEXT_COLOR_HEX
+        ) { hex ->
+            applyTextColor(hex)
+        }
+        ColorHexDialogSupport.registerResultListener(
+            fragment = this,
+            owner = viewLifecycleOwner,
+            requestKey = REQ_DATE_BG_COLOR_HEX
+        ) { hex ->
+            applyBgColor(hex)
+        }
+        ColorHexDialogSupport.registerResultListener(
+            fragment = this,
+            owner = viewLifecycleOwner,
+            requestKey = REQ_DATE_STROKE_COLOR_HEX
+        ) { hex ->
+            applyStrokeColor(hex)
+        }
+
         b.sliderFontSize.valueFrom = MIN_TEXT_SIZE_SP
         b.sliderFontSize.valueTo = MAX_TEXT_SIZE_SP
         val formats = DateFormat.entries.toTypedArray()
         b.spinnerDateFormat.adapter = ArrayAdapter(
             requireContext(),
-            android.R.layout.simple_spinner_item, formats.map { getString(it.displayNameRes) })
-            .apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+            android.R.layout.simple_spinner_item,
+            formats.map { getString(it.displayNameRes) }
+        ).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
 
         fontAdapter = FontSpinnerAdapter(requireContext(), getAvailableFonts(requireContext()))
         b.spinnerFont.adapter = fontAdapter
@@ -52,33 +78,23 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
             override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
                 if (updating) return
                 val e = viewModel.selectedElement as? TemplateElement.DateElement ?: return
-                if (e.format == formats[pos]) return   // spurious fire
+                if (e.format == formats[pos]) return
                 viewModel.updateElement(e.copy(format = formats[pos]))
             }
 
             override fun onNothingSelected(p: AdapterView<*>?) {}
         }
-        b.cpvTextColor.onColorSelected = { hex ->
-            b.tvColorHex.text = hex
-            val e = viewModel.selectedElement as? TemplateElement.DateElement
-            if (e != null) viewModel.updateElement(e.copy(textColor = hex))
-        }
-        // Background color
-        b.cpvBgColor.onColorSelected = { hex ->
-            b.tvBgColorHex.text = hex
-            val e = viewModel.selectedElement as? TemplateElement.DateElement
-            if (e != null) viewModel.updateElement(e.copy(bgColor = hex))
-        }
-        b.btnClearBgColor.setOnClickListener {
-            b.tvBgColorHex.text = "—"
-            b.cpvBgColor.colorHex = "#00000000"
-            val e = viewModel.selectedElement as? TemplateElement.DateElement
-            if (e != null) viewModel.updateElement(e.copy(bgColor = null))
-        }
+
+        b.cpvTextColor.onColorSelected = { hex -> applyTextColor(hex) }
+        b.fieldTextColorHex.setOnClickListener { openTextColorHexDialog() }
+
+        b.cpvBgColor.onColorSelected = { hex -> applyBgColor(hex) }
+        b.fieldBgColorHex.setOnClickListener { openBgColorHexDialog() }
+        b.btnClearBgColor.setOnClickListener { clearBgColor() }
+
         b.cbBold.setOnCheckedChangeListener { _, checked ->
             if (!updating) {
-                val e = viewModel.selectedElement as? TemplateElement.DateElement
-                    ?: return@setOnCheckedChangeListener
+                val e = viewModel.selectedElement as? TemplateElement.DateElement ?: return@setOnCheckedChangeListener
                 viewModel.updateElement(e.copy(isBold = checked))
             }
         }
@@ -95,11 +111,9 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
             val newStroke = if (isChecked) b.sliderTextStroke.value else 0f
             if (e.textStrokeWidth != newStroke) viewModel.updateElement(e.copy(textStrokeWidth = newStroke))
         }
-        b.cpvStrokeColor.onColorSelected = { hex ->
-            b.tvStrokeColorHex.text = hex
-            val e = viewModel.selectedElement as? TemplateElement.DateElement
-            if (e != null && e.textStrokeColor != hex) viewModel.updateElement(e.copy(textStrokeColor = hex))
-        }
+        b.cpvStrokeColor.onColorSelected = { hex -> applyStrokeColor(hex) }
+        b.fieldStrokeColorHex.setOnClickListener { openStrokeColorHexDialog() }
+
         b.sliderTextStroke.addOnChangeListener { _, v, _ ->
             b.tvStrokeSizeLabel.text = getString(R.string.prop_text_stroke) + ": ${v.toInt()}"
             if (!updating && b.cbTextStroke.isChecked) {
@@ -112,7 +126,7 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
                 if (updating) return
                 val e = viewModel.selectedElement as? TemplateElement.DateElement ?: return
                 val newFont = getAvailableFonts(requireContext())[pos].second
-                if (e.fontName == newFont) return   // spurious fire
+                if (e.fontName == newFont) return
                 viewModel.updateElement(e.copy(fontName = newFont))
             }
 
@@ -125,33 +139,31 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
         val fIdx = formats.indexOf(e.format).coerceAtLeast(0)
         if (b.spinnerDateFormat.selectedItemPosition != fIdx) b.spinnerDateFormat.setSelection(fIdx)
         if (b.cpvTextColor.colorHex != e.textColor) b.cpvTextColor.colorHex = e.textColor
-        b.tvColorHex.text = e.textColor
+        b.fieldTextColorHex.text = e.textColor
         if (e.bgColor != null) {
             if (b.cpvBgColor.colorHex != e.bgColor) b.cpvBgColor.colorHex = e.bgColor
-            b.tvBgColorHex.text = e.bgColor
+            b.fieldBgColorHex.text = e.bgColor
             b.btnClearBgColor.visibility = View.VISIBLE
         } else {
             b.cpvBgColor.colorHex = "#FFFFFFFF"
-            b.tvBgColorHex.text = getString(R.string.prop_no_bg_color)
+            b.fieldBgColorHex.text = getString(R.string.prop_no_bg_color)
             b.btnClearBgColor.visibility = View.GONE
         }
         if (b.cbBold.isChecked != e.isBold) b.cbBold.isChecked = e.isBold
         val s = kotlin.math.round(e.textSizeSp).coerceIn(MIN_TEXT_SIZE_SP, MAX_TEXT_SIZE_SP)
         if (b.sliderFontSize.value != s) b.sliderFontSize.value = s
         b.tvFontSizeLabel.text = getString(R.string.prop_font_size) + ": ${s.toInt()}"
-        
-        // Text stroke
+
         val hasStroke = e.textStrokeWidth > 0f
         if (b.cbTextStroke.isChecked != hasStroke) b.cbTextStroke.isChecked = hasStroke
         b.layoutTextStrokeOptions.visibility = if (hasStroke) View.VISIBLE else View.GONE
-        
+
         val targetStroke = e.textStrokeWidth.coerceAtLeast(1f).coerceAtMost(10f)
         if (b.sliderTextStroke.value != targetStroke) b.sliderTextStroke.value = targetStroke
         b.tvStrokeSizeLabel.text = getString(R.string.prop_text_stroke) + ": ${targetStroke.toInt()}"
         if (b.cpvStrokeColor.colorHex != e.textStrokeColor) b.cpvStrokeColor.colorHex = e.textStrokeColor
-        b.tvStrokeColorHex.text = e.textStrokeColor
+        b.fieldStrokeColorHex.text = e.textStrokeColor
 
-        // Update Font Adapter preview
         val previewStr = try {
             java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern(e.format.pattern))
         } catch (_: Exception) {
@@ -167,21 +179,91 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
         updating = false
     }
 
-    override fun onUiStateChanged(state: EditorUiState) {
-        if (_b == null) return
-        val el = viewModel.currentElements.firstOrNull { it.id == state.selectedElementId }
-                as? TemplateElement.DateElement ?: return
-        populate(
-            el, DateFormat.entries.toTypedArray()
+    private fun openTextColorHexDialog() {
+        val e = viewModel.selectedElement as? TemplateElement.DateElement ?: return
+        ColorHexDialogSupport.showDialog(
+            fragment = this,
+            requestKey = REQ_DATE_TEXT_COLOR_HEX,
+            dialogTag = DATE_TEXT_COLOR_DIALOG_TAG,
+            initialHex = e.textColor,
+            enableAlpha = b.cpvTextColor.enableAlpha
         )
     }
 
+    private fun openBgColorHexDialog() {
+        val e = viewModel.selectedElement as? TemplateElement.DateElement ?: return
+        ColorHexDialogSupport.showDialog(
+            fragment = this,
+            requestKey = REQ_DATE_BG_COLOR_HEX,
+            dialogTag = DATE_BG_COLOR_DIALOG_TAG,
+            initialHex = e.bgColor ?: b.cpvBgColor.colorHex,
+            enableAlpha = b.cpvBgColor.enableAlpha
+        )
+    }
+
+    private fun openStrokeColorHexDialog() {
+        val e = viewModel.selectedElement as? TemplateElement.DateElement ?: return
+        ColorHexDialogSupport.showDialog(
+            fragment = this,
+            requestKey = REQ_DATE_STROKE_COLOR_HEX,
+            dialogTag = DATE_STROKE_COLOR_DIALOG_TAG,
+            initialHex = e.textStrokeColor,
+            enableAlpha = b.cpvStrokeColor.enableAlpha
+        )
+    }
+
+    private fun applyTextColor(hex: String) {
+        b.fieldTextColorHex.text = hex
+        if (b.cpvTextColor.colorHex != hex) b.cpvTextColor.colorHex = hex
+        val e = viewModel.selectedElement as? TemplateElement.DateElement ?: return
+        if (e.textColor != hex) viewModel.updateElement(e.copy(textColor = hex))
+    }
+
+    private fun applyBgColor(hex: String) {
+        b.fieldBgColorHex.text = hex
+        b.btnClearBgColor.visibility = View.VISIBLE
+        if (b.cpvBgColor.colorHex != hex) b.cpvBgColor.colorHex = hex
+        val e = viewModel.selectedElement as? TemplateElement.DateElement ?: return
+        if (e.bgColor != hex) viewModel.updateElement(e.copy(bgColor = hex))
+    }
+
+    private fun clearBgColor() {
+        val e = viewModel.selectedElement as? TemplateElement.DateElement ?: return
+        if (e.bgColor == null) return
+        viewModel.updateElement(e.copy(bgColor = null))
+        b.cpvBgColor.colorHex = "#FFFFFFFF"
+        b.fieldBgColorHex.text = getString(R.string.prop_no_bg_color)
+        b.btnClearBgColor.visibility = View.GONE
+    }
+
+    private fun applyStrokeColor(hex: String) {
+        b.fieldStrokeColorHex.text = hex
+        if (b.cpvStrokeColor.colorHex != hex) b.cpvStrokeColor.colorHex = hex
+        val e = viewModel.selectedElement as? TemplateElement.DateElement ?: return
+        if (e.textStrokeColor != hex) viewModel.updateElement(e.copy(textStrokeColor = hex))
+    }
+
+    override fun onUiStateChanged(state: EditorUiState) {
+        if (_b == null) return
+        val el = viewModel.currentElements.firstOrNull { it.id == state.selectedElementId }
+            as? TemplateElement.DateElement ?: return
+        populate(el, DateFormat.entries.toTypedArray())
+    }
+
     override fun onDestroyView() {
-        super.onDestroyView(); _b = null
+        super.onDestroyView()
+        _b = null
+    }
+
+    companion object {
+        private const val REQ_DATE_TEXT_COLOR_HEX = "req_date_text_color_hex"
+        private const val REQ_DATE_BG_COLOR_HEX = "req_date_bg_color_hex"
+        private const val REQ_DATE_STROKE_COLOR_HEX = "req_date_stroke_color_hex"
+        private const val DATE_TEXT_COLOR_DIALOG_TAG = "date_text_color_hex_dialog"
+        private const val DATE_BG_COLOR_DIALOG_TAG = "date_bg_color_hex_dialog"
+        private const val DATE_STROKE_COLOR_DIALOG_TAG = "date_stroke_color_hex_dialog"
     }
 }
-
-// ── Frame Properties ─────────────────────────────────────────────────────────
 
 class FramePropertiesFragment : Fragment(), PropertyFragment {
     private var _b: FragmentPropFrameBinding? = null
@@ -190,27 +272,35 @@ class FramePropertiesFragment : Fragment(), PropertyFragment {
     private var updating = false
 
     override fun onCreateView(i: LayoutInflater, c: ViewGroup?, s: Bundle?): View {
-        _b = FragmentPropFrameBinding.inflate(i, c, false); return b.root
+        _b = FragmentPropFrameBinding.inflate(i, c, false)
+        return b.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        ColorHexDialogSupport.registerResultListener(
+            fragment = this,
+            owner = viewLifecycleOwner,
+            requestKey = REQ_FRAME_COLOR_HEX
+        ) { hex ->
+            applyFrameColor(hex)
+        }
+
         val el = viewModel.selectedElement as? TemplateElement.FrameElement ?: return
         populate(el)
 
-        b.cpvFrameColor.onColorSelected = { hex ->
-            b.tvColorHex.text = hex
-            update { it.copy(color = hex) }
-        }
-        b.stepperThickness.onValueChanged =
-            { update { el2 -> el2.copy(strokeWidthDp = it.toFloat()) } }
-        b.sliderCornerRadius.addOnChangeListener { _, value, _ -> 
+        b.cpvFrameColor.onColorSelected = { hex -> applyFrameColor(hex) }
+        b.fieldFrameColorHex.setOnClickListener { openFrameColorHexDialog() }
+
+        b.stepperThickness.onValueChanged = { update { el2 -> el2.copy(strokeWidthDp = it.toFloat()) } }
+        b.sliderCornerRadius.addOnChangeListener { _, value, _ ->
             b.tvCornerRadiusLabel.text = getString(R.string.prop_frame_corner_radius) + ": ${value.toInt()}"
-            update { it.copy(cornerRadiusDp = value) } 
+            update { it.copy(cornerRadiusDp = value) }
         }
-        b.sliderPadding.addOnChangeListener { _, value, _ -> 
+        b.sliderPadding.addOnChangeListener { _, value, _ ->
             b.tvPaddingLabel.text = getString(R.string.prop_frame_padding) + ": ${value.toInt()}"
-            update { it.copy(paddingDp = value) } 
+            update { it.copy(paddingDp = value) }
         }
         b.cbDashed.setOnCheckedChangeListener { _, checked ->
             if (!updating) {
@@ -218,13 +308,13 @@ class FramePropertiesFragment : Fragment(), PropertyFragment {
                 b.layoutDashOptions.visibility = if (checked) View.VISIBLE else View.GONE
             }
         }
-        b.sliderDashLength.addOnChangeListener { _, value, _ -> 
+        b.sliderDashLength.addOnChangeListener { _, value, _ ->
             b.tvDashLengthLabel.text = getString(R.string.prop_frame_dash_length) + ": ${value.toInt()}"
-            update { it.copy(dashLengthDp = value) } 
+            update { it.copy(dashLengthDp = value) }
         }
-        b.sliderDashGap.addOnChangeListener { _, value, _ -> 
+        b.sliderDashGap.addOnChangeListener { _, value, _ ->
             b.tvDashGapLabel.text = getString(R.string.prop_frame_dash_gap) + ": ${value.toInt()}"
-            update { it.copy(dashGapDp = value) } 
+            update { it.copy(dashGapDp = value) }
         }
         b.cbDashRounded.setOnCheckedChangeListener { _, checked ->
             if (!updating) update { it.copy(isDashRounded = checked) }
@@ -234,13 +324,15 @@ class FramePropertiesFragment : Fragment(), PropertyFragment {
     private fun populate(el: TemplateElement.FrameElement) {
         updating = true
         if (b.cpvFrameColor.colorHex != el.color) b.cpvFrameColor.colorHex = el.color
-        b.tvColorHex.text = el.color
+        b.fieldFrameColorHex.text = el.color
         val thickness = el.strokeWidthDp.toInt()
         if (b.stepperThickness.value != thickness) {
-            b.stepperThickness.minValue = 1; b.stepperThickness.maxValue = 20
+            b.stepperThickness.minValue = 1
+            b.stepperThickness.maxValue = 20
             b.stepperThickness.value = thickness
         } else {
-            b.stepperThickness.minValue = 1; b.stepperThickness.maxValue = 20
+            b.stepperThickness.minValue = 1
+            b.stepperThickness.maxValue = 20
         }
         val corner = el.cornerRadiusDp.coerceIn(0f, 100f)
         if (b.sliderCornerRadius.value != corner) b.sliderCornerRadius.value = corner
@@ -250,7 +342,6 @@ class FramePropertiesFragment : Fragment(), PropertyFragment {
         if (b.sliderPadding.value != padding) b.sliderPadding.value = padding
         b.tvPaddingLabel.text = getString(R.string.prop_frame_padding) + ": ${padding.toInt()}"
 
-        // Checkbox: guard to prevent requestLayout from firing when value same
         if (b.cbDashed.isChecked != el.isDashed) {
             b.cbDashed.isChecked = el.isDashed
             b.layoutDashOptions.visibility = if (el.isDashed) View.VISIBLE else View.GONE
@@ -262,9 +353,25 @@ class FramePropertiesFragment : Fragment(), PropertyFragment {
         val dashGap = el.dashGapDp.coerceIn(0f, 40f)
         if (b.sliderDashGap.value != dashGap) b.sliderDashGap.value = dashGap
         b.tvDashGapLabel.text = getString(R.string.prop_frame_dash_gap) + ": ${dashGap.toInt()}"
-        if (b.cbDashRounded.isChecked != el.isDashRounded) b.cbDashRounded.isChecked =
-            el.isDashRounded
+        if (b.cbDashRounded.isChecked != el.isDashRounded) b.cbDashRounded.isChecked = el.isDashRounded
         updating = false
+    }
+
+    private fun openFrameColorHexDialog() {
+        val el = viewModel.selectedElement as? TemplateElement.FrameElement ?: return
+        ColorHexDialogSupport.showDialog(
+            fragment = this,
+            requestKey = REQ_FRAME_COLOR_HEX,
+            dialogTag = FRAME_COLOR_DIALOG_TAG,
+            initialHex = el.color,
+            enableAlpha = b.cpvFrameColor.enableAlpha
+        )
+    }
+
+    private fun applyFrameColor(hex: String) {
+        b.fieldFrameColorHex.text = hex
+        if (b.cpvFrameColor.colorHex != hex) b.cpvFrameColor.colorHex = hex
+        update { it.copy(color = hex) }
     }
 
     private fun update(transform: (TemplateElement.FrameElement) -> TemplateElement.FrameElement) {
@@ -276,16 +383,20 @@ class FramePropertiesFragment : Fragment(), PropertyFragment {
     override fun onUiStateChanged(state: EditorUiState) {
         if (_b == null) return
         val el = state.template.elements.firstOrNull { it.id == state.selectedElementId }
-                as? TemplateElement.FrameElement ?: return
+            as? TemplateElement.FrameElement ?: return
         populate(el)
     }
 
     override fun onDestroyView() {
-        super.onDestroyView(); _b = null
+        super.onDestroyView()
+        _b = null
+    }
+
+    companion object {
+        private const val REQ_FRAME_COLOR_HEX = "req_frame_color_hex"
+        private const val FRAME_COLOR_DIALOG_TAG = "frame_color_hex_dialog"
     }
 }
-
-// ── No Selection ──────────────────────────────────────────────────────────────
 
 class NoSelectionFragment : Fragment(), PropertyFragment {
     override fun onCreateView(i: LayoutInflater, c: ViewGroup?, s: Bundle?): View =

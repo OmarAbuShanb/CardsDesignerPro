@@ -9,7 +9,9 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import dev.anonymous.cardsdesignerpro.data.model.ImageScaleType
 import dev.anonymous.cardsdesignerpro.databinding.FragmentPropCardBinding
+import dev.anonymous.cardsdesignerpro.ui.common.ColorHexDialogSupport
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorUiState
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel
 import dev.anonymous.cardsdesignerpro.util.ImageUtils
@@ -36,13 +38,19 @@ class CardPropertiesFragment : Fragment(), PropertyFragment {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        ColorHexDialogSupport.registerResultListener(
+            fragment = this,
+            owner = viewLifecycleOwner,
+            requestKey = REQ_CARD_BG_COLOR_HEX
+        ) { hex ->
+            applyBgColor(hex)
+        }
+
         populate(viewModel.activeCardStyle)
 
-        // ── Background color ─────────────────────────────────────────────────
-        binding.cpvBgColor.onColorSelected = { hex ->
-            binding.tvBgColorHex.text = hex
-            viewModel.updateCardBackgroundColor(hex)
-        }
+        binding.cpvBgColor.onColorSelected = { hex -> applyBgColor(hex) }
+        binding.fieldBgColorHex.setOnClickListener { openBgColorHexDialog() }
+
         binding.btnChooseBgImage.setOnClickListener {
             pickBgImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
@@ -53,10 +61,11 @@ class CardPropertiesFragment : Fragment(), PropertyFragment {
 
         binding.toggleBgScale.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (updating || !isChecked) return@addOnButtonCheckedListener
-            val type = if (checkedId == binding.btnScaleFit.id)
-                dev.anonymous.cardsdesignerpro.data.model.ImageScaleType.FIT_XY.name
-            else
-                dev.anonymous.cardsdesignerpro.data.model.ImageScaleType.CENTER_CROP.name
+            val type = if (checkedId == binding.btnScaleFit.id) {
+                ImageScaleType.FIT_XY.name
+            } else {
+                ImageScaleType.CENTER_CROP.name
+            }
             viewModel.updateCardBackgroundScale(type)
         }
     }
@@ -69,15 +78,34 @@ class CardPropertiesFragment : Fragment(), PropertyFragment {
     private fun populate(card: dev.anonymous.cardsdesignerpro.data.model.CardStyle) {
         updating = true
         if (binding.cpvBgColor.colorHex != card.backgroundColor) binding.cpvBgColor.colorHex = card.backgroundColor
-        binding.tvBgColorHex.text = card.backgroundColor
+        binding.fieldBgColorHex.text = card.backgroundColor
         updateImageLabel(card.backgroundImagePath)
 
-        val activeBtn = if (card.backgroundImageScaleType == dev.anonymous.cardsdesignerpro.data.model.ImageScaleType.CENTER_CROP.name)
-            binding.btnScaleCrop.id else binding.btnScaleFit.id
+        val activeBtn = if (card.backgroundImageScaleType == ImageScaleType.CENTER_CROP.name) {
+            binding.btnScaleCrop.id
+        } else {
+            binding.btnScaleFit.id
+        }
         if (binding.toggleBgScale.checkedButtonId != activeBtn) {
             binding.toggleBgScale.check(activeBtn)
         }
         updating = false
+    }
+
+    private fun openBgColorHexDialog() {
+        ColorHexDialogSupport.showDialog(
+            fragment = this,
+            requestKey = REQ_CARD_BG_COLOR_HEX,
+            dialogTag = CARD_BG_COLOR_DIALOG_TAG,
+            initialHex = viewModel.activeCardStyle.backgroundColor,
+            enableAlpha = binding.cpvBgColor.enableAlpha
+        )
+    }
+
+    private fun applyBgColor(hex: String) {
+        binding.fieldBgColorHex.text = hex
+        if (binding.cpvBgColor.colorHex != hex) binding.cpvBgColor.colorHex = hex
+        viewModel.updateCardBackgroundColor(hex)
     }
 
     private fun copyBgImage(uri: Uri) {
@@ -102,5 +130,10 @@ class CardPropertiesFragment : Fragment(), PropertyFragment {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    companion object {
+        private const val REQ_CARD_BG_COLOR_HEX = "req_card_bg_color_hex"
+        private const val CARD_BG_COLOR_DIALOG_TAG = "card_bg_color_hex_dialog"
     }
 }

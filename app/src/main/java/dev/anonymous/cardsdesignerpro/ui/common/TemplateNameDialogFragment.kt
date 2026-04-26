@@ -1,7 +1,10 @@
 package dev.anonymous.cardsdesignerpro.ui.common
 
+import android.content.Context
 import android.os.Bundle
+import android.view.inputmethod.InputMethodManager
 import android.view.WindowManager
+import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.DialogFragment
@@ -57,9 +60,9 @@ class TemplateNameDialogFragment : DialogFragment() {
             .create()
 
         dialog.setOnShowListener {
-            dialog.window?.clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)
             val btnPositive = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
             btnPositive.isEnabled = !binding.etName.text?.toString()?.trim().isNullOrEmpty()
+            focusAndShowKeyboard(binding.etName)
 
             binding.etName.doAfterTextChanged { editable ->
                 btnPositive.isEnabled = !editable?.toString()?.trim().isNullOrEmpty()
@@ -75,6 +78,18 @@ class TemplateNameDialogFragment : DialogFragment() {
             }
         }
 
+        dialog.window?.setSoftInputMode(
+            WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE
+        )
+
         return dialog
+    }
+
+    private fun focusAndShowKeyboard(editText: EditText) {
+        editText.requestFocus()
+        editText.post {
+            val imm = context?.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+            imm?.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
+        }
     }
 }

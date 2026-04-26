@@ -39,7 +39,6 @@ class PropertiesContainerFragment : Fragment(), PropertyFragment {
                 ?.onUiStateChanged(state)
             return
         }
-//        Log.d("PROPS_DEBUG", "REPLACING fragment: $lastSelectedId → $selectedId")
         lastSelectedId = selectedId
 
         if (!isAdded || view == null) return

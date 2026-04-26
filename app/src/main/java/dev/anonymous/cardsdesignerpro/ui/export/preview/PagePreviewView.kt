@@ -39,6 +39,7 @@ class PagePreviewView @JvmOverloads constructor(
     private var layout: PdfExporter.LayoutInfo? = null
     private var isMirrored = false
     private var flipEdge = FlipEdge.LONG_EDGE
+    private var showPageNumberPreview = false
 
     private val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE; style = Paint.Style.FILL
@@ -47,6 +48,10 @@ class PagePreviewView @JvmOverloads constructor(
         color = 0x33000000; style = Paint.Style.FILL
     }
     private val renderer = TemplateRenderer(context)
+    private val pageNumberPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.BLACK
+        textAlign = Paint.Align.RIGHT
+    }
 
     // ── Bitmap cache ─────────────────────────────────────────────────────────
     private var cachedBitmap: Bitmap? = null
@@ -76,14 +81,16 @@ class PagePreviewView @JvmOverloads constructor(
         template: Template?,
         layout: PdfExporter.LayoutInfo?,
         isMirrored: Boolean = false,
-        flipEdge: FlipEdge = FlipEdge.LONG_EDGE
+        flipEdge: FlipEdge = FlipEdge.LONG_EDGE,
+        showPageNumberPreview: Boolean = false
     ) {
         this.template   = template
         this.layout     = layout
         this.isMirrored = isMirrored
         this.flipEdge   = flipEdge
+        this.showPageNumberPreview = showPageNumberPreview
 
-        val newKey = buildCacheKey(template, layout, isMirrored, flipEdge)
+        val newKey = buildCacheKey(template, layout, isMirrored, flipEdge, showPageNumberPreview)
         if (newKey != cacheKey) {
             cacheKey = newKey
             if (cachedBitmap != null) {
@@ -142,6 +149,7 @@ class PagePreviewView @JvmOverloads constructor(
         val lCopy = l
         val mirroredCopy = isMirrored
         val flipCopy = flipEdge
+        val showPageNumberCopy = showPageNumberPreview
         val currentKey = cacheKey
 
         // Cap preview resolution
@@ -190,6 +198,17 @@ class PagePreviewView @JvmOverloads constructor(
                         }
                     }
                 }
+
+                if (showPageNumberCopy) {
+                    drawPageNumberOverlay(
+                        canvas = offCanvas,
+                        pageWidth = bmpW.toFloat(),
+                        pageHeight = bmpH.toFloat(),
+                        pageNumberText = "1",
+                        mirrored = mirroredCopy,
+                        flipEdge = flipCopy
+                    )
+                }
                 previewRenderer.clearBitmapCache()
 
                 post {
@@ -218,13 +237,48 @@ class PagePreviewView @JvmOverloads constructor(
         renderer.clearBitmapCache()
     }
 
-    private fun buildCacheKey(t: Template?, l: PdfExporter.LayoutInfo?, mirrored: Boolean, flip: FlipEdge): String {
+    private fun drawPageNumberOverlay(
+        canvas: Canvas,
+        pageWidth: Float,
+        pageHeight: Float,
+        pageNumberText: String,
+        mirrored: Boolean,
+        flipEdge: FlipEdge
+    ) {
+        val minSide = pageWidth.coerceAtMost(pageHeight)
+        val margin = (minSide * 0.015f).coerceAtLeast(6f)
+        pageNumberPaint.textSize = (minSide * 0.020f).coerceIn(9f, 22f)
+        val baselineOffset = pageNumberPaint.descent() + margin
+
+        val anchorRight = pageWidth - margin
+        val anchorLeft = margin + pageNumberPaint.measureText(pageNumberText)
+        val x = when {
+            !mirrored -> anchorRight
+            flipEdge == FlipEdge.LONG_EDGE -> anchorLeft
+            else -> anchorRight
+        }
+        val y = when {
+            !mirrored -> pageHeight - baselineOffset
+            flipEdge == FlipEdge.SHORT_EDGE -> margin - pageNumberPaint.ascent()
+            else -> pageHeight - baselineOffset
+        }
+        canvas.drawText(pageNumberText, x, y, pageNumberPaint)
+    }
+
+    private fun buildCacheKey(
+        t: Template?,
+        l: PdfExporter.LayoutInfo?,
+        mirrored: Boolean,
+        flip: FlipEdge,
+        showPageNumber: Boolean
+    ): String {
         if (t == null || l == null) return ""
         return "${t.id}|${t.card.hashCode()}|${t.elements.hashCode()}" +
                "|${l.columns}|${l.rows}|${l.cardWidthPt}|${l.cardHeightPt}" +
                "|${l.marginLeftPt}|${l.marginTopPt}" +
                "|${l.settings.horizontalSpacingDp}|${l.settings.verticalSpacingDp}" +
                "|$mirrored|$flip" +
+               "|$showPageNumber" +
                "|${renderer.maxImageDim}|${renderer.maxQrDim}"
     }
 }

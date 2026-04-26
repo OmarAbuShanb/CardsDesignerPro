@@ -2,6 +2,8 @@ package dev.anonymous.cardsdesignerpro.util
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import dev.anonymous.cardsdesignerpro.data.model.ExportSettings
 import dev.anonymous.cardsdesignerpro.data.model.FlipEdge
@@ -86,6 +88,8 @@ object PdfExporter {
             val total    = records.count.coerceAtLeast(1)
             val perPage  = layout.cardsPerPage
             val pageCount= ceil(total.toDouble() / perPage).toInt()
+            val totalPdfPages = pageCount * 2
+            val showPageNumbers = settings.showPageNumbers && totalPdfPages > 1
             val totalProgress = total * 2   // front cards + back cards
 
             val pdfDoc = PdfDocument()
@@ -117,6 +121,16 @@ object PdfExporter {
                     dateStr = dateStr,
                     mirrored = false
                 )
+                if (showPageNumbers) {
+                    drawPageNumberOverlay(
+                        canvas = frontPage.canvas,
+                        pageWidthPt = pageW.toFloat(),
+                        pageHeightPt = pageH.toFloat(),
+                        pageNumber = pageNum * 2 - 1,
+                        mirrored = false,
+                        flipEdge = settings.flipEdge
+                    )
+                }
                 pdfDoc.finishPage(frontPage)
                 doneCount += cardsOnPage
                 onProgress(doneCount, totalProgress)
@@ -139,6 +153,16 @@ object PdfExporter {
                     mirrored = true,
                     flipEdge = settings.flipEdge
                 )
+                if (showPageNumbers) {
+                    drawPageNumberOverlay(
+                        canvas = backPage.canvas,
+                        pageWidthPt = pageW.toFloat(),
+                        pageHeightPt = pageH.toFloat(),
+                        pageNumber = pageNum * 2,
+                        mirrored = true,
+                        flipEdge = settings.flipEdge
+                    )
+                }
                 pdfDoc.finishPage(backPage)
                 doneCount += cardsOnPage
                 onProgress(doneCount, totalProgress)
@@ -262,6 +286,7 @@ object PdfExporter {
         val pageH    = settings.pageSize.heightPt.toInt()
         val total    = records.count.coerceAtLeast(1)
         val pageCount= ceil(total.toDouble() / layout.cardsPerPage).toInt()
+        val showPageNumbers = settings.showPageNumbers && pageCount > 1
         val usernameCol = records.usernameColumn
         val passwordCol = records.passwordColumn
         val dateStr     = buildDateString(template)
@@ -274,6 +299,16 @@ object PdfExporter {
             val page     = pdfDoc.startPage(pageInfo)
             drawCards(page.canvas, layout, template, renderer, records, shortRecords,
                 cardIndex, cardsOnPage, usernameCol, passwordCol, dateStr, mirrored = false)
+            if (showPageNumbers) {
+                drawPageNumberOverlay(
+                    canvas = page.canvas,
+                    pageWidthPt = pageW.toFloat(),
+                    pageHeightPt = pageH.toFloat(),
+                    pageNumber = pageNum,
+                    mirrored = false,
+                    flipEdge = settings.flipEdge
+                )
+            }
             pdfDoc.finishPage(page)
             cardIndex += cardsOnPage
             onProgress(cardIndex, total)
@@ -299,6 +334,7 @@ object PdfExporter {
         val pageH     = settings.pageSize.heightPt.toInt()
         val total     = records.count.coerceAtLeast(1)
         val pageCount = ceil(total.toDouble() / layout.cardsPerPage).toInt()
+        val showPageNumbers = settings.showPageNumbers && pageCount > 1
         val usernameCol = records.usernameColumn
         val passwordCol = records.passwordColumn
         val dateStr     = buildDateString(template)
@@ -312,6 +348,16 @@ object PdfExporter {
             drawCards(page.canvas, layout, template, renderer, records, shortRecords,
                 cardIndex, cardsOnPage, usernameCol, passwordCol, dateStr,
                 mirrored = true, flipEdge = flipEdge)
+            if (showPageNumbers) {
+                drawPageNumberOverlay(
+                    canvas = page.canvas,
+                    pageWidthPt = pageW.toFloat(),
+                    pageHeightPt = pageH.toFloat(),
+                    pageNumber = pageNum,
+                    mirrored = true,
+                    flipEdge = flipEdge
+                )
+            }
             pdfDoc.finishPage(page)
             cardIndex += cardsOnPage
             onProgress(cardIndex, total)
@@ -415,6 +461,43 @@ object PdfExporter {
             .filterIsInstance<TemplateElement.DateElement>().firstOrNull() ?: return ""
         val formatter = DateTimeFormatter.ofPattern(dateEl.format.pattern)
         return LocalDate.now().format(formatter)
+    }
+
+    // Draw page number after all cards so it stays visible even when content overlaps the corner.
+    private fun drawPageNumberOverlay(
+        canvas: Canvas,
+        pageWidthPt: Float,
+        pageHeightPt: Float,
+        pageNumber: Int,
+        mirrored: Boolean,
+        flipEdge: FlipEdge
+    ) {
+        val text = pageNumber.toString()
+        val minSide = minOf(pageWidthPt, pageHeightPt)
+        val margin = (minSide * 0.012f).coerceAtLeast(4f)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.BLACK
+            textAlign = Paint.Align.RIGHT
+            textSize = (minSide * 0.016f).coerceIn(8f, 12f)
+        }
+
+        val rightX = pageWidthPt - margin
+        val leftX = margin + paint.measureText(text)
+        val bottomY = pageHeightPt - margin
+        val topY = margin - paint.ascent()
+
+        val x = when {
+            !mirrored -> rightX
+            flipEdge == FlipEdge.LONG_EDGE -> leftX
+            else -> rightX
+        }
+        val y = when {
+            !mirrored -> bottomY
+            flipEdge == FlipEdge.SHORT_EDGE -> topY
+            else -> bottomY
+        }
+
+        canvas.drawText(text, x, y, paint)
     }
 
     // ── Data ──────────────────────────────────────────────────────────────────

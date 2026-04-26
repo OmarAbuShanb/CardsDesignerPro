@@ -5,7 +5,6 @@ import android.graphics.Typeface
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.anonymous.cardsdesignerpro.data.model.CardSide
@@ -51,7 +50,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     private var originalTemplate: Template? = null
 
     private val typefaceCache = mutableMapOf<String, Typeface>()
-    // Active drag session used to freeze wrapping behavior during corner-resize.
+    // Keeps resize-time line lock data so text width/height stay stable during drag.
     private var textCornerResizeSession: TextCornerResizeSession? = null
 
     // ── Undo Stack ────────────────────────────────────────────────────────────
@@ -675,14 +674,6 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         val safeW = newWidth.coerceAtLeast(20f)
         val el =
             currentElements.firstOrNull { it.id == id } as? TemplateElement.TextElement ?: return
-        val before = measureTextMetrics(
-            text = el.text,
-            sizeSp = el.textSizeSp,
-            fontName = el.fontName,
-            isBold = el.isBold,
-            maxWidthDp = el.width,
-            pxPerDp = pxPerDp
-        )
         val after = measureTextMetrics(
             text = el.text,
             sizeSp = el.textSizeSp,
@@ -690,12 +681,6 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
             isBold = el.isBold,
             maxWidthDp = safeW,
             pxPerDp = pxPerDp
-        )
-        Log.d(
-            TAG,
-            "VM width-resize id=$id " +
-                "w:${el.width}->$safeW h:${el.height}->${after.heightDp} sp=${el.textSizeSp} " +
-                "lines:${before.lineCount}->${after.lineCount} pxPerDp=${pxPerDp ?: -1f}"
         )
         val newEl = el.copy(width = safeW, height = after.heightDp)
         val prev = uiState.value
@@ -714,7 +699,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         if (kotlin.math.abs(newH - el.height) > 1f) updateElement(el.copy(height = newH))
     }
 
-    /** Starts a corner-resize session for TextElement and locks its current line count. */
+    // Lock wrapped line count at drag start to prevent 2↔3 line oscillation while resizing.
     fun beginTextCornerResize(id: String, pxPerDp: Float? = null) {
         val el = currentElements.firstOrNull { it.id == id } as? TemplateElement.TextElement ?: return
         val metrics = measureTextMetrics(
@@ -730,16 +715,9 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
             lockedLineCount = metrics.lineCount.coerceAtLeast(1),
             pxPerDp = pxPerDp
         )
-        Log.d(
-            TAG,
-            "VM corner-resize START id=$id lockLines=${metrics.lineCount} pxPerDp=${pxPerDp ?: -1f}"
-        )
     }
 
-    /**
-     * Ends a corner-resize session and normalizes TextElement height once using
-     * natural wrapping (one-time jump is acceptable; jitter during drag is not).
-     */
+    // Release line lock at drag end and do one final natural height normalization.
     fun endTextCornerResize(id: String, pxPerDp: Float? = null) {
         val session = textCornerResizeSession
         textCornerResizeSession = null
@@ -763,10 +741,6 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 )
             } else el
         }
-        Log.d(
-            TAG,
-            "VM corner-resize END id=$id pxPerDp=${effectivePxPerDp ?: -1f}"
-        )
     }
 
     /**
@@ -837,13 +811,6 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                         isBold = el.isBold,
                         lineCount = lineCountForHeight,
                         pxPerDp = pxPerDp
-                    )
-                    Log.d(
-                        TAG,
-                        "VM corner-resize id=$id " +
-                            "w:${el.width}->req:$safeW->applied:$enforcedW h:${el.height}->raw:${stableAfter.heightDp}->smooth:$smoothHeight " +
-                            "sp:${el.textSizeSp}->$safeSp lines:${before.lineCount}->raw:${after.lineCount}->stable:${stableAfter.lineCount}->used:$lineCountForHeight " +
-                            "pxPerDp=${pxPerDp ?: -1f}"
                     )
                     el.copy(
                         x = oldCX - enforcedW / 2f, y = oldCY - smoothHeight / 2f,
@@ -1348,7 +1315,6 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     companion object {
-        private const val TAG = "TextResizeDiag.VM"
         const val MIN_TEXT_SIZE_SP = 10f
         const val MAX_TEXT_SIZE_SP = 100f
         private const val UNDO_LIMIT = 20    // max snapshots kept

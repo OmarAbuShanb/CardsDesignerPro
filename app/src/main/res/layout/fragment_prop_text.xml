@@ -51,14 +51,10 @@
                 android:layout_height="40dp"
                 android:layout_marginEnd="12dp" />
 
-            <TextView
-                android:id="@+id/tv_text_color_hex"
+            <dev.anonymous.cardsdesignerpro.common.widget.ColorHexFieldView
+                android:id="@+id/field_text_color_hex"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="monospace"
-                android:text="#000000"
-                android:textAppearance="?attr/textAppearanceBodyMedium"
-                tools:ignore="HardcodedText" />
+                android:layout_height="wrap_content" />
         </LinearLayout>
 
         <!-- Bg color -->
@@ -82,14 +78,11 @@
                 android:layout_height="40dp"
                 android:layout_marginEnd="12dp" />
 
-            <TextView
-                android:id="@+id/tv_bg_color_hex"
-                android:layout_width="0dp"
+            <dev.anonymous.cardsdesignerpro.common.widget.ColorHexFieldView
+                android:id="@+id/field_bg_color_hex"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:fontFamily="monospace"
-                android:text="@string/label_none"
-                android:textAppearance="?attr/textAppearanceBodyMedium" />
+                android:layout_marginEnd="8dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_clear_bg_color"
@@ -224,14 +217,10 @@
                     android:layout_height="40dp"
                     android:layout_marginEnd="12dp" />
 
-                <TextView
-                    android:id="@+id/tv_stroke_color_hex"
+                <dev.anonymous.cardsdesignerpro.common.widget.ColorHexFieldView
+                    android:id="@+id/field_stroke_color_hex"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="monospace"
-                    android:text="#000000"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
-                    tools:ignore="HardcodedText" />
+                    android:layout_height="wrap_content" />
             </LinearLayout>
 
             <TextView

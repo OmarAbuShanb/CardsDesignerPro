@@ -9,6 +9,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dev.anonymous.cardsdesignerpro.databinding.BottomSheetDefaultTemplatesBinding
+import dev.anonymous.cardsdesignerpro.ui.common.TemplateNameDialogFragment
 import kotlinx.coroutines.launch
 
 class DefaultTemplatesBottomSheet : BottomSheetDialogFragment() {
@@ -42,13 +43,13 @@ class DefaultTemplatesBottomSheet : BottomSheetDialogFragment() {
                     }
                 }
             }
-            if (childFragmentManager.findFragmentByTag(dev.anonymous.cardsdesignerpro.ui.common.TemplateNameDialogFragment.TAG) == null) {
-                dev.anonymous.cardsdesignerpro.ui.common.TemplateNameDialogFragment.newInstance(
+            if (childFragmentManager.findFragmentByTag(TemplateNameDialogFragment.TAG) == null) {
+                TemplateNameDialogFragment.newInstance(
                     titleRes = dev.anonymous.cardsdesignerpro.R.string.btn_edit_default_template,
                     positiveBtnRes = dev.anonymous.cardsdesignerpro.R.string.btn_save,
                     initialName = getString(dev.anonymous.cardsdesignerpro.R.string.template_name_copy, template.name),
                     requestKey = reqKey
-                ).show(childFragmentManager, dev.anonymous.cardsdesignerpro.ui.common.TemplateNameDialogFragment.TAG)
+                ).show(childFragmentManager, TemplateNameDialogFragment.TAG)
             }
         }
         binding.rvDefaultTemplates.adapter = adapter

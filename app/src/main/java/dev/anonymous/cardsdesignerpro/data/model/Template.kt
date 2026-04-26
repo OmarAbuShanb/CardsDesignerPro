@@ -63,6 +63,8 @@ data class ExportSettings(
     val exportFrontOnly: Boolean = false,
     /** Rendering quality — controls bitmap resolution for images, QR codes, and patterns. */
     val quality: ExportQuality = ExportQuality.HIGH,
+    /** Adds page numbers to exported pages (only shown when a document has multiple pages). */
+    val showPageNumbers: Boolean = false,
 ) {
     /** Resolves the selected preset, falling back to the recommended one. */
     val selectedPreset: CardLayoutPreset

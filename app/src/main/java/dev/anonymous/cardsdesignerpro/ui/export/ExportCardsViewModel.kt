@@ -270,6 +270,10 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
         _uiState.value = _uiState.value.copy(settings = _uiState.value.settings.copy(quality = q))
     }
 
+    fun updateShowPageNumbers(enabled: Boolean) {
+        mutateSettings { it.copy(showPageNumbers = enabled) }
+    }
+
     fun updateFlipEdge(e: FlipEdge) {
         _uiState.value = _uiState.value.copy(settings = _uiState.value.settings.copy(flipEdge = e))
     }

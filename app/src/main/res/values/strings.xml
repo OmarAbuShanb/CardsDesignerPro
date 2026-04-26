@@ -72,6 +72,7 @@
     <string name="label_horizontal_spacing">Horizontal Spacing</string>
     <string name="label_vertical_spacing">Vertical Spacing</string>
     <string name="label_page_size">Page Size</string>
+    <string name="label_page_numbers">Page Numbering</string>
 
     <!-- Editor and Default Templates -->
     <string name="flip_long_edge_desc">Flip on Long Edge</string>
@@ -109,6 +110,8 @@
     <string name="editor_undo_title">Undo</string>
     <string name="editor_restore_title">Reset</string>
     <string name="editor_restore_message">All changes made in this session will be undone. Do you want to continue?</string>
+    <string name="editor_delete_element_title">Delete element</string>
+    <string name="editor_delete_element_message">Do you want to delete this element?</string>
     <string name="btn_restore">Reset</string>
 
     <!-- Editor – Add Element Tab -->
@@ -144,6 +147,12 @@
     <string name="prop_bg_scale_crop">Center Crop</string>
     <string name="prop_text_content">Text Content</string>
     <string name="prop_text_color">Text Color</string>
+    <string name="color_hex_dialog_title">Edit Color Code</string>
+    <string name="color_hex_dialog_quick_colors">Quick Colors</string>
+    <string name="color_hex_dialog_hint">Hex Code (e.g. #FF5722)</string>
+    <string name="color_hex_dialog_invalid">Invalid color code</string>
+    <string name="color_hex_dialog_color_item_cd">Select color %1$s</string>
+    <string name="color_hex_dialog_edit_icon_cd">Edit color code</string>
     <string name="prop_text_bg_color">Text Background Color</string>
     <string name="prop_bold">Bold</string>
     <string name="prop_font">Font</string>
