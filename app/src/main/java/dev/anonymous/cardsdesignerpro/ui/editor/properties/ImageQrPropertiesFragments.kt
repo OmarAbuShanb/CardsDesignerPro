@@ -7,8 +7,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.AdapterView
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import dev.anonymous.cardsdesignerpro.R
@@ -16,6 +14,7 @@ import dev.anonymous.cardsdesignerpro.data.model.TemplateElement
 import dev.anonymous.cardsdesignerpro.databinding.FragmentPropImageBinding
 import dev.anonymous.cardsdesignerpro.databinding.FragmentPropQrBinding
 import dev.anonymous.cardsdesignerpro.ui.common.ColorHexDialogSupport
+import dev.anonymous.cardsdesignerpro.ui.common.ImageSourceBottomSheet
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorUiState
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel
 import dev.anonymous.cardsdesignerpro.util.ImageUtils
@@ -26,13 +25,6 @@ class ImagePropertiesFragment : Fragment(), PropertyFragment {
     private var _binding: FragmentPropImageBinding? = null
     private val binding get() = _binding!!
     val viewModel: EditorViewModel by activityViewModels()
-
-    /** Pick a new image to replace the current one — preserves size and position. */
-    private val changeImageLauncher = registerForActivityResult(
-        ActivityResultContracts.PickVisualMedia()
-    ) { uri: Uri? ->
-        uri?.let { changeImage(it) }
-    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentPropImageBinding.inflate(inflater, container, false)
@@ -64,8 +56,18 @@ class ImagePropertiesFragment : Fragment(), PropertyFragment {
                 val sheet = dev.anonymous.cardsdesignerpro.ui.editor.addelem.PackBrowserBottomSheet()
                 sheet.show(parentFragmentManager, "pack_change")
             } else {
-                changeImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                ImageSourceBottomSheet.show(parentFragmentManager, REQ_CHANGE_IMAGE)
             }
+        }
+
+        // Listen for image source result (replacing a file-based image)
+        parentFragmentManager.setFragmentResultListener(
+            REQ_CHANGE_IMAGE, viewLifecycleOwner
+        ) { _, bundle ->
+            @Suppress("DEPRECATION")
+            val uri = bundle.getParcelable<Uri>(ImageSourceBottomSheet.KEY_URI)
+                ?: return@setFragmentResultListener
+            changeImage(uri)
         }
 
         // Listen for pack browser result (replacing a pack image)
@@ -196,6 +198,7 @@ class ImagePropertiesFragment : Fragment(), PropertyFragment {
     companion object {
         private const val REQ_IMAGE_TINT_HEX = "req_image_tint_hex"
         private const val IMAGE_TINT_DIALOG_TAG = "image_tint_hex_dialog"
+        private const val REQ_CHANGE_IMAGE = "req_change_image"
     }
 }
 
@@ -206,10 +209,6 @@ class QrPropertiesFragment : Fragment(), PropertyFragment {
     private val binding get() = _binding!!
     val viewModel: EditorViewModel by activityViewModels()
     private var updating = false
-
-    private val pickLogoLauncher = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? ->
-        uri?.let { copyLogo(it) }
-    }
 
     // Shape option arrays
     private val pixelShapeValues = listOf("square", "round", "circle")
@@ -295,7 +294,17 @@ class QrPropertiesFragment : Fragment(), PropertyFragment {
 
         // Logo
         binding.btnPickLogo.setOnClickListener {
-            pickLogoLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            ImageSourceBottomSheet.show(parentFragmentManager, REQ_QR_LOGO)
+        }
+
+        // Listen for logo picker result
+        parentFragmentManager.setFragmentResultListener(
+            REQ_QR_LOGO, viewLifecycleOwner
+        ) { _, bundle ->
+            @Suppress("DEPRECATION")
+            val uri = bundle.getParcelable<Uri>(ImageSourceBottomSheet.KEY_URI)
+                ?: return@setFragmentResultListener
+            copyLogo(uri)
         }
         binding.btnRemoveLogo.setOnClickListener {
             val e = viewModel.selectedElement as? TemplateElement.QrElement ?: return@setOnClickListener
@@ -433,5 +442,6 @@ class QrPropertiesFragment : Fragment(), PropertyFragment {
         private const val REQ_QR_BG_COLOR_HEX = "req_qr_bg_color_hex"
         private const val QR_COLOR_DIALOG_TAG = "qr_color_hex_dialog"
         private const val QR_BG_COLOR_DIALOG_TAG = "qr_bg_color_hex_dialog"
+        private const val REQ_QR_LOGO = "req_qr_logo"
     }
 }

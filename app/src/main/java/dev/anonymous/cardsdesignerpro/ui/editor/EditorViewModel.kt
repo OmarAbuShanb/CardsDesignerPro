@@ -133,17 +133,18 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
 
     /** Auto-save (onPause). Writes to disk but keeps hasUnsavedChanges so the
      *  discard dialog still appears when the user returns.
-     *  Also resets activeSide to FRONT before writing so the next session starts
-     *  on the front face. */
+     *  Persists with activeSide=FRONT so the next cold-start session opens on the
+     *  front face, but does NOT change the live UI state — this prevents screen
+     *  rotation from snapping back to the front side. */
     fun saveIfNeeded() {
         if (uiState.value.hasUnsavedChanges) {
+            // Save to disk with activeSide=FRONT, but don't touch the live state
             val base = currentTemplate.copy(activeSide = CardSide.FRONT)
             val templateToSave = if (base.version == originalTemplate?.version) {
                 base.copy(version = base.version + 1)
             } else {
                 base
             }
-            _uiState.value = uiState.value.copy(template = templateToSave)
             viewModelScope.launch { repo.save(templateToSave) }
         }
     }
@@ -1077,11 +1078,18 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         val key = "$fontName|$isBold"
         return typefaceCache.getOrPut(key) {
             val style = if (isBold) Typeface.BOLD else Typeface.NORMAL
-            val baseTypeface = when (fontName.lowercase()) {
-                "default", "" -> Typeface.DEFAULT
-                "serif" -> Typeface.SERIF
-                "monospace" -> Typeface.MONOSPACE
-                "sans-serif" -> Typeface.SANS_SERIF
+            val baseTypeface = when {
+                fontName.startsWith("custom:") -> {
+                    val fileName = fontName.removePrefix("custom:")
+                    val file = java.io.File(getFontDirForCurrentTemplate(), fileName)
+                    if (file.exists()) {
+                        try { Typeface.createFromFile(file) } catch (_: Exception) { Typeface.DEFAULT }
+                    } else Typeface.DEFAULT
+                }
+                fontName.lowercase().let { it == "default" || it.isEmpty() } -> Typeface.DEFAULT
+                fontName.lowercase() == "serif" -> Typeface.SERIF
+                fontName.lowercase() == "monospace" -> Typeface.MONOSPACE
+                fontName.lowercase() == "sans-serif" -> Typeface.SANS_SERIF
                 else -> runCatching {
                     val ctx = getApplication<Application>()
                     val resId = ctx.resources.getIdentifier(fontName, "font", ctx.packageName)
@@ -1176,6 +1184,45 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
 
     fun getImageDirForCurrentTemplate(): java.io.File =
         repo.getOrCreateImageDir(currentTemplate.id)
+
+    fun getFontDirForCurrentTemplate(): java.io.File =
+        repo.getOrCreateFontDir(currentTemplate.id)
+
+    /** Returns (displayName, "custom:filename") pairs for all custom fonts in this template. */
+    fun getCustomFontsForCurrentTemplate(): List<Pair<String, String>> =
+        repo.getCustomFonts(currentTemplate.id).map { file ->
+            val display = file.nameWithoutExtension
+                .replace("_", " ")
+                .replaceFirstChar { it.uppercase() }
+            display to "custom:${file.name}"
+        }
+
+    /** Deletes a custom font file and resets any elements using it to "default". */
+    fun deleteCustomFont(fontFileName: String) {
+        val file = java.io.File(getFontDirForCurrentTemplate(), fontFileName)
+        if (file.exists()) file.delete()
+        val customKey = "custom:$fontFileName"
+        // Reset elements on both sides that reference this font
+        mutateTemplate { t ->
+            fun resetElements(elements: List<TemplateElement>) = elements.map { el ->
+                when (el) {
+                    is TemplateElement.TextElement ->
+                        if (el.fontName == customKey) el.copy(fontName = "default") else el
+                    is TemplateElement.UsernameElement ->
+                        if (el.fontName == customKey) el.copy(fontName = "default") else el
+                    is TemplateElement.PasswordElement ->
+                        if (el.fontName == customKey) el.copy(fontName = "default") else el
+                    is TemplateElement.DateElement ->
+                        if (el.fontName == customKey) el.copy(fontName = "default") else el
+                    else -> el
+                }
+            }
+            t.copy(
+                elements = resetElements(t.elements),
+                backElements = t.backElements?.let { resetElements(it) }
+            )
+        }
+    }
 
     // ── Private helpers ───────────────────────────────────────────────────────
 

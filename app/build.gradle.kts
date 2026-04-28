@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -57,9 +58,10 @@ dependencies {
     // Serialization
     implementation(libs.kotlinx.serialization.json)
 
-    // CSV / Excel
+    // CSV / Excel / PDF
     implementation(libs.opencsv)
     implementation(libs.poi.ooxml)
+    implementation(libs.pdfbox.android)
 
     // QR Code generation — custom-qr-generator (powered by ZXing internally, adds shape/logo/color support)
     implementation(libs.custom.qr.generator)
@@ -83,6 +85,9 @@ dependencies {
 
     // Splash Screen API (backport to API 26+)
     implementation(libs.androidx.core.splashscreen)
+
+    // Firebase Cloud Functions (trial registration)
+    implementation(libs.firebase.functions)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

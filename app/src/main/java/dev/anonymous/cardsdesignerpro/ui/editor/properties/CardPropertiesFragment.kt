@@ -5,13 +5,12 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import dev.anonymous.cardsdesignerpro.data.model.ImageScaleType
 import dev.anonymous.cardsdesignerpro.databinding.FragmentPropCardBinding
 import dev.anonymous.cardsdesignerpro.ui.common.ColorHexDialogSupport
+import dev.anonymous.cardsdesignerpro.ui.common.ImageSourceBottomSheet
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorUiState
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel
 import dev.anonymous.cardsdesignerpro.util.ImageUtils
@@ -23,10 +22,6 @@ class CardPropertiesFragment : Fragment(), PropertyFragment {
     private val binding get() = _binding!!
     val viewModel: EditorViewModel by activityViewModels()
     private var updating = false
-
-    private val pickBgImageLauncher = registerForActivityResult(
-        ActivityResultContracts.PickVisualMedia()
-    ) { uri: Uri? -> uri?.let { copyBgImage(it) } }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -52,7 +47,17 @@ class CardPropertiesFragment : Fragment(), PropertyFragment {
         binding.fieldBgColorHex.setOnClickListener { openBgColorHexDialog() }
 
         binding.btnChooseBgImage.setOnClickListener {
-            pickBgImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            ImageSourceBottomSheet.show(parentFragmentManager, REQ_BG_IMAGE)
+        }
+
+        // Listen for image source result
+        parentFragmentManager.setFragmentResultListener(
+            REQ_BG_IMAGE, viewLifecycleOwner
+        ) { _, bundle ->
+            @Suppress("DEPRECATION")
+            val uri = bundle.getParcelable<Uri>(ImageSourceBottomSheet.KEY_URI)
+                ?: return@setFragmentResultListener
+            copyBgImage(uri)
         }
         binding.btnDeleteBgImage.setOnClickListener {
             viewModel.updateCardBackgroundImage(null)
@@ -135,5 +140,6 @@ class CardPropertiesFragment : Fragment(), PropertyFragment {
     companion object {
         private const val REQ_CARD_BG_COLOR_HEX = "req_card_bg_color_hex"
         private const val CARD_BG_COLOR_DIALOG_TAG = "card_bg_color_hex_dialog"
+        private const val REQ_BG_IMAGE = "req_bg_image"
     }
 }

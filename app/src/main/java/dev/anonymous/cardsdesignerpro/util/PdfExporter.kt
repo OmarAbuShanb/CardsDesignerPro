@@ -48,7 +48,9 @@ object PdfExporter {
         outputStream: OutputStream,
         onProgress: (Int, Int) -> Unit = { _, _ -> }
     ) = withContext(Dispatchers.IO) {
-        val renderer = TemplateRenderer(context)
+        val renderer = TemplateRenderer(context).apply {
+            fontsDir = java.io.File(context.filesDir, "templates/${template.id}/fonts")
+        }
         try {
             val layout = calculateLayout(template, settings)
             writeFacePages(
@@ -73,7 +75,9 @@ object PdfExporter {
         outputStream: OutputStream,
         onProgress: (Int, Int) -> Unit = { _, _ -> }
     ) = withContext(Dispatchers.IO) {
-        val renderer = TemplateRenderer(context)
+        val renderer = TemplateRenderer(context).apply {
+            fontsDir = java.io.File(context.filesDir, "templates/${template.id}/fonts")
+        }
         val backTemplate = backFaceTemplate(template) ?: run {
             // No back side configured — fall back to single export
             writeFacePages(renderer, calculateLayout(template, settings),
@@ -190,7 +194,9 @@ object PdfExporter {
         backStream: OutputStream,
         onProgress: (Int, Int) -> Unit = { _, _ -> }
     ) = withContext(Dispatchers.IO) {
-        val renderer = TemplateRenderer(context)
+        val renderer = TemplateRenderer(context).apply {
+            fontsDir = java.io.File(context.filesDir, "templates/${template.id}/fonts")
+        }
         // No back side configured — fall back to single export
         val backTemplate = backFaceTemplate(template) ?: run {
             writeFacePages(renderer, calculateLayout(template, settings),
@@ -481,23 +487,29 @@ object PdfExporter {
             textSize = (minSide * 0.016f).coerceIn(8f, 12f)
         }
 
+        // Front side: always bottom-right
+        // Back side long-edge flip:  bottom-left  (mirrored horizontally)
+        // Back side short-edge flip: top-left + rotated 180° (mirrored vertically)
+
         val rightX = pageWidthPt - margin
         val leftX = margin + paint.measureText(text)
         val bottomY = pageHeightPt - margin
         val topY = margin - paint.ascent()
 
-        val x = when {
-            !mirrored -> rightX
-            flipEdge == FlipEdge.LONG_EDGE -> leftX
-            else -> rightX
+        if (!mirrored) {
+            // Front page — bottom-right
+            canvas.drawText(text, rightX, bottomY, paint)
+        } else if (flipEdge == FlipEdge.LONG_EDGE) {
+            // Back, long-edge flip — bottom-right (same corner as front)
+            canvas.drawText(text, rightX, bottomY, paint)
+        } else {
+            // Back, short-edge flip — top-left, rotated 180°
+            canvas.withSave {
+                rotate(180f, pageWidthPt / 2f, pageHeightPt / 2f)
+                // After 180° rotation, drawing at bottom-right ends up at top-left visually
+                canvas.drawText(text, rightX, bottomY, paint)
+            }
         }
-        val y = when {
-            !mirrored -> bottomY
-            flipEdge == FlipEdge.SHORT_EDGE -> topY
-            else -> bottomY
-        }
-
-        canvas.drawText(text, x, y, paint)
     }
 
     // ── Data ──────────────────────────────────────────────────────────────────

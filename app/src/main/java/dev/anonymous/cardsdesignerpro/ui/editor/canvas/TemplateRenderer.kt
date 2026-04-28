@@ -61,6 +61,12 @@ class TemplateRenderer(private val context: Context) {
     /** Cache for resolved Typefaces to avoid repeated resource lookups. */
     private val typefaceCache = mutableMapOf<String, Typeface>()
 
+    /**
+     * Directory containing custom font files (.ttf/.otf) for the current template.
+     * Must be set before [draw] when the template uses custom fonts.
+     */
+    var fontsDir: java.io.File? = null
+
 
     /**
      * Maximum bitmap dimensions for each content type.
@@ -746,11 +752,18 @@ class TemplateRenderer(private val context: Context) {
         val key = "$fontName|$isBold"
         return typefaceCache.getOrPut(key) {
             val style = if (isBold) Typeface.BOLD else Typeface.NORMAL
-            val baseTypeface = when (fontName.lowercase()) {
-                "default", "" -> Typeface.DEFAULT
-                "serif" -> Typeface.SERIF
-                "monospace" -> Typeface.MONOSPACE
-                "sans-serif" -> Typeface.SANS_SERIF
+            val baseTypeface = when {
+                fontName.startsWith("custom:") -> {
+                    val fileName = fontName.removePrefix("custom:")
+                    val file = fontsDir?.let { java.io.File(it, fileName) }
+                    if (file != null && file.exists()) {
+                        try { Typeface.createFromFile(file) } catch (_: Exception) { Typeface.DEFAULT }
+                    } else Typeface.DEFAULT
+                }
+                fontName.lowercase().let { it == "default" || it.isEmpty() } -> Typeface.DEFAULT
+                fontName.lowercase() == "serif" -> Typeface.SERIF
+                fontName.lowercase() == "monospace" -> Typeface.MONOSPACE
+                fontName.lowercase() == "sans-serif" -> Typeface.SANS_SERIF
                 else -> {
                     try {
                         val resId =

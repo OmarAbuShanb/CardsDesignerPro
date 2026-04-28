@@ -23,6 +23,8 @@ poi = "5.5.1"
 customQrGenerator = "1.6.2"
 # Color picker
 colorpickerview = "2.4.0"
+# PDF text extraction (for parsing card data from PDF files)
+pdfboxAndroid = "2.0.27.0"
 # Modern 16KB-safe lightweight PDF Viewer
 afreakyelfPdfViewer = "2.4.0"
 # Jetpack PDF Viewer
@@ -31,6 +33,9 @@ androidxPdfViewer = "1.0.0-alpha17"
 coil = "2.7.0"
 # Splash Screen
 splashscreen = "1.2.0"
+# Firebase
+googleServices = "4.4.4"
+firebaseFunctions = "22.1.1"
 
 [libraries]
 androidsvg-aar = { module = "com.caverock:androidsvg-aar", version.ref = "androidsvgAar" }
@@ -59,6 +64,8 @@ androidx-pdf-viewer = { group = "androidx.pdf", name = "pdf-viewer-fragment", ve
 # CSV / Excel
 opencsv = { group = "com.opencsv", name = "opencsv", version.ref = "opencsv" }
 poi-ooxml = { group = "org.apache.poi", name = "poi-ooxml", version.ref = "poi" }
+# PDF text extraction
+pdfbox-android = { group = "com.tom-roush", name = "pdfbox-android", version.ref = "pdfboxAndroid" }
 # QR
 custom-qr-generator = { group = "com.github.alexzhirkevich", name = "custom-qr-generator", version.ref = "customQrGenerator" }
 # Color picker
@@ -67,7 +74,10 @@ colorpickerview = { group = "com.github.skydoves", name = "colorpickerview", ver
 coil = { group = "io.coil-kt", name = "coil", version.ref = "coil" }
 # Splash Screen
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashscreen" }
+# Firebase
+firebase-functions = { group = "com.google.firebase", name = "firebase-functions", version.ref = "firebaseFunctions" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinSerialization" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }

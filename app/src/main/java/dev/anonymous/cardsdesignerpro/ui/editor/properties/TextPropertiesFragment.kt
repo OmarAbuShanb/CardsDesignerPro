@@ -1,10 +1,12 @@
 package dev.anonymous.cardsdesignerpro.ui.editor.properties
 
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -18,7 +20,11 @@ import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel.Companion.MAX_TEXT_SIZE_SP
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel.Companion.MIN_TEXT_SIZE_SP
 
-fun getAvailableFonts(context: android.content.Context) = listOf(
+/** Sentinel value used as the fontName for the "Choose custom font…" action item. */
+const val PICK_CUSTOM_FONT_SENTINEL = "__pick_custom__"
+
+/** Built-in font list (always appended after custom fonts). */
+private fun builtInFonts(context: android.content.Context) = listOf(
     context.getString(R.string.font_default) to "default",
     "Abril Fatface" to "abril_fatface_regular",
     "Almarai" to "almarai",
@@ -34,6 +40,19 @@ fun getAvailableFonts(context: android.content.Context) = listOf(
     "Special Elite" to "special_elite_regular"
 )
 
+/**
+ * Builds the full font list: action item → custom fonts → built-in fonts.
+ * [customFonts] are (displayName, "custom:filename") pairs from the ViewModel.
+ */
+fun getAvailableFonts(
+    context: android.content.Context,
+    customFonts: List<Pair<String, String>> = emptyList()
+): List<Pair<String, String>> = buildList {
+    add(context.getString(R.string.font_pick_custom) to PICK_CUSTOM_FONT_SENTINEL)
+    addAll(customFonts)
+    addAll(builtInFonts(context))
+}
+
 class TextPropertiesFragment : Fragment(), PropertyFragment {
 
     private var _binding: FragmentPropTextBinding? = null
@@ -41,6 +60,14 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
     val viewModel: EditorViewModel by activityViewModels()
     private var updating = false
     private var fontAdapter: FontSpinnerAdapter? = null
+
+    /** SAF font picker — copies selected .ttf/.otf to the template's fonts dir. */
+    private val fontPickerLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri ?: return@registerForActivityResult
+        importCustomFont(uri)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -82,8 +109,72 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
     }
 
     private fun setupFontSpinner() {
-        fontAdapter = FontSpinnerAdapter(requireContext(), getAvailableFonts(requireContext()))
+        rebuildFontAdapter()
+    }
+
+    /** Rebuilds the adapter with current custom fonts and sets the correct selection. */
+    private fun rebuildFontAdapter(selectFontName: String? = null) {
+        val oldPreview = fontAdapter?.previewText ?: "نص تجريبي"
+        val customFonts = viewModel.getCustomFontsForCurrentTemplate()
+        val fonts = getAvailableFonts(requireContext(), customFonts)
+        fontAdapter = FontSpinnerAdapter(
+            requireContext(), fonts,
+            previewText = oldPreview,
+            fontsDir = viewModel.getFontDirForCurrentTemplate()
+        ).also { adapter ->
+            adapter.onDeleteCustomFont = { fileName -> confirmDeleteFont(fileName) }
+        }
         binding.spinnerFont.adapter = fontAdapter
+        // If a specific font should be selected (e.g. just imported), select it
+        if (selectFontName != null) {
+            val idx = fonts.indexOfFirst { it.second == selectFontName }.coerceAtLeast(0)
+            binding.spinnerFont.setSelection(idx)
+        }
+    }
+
+    private fun confirmDeleteFont(fileName: String) {
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.font_delete_confirm_title)
+            .setMessage(R.string.font_delete_confirm_message)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.action_delete) { _, _ ->
+                viewModel.deleteCustomFont(fileName)
+                rebuildFontAdapter()
+                // Re-select the current element's font (now reset to default)
+                val el = viewModel.selectedElement as? TemplateElement.TextElement
+                if (el != null) {
+                    val allFonts = getAvailableFonts(requireContext(), viewModel.getCustomFontsForCurrentTemplate())
+                    val idx = allFonts.indexOfFirst { it.second == el.fontName }.coerceAtLeast(0)
+                    binding.spinnerFont.setSelection(idx)
+                }
+            }
+            .show()
+    }
+
+    private fun importCustomFont(uri: Uri) {
+        val ctx = requireContext()
+        val fontsDir = viewModel.getFontDirForCurrentTemplate()
+        // Derive filename from URI
+        val displayName = ctx.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            val nameIdx = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+            if (cursor.moveToFirst() && nameIdx >= 0) cursor.getString(nameIdx) else null
+        } ?: "custom_font_${System.currentTimeMillis()}.ttf"
+        val ext = displayName.substringAfterLast('.', "ttf").lowercase()
+        if (ext != "ttf" && ext != "otf") {
+            android.widget.Toast.makeText(ctx, R.string.font_invalid_format, android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
+        val outFile = java.io.File(fontsDir, displayName)
+        ctx.contentResolver.openInputStream(uri)?.use { input ->
+            outFile.outputStream().use { output -> input.copyTo(output) }
+        }
+        // Select the new font on the element
+        val customKey = "custom:${outFile.name}"
+        val el = viewModel.selectedElement as? TemplateElement.TextElement ?: return
+        val updated = el.copy(fontName = customKey)
+        viewModel.updateElement(updated)
+        viewModel.resizeTextElementToFit(updated)
+        rebuildFontAdapter(selectFontName = customKey)
     }
 
     private fun populateFrom(el: TemplateElement.TextElement) {
@@ -134,7 +225,8 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
             fontAdapter?.notifyDataSetChanged()
         }
 
-        val fontIdx = getAvailableFonts(requireContext()).indexOfFirst { it.second == el.fontName }.coerceAtLeast(0)
+        val allFonts = getAvailableFonts(requireContext(), viewModel.getCustomFontsForCurrentTemplate())
+        val fontIdx = allFonts.indexOfFirst { it.second == el.fontName }.coerceAtLeast(0)
         if (binding.spinnerFont.selectedItemPosition != fontIdx) binding.spinnerFont.setSelection(fontIdx)
 
         val alignBtnId = when (el.textAlign) {
@@ -214,8 +306,25 @@ class TextPropertiesFragment : Fragment(), PropertyFragment {
         binding.spinnerFont.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
                 if (updating) return
+                val allFonts = getAvailableFonts(requireContext(), viewModel.getCustomFontsForCurrentTemplate())
+                val newFont = allFonts[pos].second
+                // If user tapped the "Choose custom font..." action item, open file picker
+                if (newFont == PICK_CUSTOM_FONT_SENTINEL) {
+                    fontPickerLauncher.launch(arrayOf(
+                        "font/*",
+                        "application/x-font-ttf",
+                        "application/x-font-opentype",
+                        "application/octet-stream"
+                    ))
+                    // Revert selection to current font
+                    val el = viewModel.selectedElement as? TemplateElement.TextElement
+                    if (el != null) {
+                        val idx = allFonts.indexOfFirst { it.second == el.fontName }.coerceAtLeast(0)
+                        binding.spinnerFont.setSelection(idx)
+                    }
+                    return
+                }
                 val el = viewModel.selectedElement as? TemplateElement.TextElement ?: return
-                val newFont = getAvailableFonts(requireContext())[pos].second
                 if (el.fontName == newFont) return
                 val updated = el.copy(fontName = newFont)
                 viewModel.updateElement(updated)

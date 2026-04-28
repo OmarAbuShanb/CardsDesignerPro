@@ -5,15 +5,17 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
 import dev.anonymous.cardsdesignerpro.R
+import dev.anonymous.cardsdesignerpro.data.license.LicenseManager
+import dev.anonymous.cardsdesignerpro.data.license.PremiumFeature
 import dev.anonymous.cardsdesignerpro.databinding.FragmentAddElementBinding
+import dev.anonymous.cardsdesignerpro.ui.common.ImageSourceBottomSheet
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel
+import dev.anonymous.cardsdesignerpro.ui.license.LicenseDialogs
 import dev.anonymous.cardsdesignerpro.util.ImageUtils
 
 class AddElementFragment : Fragment() {
@@ -22,9 +24,9 @@ class AddElementFragment : Fragment() {
     private val binding get() = _binding!!
     val viewModel: EditorViewModel by activityViewModels()
 
-    private val pickImageLauncher = registerForActivityResult(
-        ActivityResultContracts.PickVisualMedia()
-    ) { uri: Uri? -> uri?.let { addImage(it) } }
+    companion object {
+        private const val REQ_ADD_IMAGE = "req_add_image"
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -38,13 +40,14 @@ class AddElementFragment : Fragment() {
         setupButtons()
         updateButtonStates()
         listenForPackResult()
+        listenForImageResult()
     }
 
     private fun setupButtons() {
         binding.btnAddText.setOnClickListener { showAddTextDialog() }
         binding.btnAddDate.setOnClickListener { viewModel.addDateElement() }
         binding.btnAddImage.setOnClickListener {
-            pickImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            ImageSourceBottomSheet.show(parentFragmentManager, REQ_ADD_IMAGE)
         }
         binding.btnAddUsername.setOnClickListener {
             if (!viewModel.hasNormalUsernameElement()) viewModel.addUsernameElement(isShort = false)
@@ -82,6 +85,17 @@ class AddElementFragment : Fragment() {
             val assetPath = packPath.removePrefix("pack:")
             val (w, h) = readSvgDimensions(assetPath)
             viewModel.addImageElement(packPath, w, h)
+        }
+    }
+
+    private fun listenForImageResult() {
+        parentFragmentManager.setFragmentResultListener(
+            REQ_ADD_IMAGE, viewLifecycleOwner
+        ) { _, bundle ->
+            @Suppress("DEPRECATION")
+            val uri = bundle.getParcelable<Uri>(ImageSourceBottomSheet.KEY_URI)
+                ?: return@setFragmentResultListener
+            addImage(uri)
         }
     }
 

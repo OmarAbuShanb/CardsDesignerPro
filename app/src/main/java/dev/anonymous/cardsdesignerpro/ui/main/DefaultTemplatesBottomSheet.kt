@@ -8,8 +8,11 @@ import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import dev.anonymous.cardsdesignerpro.R
+import dev.anonymous.cardsdesignerpro.data.license.LicenseManager
 import dev.anonymous.cardsdesignerpro.databinding.BottomSheetDefaultTemplatesBinding
 import dev.anonymous.cardsdesignerpro.ui.common.TemplateNameDialogFragment
+import dev.anonymous.cardsdesignerpro.ui.license.LicenseDialogs
 import kotlinx.coroutines.launch
 
 class DefaultTemplatesBottomSheet : BottomSheetDialogFragment() {
@@ -29,6 +32,15 @@ class DefaultTemplatesBottomSheet : BottomSheetDialogFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         val adapter = DefaultTemplateAdapter { dirName, template ->
+            // Premium template gate
+            val lm = LicenseManager.getInstance(requireContext())
+            if (lm.isPremiumTemplate(dirName) && !lm.isActivated) {
+                LicenseDialogs.showPremiumTemplateDialog(requireActivity()) {
+                    LicenseDialogs.showActivationDialog(requireActivity()) {}
+                }
+                return@DefaultTemplateAdapter
+            }
+
             val reqKey = "extract_${dirName}_${template.id}"
             childFragmentManager.setFragmentResultListener(reqKey, viewLifecycleOwner) { _, bundle ->
                 val enteredName = bundle.getString("name")

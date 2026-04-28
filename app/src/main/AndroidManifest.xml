@@ -47,7 +47,7 @@
             android:label="@string/alias_export_cards"
             android:targetActivity=".ui.export.ExportCardsActivity"
             android:exported="true">
-            <!-- فتح من مدير الملفات — يتطابق مع كل أنواع CSV و Excel -->
+            <!-- فتح من مدير الملفات — يتطابق مع كل أنواع CSV و Excel و PDF -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -56,6 +56,7 @@
                 <data android:scheme="content" android:mimeType="application/vnd.ms-excel" />
                 <data android:scheme="content"
                     android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <data android:scheme="content" android:mimeType="application/pdf" />
             </intent-filter>
 
             <!-- مشاركة من تطبيق آخر — بدون تحديد scheme -->
@@ -67,6 +68,7 @@
                 <data android:mimeType="text/comma-separated-values" />
                 <data android:mimeType="application/vnd.ms-excel" />
                 <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <data android:mimeType="application/pdf" />
             </intent-filter>
         </activity-alias>
 

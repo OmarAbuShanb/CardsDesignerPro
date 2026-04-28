@@ -27,6 +27,7 @@ object TemplateZipManager {
 
     private const val JSON_ENTRY = "template.json"
     private const val IMAGES_DIR = "images/"
+    private const val FONTS_DIR = "fonts/"
 
     /**
      * Exports a list of templates to a ZIP file.
@@ -53,6 +54,18 @@ object TemplateZipManager {
                                 zip.putNextEntry(ZipEntry(basePath + IMAGES_DIR + file.name))
                                 FileInputStream(file).use { it.copyTo(zip) }
                                 zip.closeEntry()
+                            }
+                        }
+
+                        // Export custom fonts
+                        val fontsDir = File(context.filesDir, "templates/${template.id}/fonts")
+                        if (fontsDir.exists()) {
+                            fontsDir.listFiles()?.forEach { fontFile ->
+                                if (fontFile.isFile) {
+                                    zip.putNextEntry(ZipEntry(basePath + FONTS_DIR + fontFile.name))
+                                    FileInputStream(fontFile).use { it.copyTo(zip) }
+                                    zip.closeEntry()
+                                }
                             }
                         }
                     }
@@ -102,6 +115,7 @@ object TemplateZipManager {
         runCatching {
             // Group bytes by template id
             val imageBytes = mutableMapOf<String, MutableMap<String, ByteArray>>() // id -> name -> bytes
+            val fontBytes = mutableMapOf<String, MutableMap<String, ByteArray>>()  // id -> name -> bytes
             val jsonStrings = mutableMapOf<String, String>()
 
             context.contentResolver.openInputStream(inputUri)?.use { rawIn ->
@@ -119,6 +133,12 @@ object TemplateZipManager {
                                     if (name.isNotEmpty()) {
                                         if (imageBytes[id] == null) imageBytes[id] = mutableMapOf()
                                         imageBytes[id]!![name] = zip.readBytes()
+                                    }
+                                } else if (entry.name.contains(FONTS_DIR) && !entry.isDirectory) {
+                                    val name = entry.name.substringAfter(FONTS_DIR)
+                                    if (name.isNotEmpty()) {
+                                        if (fontBytes[id] == null) fontBytes[id] = mutableMapOf()
+                                        fontBytes[id]!![name] = zip.readBytes()
                                     }
                                 }
                             }
@@ -140,6 +160,15 @@ object TemplateZipManager {
                         File(imageDir, name).writeBytes(bytes)
                     }
                     template = rewriteImagePaths(template, imageDir.absolutePath)
+                }
+                // Restore custom fonts
+                val fonts = fontBytes[id]
+                if (fonts != null && fonts.isNotEmpty()) {
+                    val fontDir = File(context.filesDir, "templates/$id/fonts")
+                    fontDir.mkdirs()
+                    fonts.forEach { (name, bytes) ->
+                        File(fontDir, name).writeBytes(bytes)
+                    }
                 }
                 imported.add(template)
             }

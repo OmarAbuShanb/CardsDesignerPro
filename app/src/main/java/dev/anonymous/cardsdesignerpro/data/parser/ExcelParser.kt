@@ -2,6 +2,7 @@ package dev.anonymous.cardsdesignerpro.data.parser
 
 import android.content.Context
 import android.net.Uri
+import dev.anonymous.cardsdesignerpro.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.apache.poi.hssf.usermodel.HSSFWorkbook
@@ -59,7 +60,7 @@ object ExcelParser {
                 } ?: ParseResult.empty()
             }.getOrElse { e ->
                 e.printStackTrace()
-                ParseResult.error(e.message ?: "خطأ غير معروف")
+                ParseResult.error(e.message ?: context.getString(R.string.error_unknown_parse))
             }
         }
 

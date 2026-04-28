@@ -22,11 +22,15 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import dev.anonymous.cardsdesignerpro.R
+import dev.anonymous.cardsdesignerpro.data.license.LicenseManager
+import dev.anonymous.cardsdesignerpro.data.license.LicenseStatus
+import dev.anonymous.cardsdesignerpro.data.license.PremiumFeature
 import dev.anonymous.cardsdesignerpro.data.model.CardLayoutPreset
 import dev.anonymous.cardsdesignerpro.data.model.ExportQuality
 import dev.anonymous.cardsdesignerpro.data.model.FlipEdge
 import dev.anonymous.cardsdesignerpro.data.model.PageSize
 import dev.anonymous.cardsdesignerpro.databinding.ActivityExportCardsBinding
+import dev.anonymous.cardsdesignerpro.ui.license.LicenseDialogs
 import dev.anonymous.cardsdesignerpro.ui.viewer.PdfViewerActivity
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -333,6 +337,7 @@ class ExportCardsActivity : AppCompatActivity() {
                     "text/csv", "text/comma-separated-values",
                     "application/vnd.ms-excel",
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "application/pdf",
                     "*/*"
                 )
             )
@@ -343,6 +348,7 @@ class ExportCardsActivity : AppCompatActivity() {
                     "text/csv", "text/comma-separated-values",
                     "application/vnd.ms-excel",
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "application/pdf",
                     "*/*"
                 )
             )
@@ -547,6 +553,51 @@ class ExportCardsActivity : AppCompatActivity() {
      * 4. Proceed to launch the PDF saver.
      */
     private fun handleExportClick(isSeparate: Boolean) {
+        // License guard — must pass before any other checks
+        val lm = LicenseManager.getInstance(this)
+        if (!lm.canAccess(PremiumFeature.PDF_EXPORT)) {
+            when (lm.licenseState.value.status) {
+                LicenseStatus.TRIAL_EXPIRED ->
+                    LicenseDialogs.showTrialExpiredDialog(this) {
+                        LicenseDialogs.showActivationDialog(this) {}
+                    }
+                LicenseStatus.EXPORT_LIMIT_REACHED ->
+                    LicenseDialogs.showExportLimitDialog(this) {
+                        LicenseDialogs.showActivationDialog(this) {}
+                    }
+                else ->
+                    LicenseDialogs.showPremiumFeatureDialog(this) {
+                        LicenseDialogs.showActivationDialog(this) {}
+                    }
+            }
+            return
+        }
+
+        // Scenario A — trial users must increment export count on server before exporting
+        if (!lm.isActivated) {
+            lm.incrementServerExportCount(
+                onSuccess = { _ -> proceedWithExport(isSeparate) },
+                onFailure = { _ ->
+                    Snackbar.make(
+                        binding.root,
+                        R.string.license_export_sync_error,
+                        Snackbar.LENGTH_LONG
+                    ).setAction(R.string.license_btn_retry) {
+                        handleExportClick(isSeparate)
+                    }.show()
+                }
+            )
+            return
+        }
+
+        proceedWithExport(isSeparate)
+    }
+
+    /**
+     * Continues the export flow after all license/sync checks pass.
+     */
+    private fun proceedWithExport(isSeparate: Boolean) {
+
         val state = viewModel.uiState.value
 
         // Guard 1: file still being parsed
@@ -847,11 +898,14 @@ class ExportCardsActivity : AppCompatActivity() {
         // Events
         state.event?.let { ev ->
             when (ev) {
-                is ExportEvent.ExportSuccess -> showSingleSuccessDialog(ev.outputUri)
-                is ExportEvent.ExportSuccessDual -> showSeparateSuccessDialog(
-                    ev.frontUri,
-                    ev.backUri
-                )
+                is ExportEvent.ExportSuccess -> {
+                    LicenseManager.getInstance(this).incrementExportCount()
+                    showSingleSuccessDialog(ev.outputUri)
+                }
+                is ExportEvent.ExportSuccessDual -> {
+                    LicenseManager.getInstance(this).incrementExportCount()
+                    showSeparateSuccessDialog(ev.frontUri, ev.backUri)
+                }
 
                 is ExportEvent.ExportFailed ->
                     Snackbar.make(
@@ -993,7 +1047,8 @@ class ExportCardsActivity : AppCompatActivity() {
         val validMimeTypes = setOf(
             "text/csv", "text/comma-separated-values",
             "application/vnd.ms-excel",
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/pdf"
         )
         if (type != null && type != "*/*") {
             if (validMimeTypes.contains(type)) return true
@@ -1002,6 +1057,7 @@ class ExportCardsActivity : AppCompatActivity() {
         val name = queryFileName(uri) ?: return false
         return name.endsWith(".csv", true) ||
                 name.endsWith(".xls", true) ||
-                name.endsWith(".xlsx", true)
+                name.endsWith(".xlsx", true) ||
+                name.endsWith(".pdf", true)
     }
 }

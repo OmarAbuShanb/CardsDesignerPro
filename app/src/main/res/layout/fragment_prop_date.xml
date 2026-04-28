@@ -98,7 +98,7 @@
             android:text="@string/prop_font"
             android:textAppearance="?attr/textAppearanceLabelMedium" />
 
-        <Spinner
+        <dev.anonymous.cardsdesignerpro.ui.common.TopScrollSpinner
             android:id="@+id/spinner_font"
             android:layout_width="match_parent"
             android:layout_height="48dp"

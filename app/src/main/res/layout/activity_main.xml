@@ -16,7 +16,22 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:title="@string/app_name"
-            app:titleTextColor="?attr/colorOnSurface" />
+            app:titleTextColor="?attr/colorOnSurface">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_activate"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end|center_vertical"
+                android:layout_marginEnd="8dp"
+                android:textSize="11sp"
+                android:minHeight="36dp"
+                android:paddingHorizontal="16dp"
+                app:cornerRadius="18dp"
+                android:visibility="gone" />
+
+        </com.google.android.material.appbar.MaterialToolbar>
 
     </com.google.android.material.appbar.AppBarLayout>
 

@@ -88,7 +88,7 @@
     <string name="btn_pick_qr_logo">Choose QR Logo</string>
     <string name="label_chosen_logo">Chosen Logo</string>
     <string name="cb_tint_logo">Tint logo with QR color</string>
-    <string name="label_data_file">Data File(s) (CSV / Excel)</string>
+    <string name="label_data_file">Data File(s) (CSV / Excel / PDF)</string>
     <string name="label_cards_per_page">Cards per Page</string>
     <string name="label_total_pages">Total Pages</string>
     <string name="btn_export">Export</string>
@@ -232,9 +232,9 @@
     <string name="flip_hint_short_edge">(Flip on short edge)</string>
 
     <!-- Dual-sided card feature — File list -->
-    <string name="label_file_unsupported">Unsupported type — please choose CSV or Excel</string>
+    <string name="label_file_unsupported">Unsupported type — please choose CSV, Excel or PDF</string>
     <string name="action_remove_file">Remove file</string>
-    <string name="error_no_valid_file">Please choose a valid CSV or Excel file first</string>
+    <string name="error_no_valid_file">Please choose a valid CSV, Excel or PDF file first</string>
 
     <!-- File name tokens used in saved PDF names -->
     <string name="front_filename">front_side</string>
@@ -293,6 +293,7 @@
     <string name="item_mismatch_password">Password: %1$s (%2$d digits)</string>
     <string name="action_continue_export">Continue Export</string>
     <string name="action_fix_data">Fix Data</string>
+    <string name="error_unknown_parse">Unknown error while reading the file</string>
 
     <!-- Date format display names (used in DateFormat enum spinner) -->
     <string name="date_format_year_month_day_slash">Year/Month/Day</string>
@@ -310,4 +311,53 @@
     <string name="alias_pdf_preview">PDF Preview</string>
     <string name="alias_export_cards">Export Cards</string>
 
+    <!-- License / Activation -->
+    <string name="license_trial_active_btn">Free Trial — Tap to Activate</string>
+    <string name="license_trial_expired_btn">Trial Expired — Tap to Activate</string>
+    <string name="license_export_limit_btn">Export Limit Reached — Activate</string>
+    <string name="license_activate_title">Activate App</string>
+    <string name="license_activate_benefits">Activating the app unlocks:\n\n• Unlimited PDF exports\n• Ready-made elements\n• Premium templates\n• Template backup import/export\n• Removes screenshot block in editor</string>
+    <string name="license_whatsapp_click">📱 Send device hash via WhatsApp to get your code</string>
+    <string name="license_whatsapp_message">Hello, I want to activate Cards Designer Pro.\n\nDevice hash:\n%s</string>
+    <string name="license_hint_activation_code">Activation Code</string>
+    <string name="license_btn_activate">Activate</string>
+    <string name="license_btn_activate_now">Activate Now</string>
+    <string name="license_btn_later">Later</string>
+    <string name="license_activate_success">App activated successfully! 🎉</string>
+    <string name="license_error_empty_code">Enter the activation code first</string>
+    <string name="license_error_invalid_code">Invalid activation code</string>
+    <string name="license_premium_feature_title">Premium Feature</string>
+    <string name="license_premium_feature_message">This feature is available only in the activated version of the app.\n\nActivate now to unlock all features.</string>
+    <string name="license_premium_export_message">Exporting template backups is available only in the activated version.\n\nActivate now to export your templates.</string>
+    <string name="license_premium_import_message">Importing template backups is available only in the activated version.\n\nActivate now to import templates.</string>
+    <string name="license_premium_template_message">This premium template is available only in the activated version.\n\nActivate the app to use all templates.</string>
+    <string name="license_premium_readymade_message">This ready-made element is available only in the activated version.\n\nActivate now to use all elements.</string>
+    <string name="license_export_limit_title">Free Export Limit Reached</string>
+    <string name="license_export_limit_message">You have used all %1$d free exports.\n\nActivate the app to get unlimited exports.</string>
+    <string name="license_trial_expired_title">Free Trial Ended</string>
+    <string name="license_trial_expired_message">Your %1$d-day free trial has ended.\n\nActivate the app to continue using all features.</string>
+    <string name="license_premium_template_snack">This template is available only in the activated version.</string>
+    <string name="license_remaining_exports">Remaining free exports: %1$d of %2$d</string>
+    <string name="license_export_sync_error">Please connect to the internet to export</string>
+
+    <!-- Server Sync Dialog -->
+    <string name="license_sync_title">Verifying App</string>
+    <string name="license_sync_loading">Connecting to server…</string>
+    <string name="license_sync_error">Connection failed: %s</string>
+    <string name="license_btn_retry">Retry</string>
+    <string name="license_btn_have_code">Already have an activation code?</string>
+
+    <!-- Image Source Picker -->
+    <string name="image_source_title">Choose Image From</string>
+    <string name="image_source_gallery">Gallery</string>
+    <string name="image_source_files">Files</string>
+
+    <!-- Custom Font Picker -->
+    <string name="font_pick_custom">Choose custom font…</string>
+    <string name="font_invalid_format">Invalid format. Please select a .ttf or .otf file.</string>
+    <string name="font_delete_confirm_title">Remove Font</string>
+    <string name="font_delete_confirm_message">This will remove the font and reset all elements using it to the default font.</string>
+    <string name="action_delete">Delete</string>
+
 </resources>
+

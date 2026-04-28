@@ -187,16 +187,25 @@ class CardCanvasView @JvmOverloads constructor(
         (1..count).joinToString("") { (it % 10).toString() }
 
     private val typefaceCache = mutableMapOf<String, Typeface>()
+    /** Directory with custom font files for the current template. */
+    private var fontsDir: java.io.File? = null
 
     private fun resolveTypeface(fontName: String, isBold: Boolean): Typeface {
         val key = "$fontName|$isBold"
         return typefaceCache.getOrPut(key) {
             val style = if (isBold) Typeface.BOLD else Typeface.NORMAL
-            val baseTypeface = when (fontName.lowercase()) {
-                "default", "" -> Typeface.DEFAULT
-                "serif"       -> Typeface.SERIF
-                "monospace"   -> Typeface.MONOSPACE
-                "sans-serif"  -> Typeface.SANS_SERIF
+            val baseTypeface = when {
+                fontName.startsWith("custom:") -> {
+                    val fileName = fontName.removePrefix("custom:")
+                    val file = fontsDir?.let { java.io.File(it, fileName) }
+                    if (file != null && file.exists()) {
+                        try { Typeface.createFromFile(file) } catch (_: Exception) { Typeface.DEFAULT }
+                    } else Typeface.DEFAULT
+                }
+                fontName.lowercase().let { it == "default" || it.isEmpty() } -> Typeface.DEFAULT
+                fontName.lowercase() == "serif"       -> Typeface.SERIF
+                fontName.lowercase() == "monospace"   -> Typeface.MONOSPACE
+                fontName.lowercase() == "sans-serif"  -> Typeface.SANS_SERIF
                 else -> {
                     try {
                         val resId = context.resources.getIdentifier(fontName, "font", context.packageName)
@@ -264,6 +273,10 @@ class CardCanvasView @JvmOverloads constructor(
         this.template = template
         this.selectedId = selectedId
         this.activeSide = activeSide
+        // Set custom fonts directory for this template
+        val fDir = java.io.File(context.filesDir, "templates/${template.id}/fonts")
+        fontsDir = fDir
+        renderer.fontsDir = fDir
         previewCache?.recycle()
         previewCache = null
         previewRendering = false
@@ -276,8 +289,9 @@ class CardCanvasView @JvmOverloads constructor(
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val w = MeasureSpec.getSize(widthMeasureSpec)
         val t = template
-        // Add HR below the card so the height-handle icon is not clipped by the view bounds
-        val h = if (t != null) (w * t.card.heightRatio + HR).toInt() else w
+        // Add HR only in interactive mode (editor) for the height-handle icon
+        val extra = if (isInteractive) HR else 0f
+        val h = if (t != null) (w * t.card.heightRatio + extra).toInt() else w
         setMeasuredDimension(w, h)
     }
 
@@ -347,15 +361,23 @@ class CardCanvasView @JvmOverloads constructor(
             return
         }
 
+        // Clip elements + overlay to the card bounds; height handle is drawn
+        // AFTER restore so it can sit half-inside / half-outside the card edge.
+        canvas.save()
+        canvas.clipRect(0f, 0f, cardWidthPx, cardHeightPx)
+
         // Build a render-proxy: same card style, but active side's elements
         val activeCard = if (activeSide == CardSide.BACK && t.isBackSideEnabled)
             t.backCard ?: t.card else t.card
         val renderTemplate = if (activeSide == CardSide.BACK && t.isBackSideEnabled)
             t.copy(elements = t.backElements ?: emptyList(), card = activeCard)
         else t
+
         renderer.draw(canvas, renderTemplate, 0f, 0f, cardWidthPx, cardHeightPx)
         drawSnapLines(canvas)
         drawElementOverlay(canvas, renderTemplate)
+
+        canvas.restore()
         drawHeightHandleIcon(canvas)
     }
 
@@ -551,7 +573,7 @@ class CardCanvasView @JvmOverloads constructor(
                 val idx = event.findPointerIndex(activePointerId)
                 val x = if (idx >= 0) event.getX(idx) else lastX
                 val y = if (idx >= 0) event.getY(idx) else lastY
-                if (mode != Mode.CONSUMED && hypot((x - downX).toDouble(), (y - downY).toDouble()) < TAP_SLOP)
+                if (mode == Mode.NONE && hypot((x - downX).toDouble(), (y - downY).toDouble()) < TAP_SLOP)
                     handleTap(downX, downY)
                 endGesture()
             }
@@ -881,16 +903,32 @@ class CardCanvasView @JvmOverloads constructor(
     private fun handleTap(x: Float, y: Float) {
         template ?: return
         if (selectedId == "card_background" && dist(x, y, cardWidthPx / 2, cardHeightPx) < HR * 2f) return
+
+        // Helper: inverse-rotate touch into element's local space and check if inside bounds.
+        // This ensures rotated elements are hit-tested correctly.
+        fun hitTestElement(el: TemplateElement): Boolean {
+            val ecx = (el.x + el.width / 2) * scaleX
+            val ecy = (el.y + el.height / 2) * scaleY
+            val (hw, hh) = elementHalfSizes(el)
+            val rad = Math.toRadians(el.rotation.toDouble())
+            val cosR = kotlin.math.cos(rad).toFloat()
+            val sinR = kotlin.math.sin(rad).toFloat()
+            val dx = x - ecx; val dy = y - ecy
+            val lx = ecx + dx * cosR + dy * sinR
+            val ly = ecy - dx * sinR + dy * cosR
+            return lx in (ecx - hw)..(ecx + hw) && ly in (ecy - hh)..(ecy + hh)
+        }
+
+        // Tap outside card bounds → deselect
         if (x !in 0f..cardWidthPx || y < 0f || y > cardHeightPx) {
             listener?.onElementSelected(null); return
         }
+
+        // Inside card: find topmost hit element (with rotation-aware hit test)
         for (el in activeElements) {
             if (!el.isVisible || el is TemplateElement.CardBackground
                 || el is TemplateElement.FrameElement) continue
-            val cx = (el.x + el.width / 2) * scaleX
-            val cy = (el.y + el.height / 2) * scaleY
-            val (hw, hh) = elementHalfSizes(el)
-            if (x in (cx - hw)..(cx + hw) && y in (cy - hh)..(cy + hh)) {
+            if (hitTestElement(el)) {
                 listener?.onElementSelected(el.id); return
             }
         }

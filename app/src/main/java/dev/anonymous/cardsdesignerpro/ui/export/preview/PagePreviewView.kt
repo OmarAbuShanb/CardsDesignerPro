@@ -89,6 +89,10 @@ class PagePreviewView @JvmOverloads constructor(
         this.isMirrored = isMirrored
         this.flipEdge   = flipEdge
         this.showPageNumberPreview = showPageNumberPreview
+        // Set fonts dir for custom font rendering
+        if (template != null) {
+            renderer.fontsDir = java.io.File(context.filesDir, "templates/${template.id}/fonts")
+        }
 
         val newKey = buildCacheKey(template, layout, isMirrored, flipEdge, showPageNumberPreview)
         if (newKey != cacheKey) {
@@ -162,6 +166,7 @@ class PagePreviewView @JvmOverloads constructor(
             val q = dev.anonymous.cardsdesignerpro.data.model.ExportQuality.LOW
             maxImageDim = q.maxImageDim
             maxQrDim    = q.maxQrDim
+            fontsDir = tCopy?.let { java.io.File(context.filesDir, "templates/${it.id}/fonts") }
         }
 
         pendingFuture = RENDER_EXECUTOR.submit {
@@ -248,21 +253,24 @@ class PagePreviewView @JvmOverloads constructor(
         val minSide = pageWidth.coerceAtMost(pageHeight)
         val margin = (minSide * 0.015f).coerceAtLeast(6f)
         pageNumberPaint.textSize = (minSide * 0.020f).coerceIn(9f, 22f)
-        val baselineOffset = pageNumberPaint.descent() + margin
 
-        val anchorRight = pageWidth - margin
-        val anchorLeft = margin + pageNumberPaint.measureText(pageNumberText)
-        val x = when {
-            !mirrored -> anchorRight
-            flipEdge == FlipEdge.LONG_EDGE -> anchorLeft
-            else -> anchorRight
+        val rightX = pageWidth - margin
+        val leftX = margin + pageNumberPaint.measureText(pageNumberText)
+        val bottomY = pageHeight - (pageNumberPaint.descent() + margin)
+
+        if (!mirrored) {
+            // Front page — bottom-right
+            canvas.drawText(pageNumberText, rightX, bottomY, pageNumberPaint)
+        } else if (flipEdge == FlipEdge.LONG_EDGE) {
+            // Back, long-edge flip — bottom-right (same corner as front)
+            canvas.drawText(pageNumberText, rightX, bottomY, pageNumberPaint)
+        } else {
+            // Back, short-edge flip — top-left, rotated 180°
+            canvas.withSave {
+                rotate(180f, pageWidth / 2f, pageHeight / 2f)
+                canvas.drawText(pageNumberText, rightX, bottomY, pageNumberPaint)
+            }
         }
-        val y = when {
-            !mirrored -> pageHeight - baselineOffset
-            flipEdge == FlipEdge.SHORT_EDGE -> margin - pageNumberPaint.ascent()
-            else -> pageHeight - baselineOffset
-        }
-        canvas.drawText(pageNumberText, x, y, pageNumberPaint)
     }
 
     private fun buildCacheKey(

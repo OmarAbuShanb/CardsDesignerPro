@@ -19,6 +19,7 @@ class TemplateRepository(private val context: Context) {
     private fun templateDir(id: String) = File(rootDir, id)
     private fun jsonFile(id: String) = File(templateDir(id), "template.json")
     private fun imageDir(id: String) = File(templateDir(id), "images")
+    private fun fontDir(id: String) = File(templateDir(id), "fonts")
 
     // ── CRUD ─────────────────────────────────────────────────────────────────
 
@@ -201,6 +202,19 @@ class TemplateRepository(private val context: Context) {
      * Creates it if it doesn't exist.
      */
     fun getOrCreateImageDir(id: String): File = imageDir(id).also { it.mkdirs() }
+
+    /** Returns the fonts directory for a given template, creating it if needed. */
+    fun getOrCreateFontDir(id: String): File = fontDir(id).also { it.mkdirs() }
+
+    /** Lists custom font files (.ttf / .otf) stored in this template's fonts dir. */
+    fun getCustomFonts(id: String): List<File> {
+        val dir = fontDir(id)
+        if (!dir.exists()) return emptyList()
+        return dir.listFiles()?.filter {
+            val ext = it.extension.lowercase()
+            ext == "ttf" || ext == "otf"
+        }?.sortedBy { it.name } ?: emptyList()
+    }
 
     /**
      * Deletes image files inside a template's image directory that are no longer

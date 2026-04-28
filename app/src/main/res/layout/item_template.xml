@@ -42,7 +42,6 @@
             android:id="@+id/card_container"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:background="?attr/colorSurfaceVariant"
             android:foreground="?attr/selectableItemBackground"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"

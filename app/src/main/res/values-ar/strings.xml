@@ -88,7 +88,7 @@
     <string name="btn_pick_qr_logo">اختيار شعار للQR</string>
     <string name="label_chosen_logo">الشعار المختار</string>
     <string name="cb_tint_logo">تلوين الشعار بنفس لون الباركود</string>
-    <string name="label_data_file">ملف أو ملفات البيانات (CSV / Excel)</string>
+    <string name="label_data_file">ملف أو ملفات البيانات (CSV / Excel / PDF)</string>
     <string name="label_cards_per_page">عدد البطاقات التي تتسعها الصفحة</string>
     <string name="label_total_pages">عدد الصفحات</string>
     <string name="btn_export">تصدير</string>
@@ -225,9 +225,9 @@
     <string name="flip_hint_short_edge">(قلب على الحافة القصيرة)</string>
 
     <!-- Dual-sided card feature — File list -->
-    <string name="label_file_unsupported">نوع غير مدعوم — يرجى اختيار CSV أو Excel</string>
+    <string name="label_file_unsupported">نوع غير مدعوم — يرجى اختيار CSV أو Excel أو PDF</string>
     <string name="action_remove_file">إزالة الملف</string>
-    <string name="error_no_valid_file">يرجى اختيار ملف CSV أو Excel صحيح أولاً</string>
+    <string name="error_no_valid_file">يرجى اختيار ملف CSV أو Excel أو PDF صحيح أولاً</string>
 
     <!-- File name tokens used in saved PDF names -->
     <string name="front_filename">الوجه_الامامي</string>
@@ -286,6 +286,7 @@
     <string name="item_mismatch_password">الباسورد: %1$s (%2$d رقم)</string>
     <string name="action_continue_export">متابعة التصدير</string>
     <string name="action_fix_data">تعديل البيانات</string>
+    <string name="error_unknown_parse">خطأ غير معروف أثناء قراءة الملف</string>
 
     <!-- Date format display names (used in DateFormat enum spinner) -->
     <string name="date_format_year_month_day_slash">السنة/الشهر/اليوم</string>
@@ -303,6 +304,42 @@
     <string name="alias_pdf_preview">معاينة PDF</string>
     <string name="alias_export_cards">تصدير البطاقات</string>
 
+    <!-- License / Activation -->
+    <string name="license_trial_active_btn">فترة تجريبية — انقر للتفعيل</string>
+    <string name="license_trial_expired_btn">انتهت الفترة المجانية — انقر للتفعيل</string>
+    <string name="license_export_limit_btn">انتهت التصديرات — انقر للتفعيل</string>
+    <string name="license_activate_title">تفعيل التطبيق</string>
+    <string name="license_activate_benefits">تفعيل التطبيق يفتح لك:\n\n• تصدير PDF بدون حدود\n• العناصر الجاهزة\n• القوالب المميزة\n• استيراد وتصدير نسخ القوالب\n• إزالة حظر لقطات الشاشة في المحرر</string>
+    <string name="license_whatsapp_click">📱 أرسل هاش الجهاز عبر واتساب للحصول على كود التفعيل</string>
+    <string name="license_whatsapp_message">مرحباً، أريد تفعيل تطبيق مصمم البطاقات برو.\n\nهاش الجهاز:\n%s</string>
+    <string name="license_hint_activation_code">كود التفعيل</string>
+    <string name="license_btn_activate">تفعيل</string>
+    <string name="license_btn_activate_now">تفعيل الآن</string>
+    <string name="license_btn_later">لاحقاً</string>
+    <string name="license_activate_success">تم تفعيل التطبيق بنجاح! 🎉</string>
+    <string name="license_error_empty_code">أدخل كود التفعيل أولاً</string>
+    <string name="license_error_invalid_code">كود التفعيل غير صحيح</string>
+    <string name="license_premium_feature_title">ميزة مدفوعة</string>
+    <string name="license_premium_feature_message">هذه الميزة متاحة فقط في النسخة المفعّلة من التطبيق.\n\nفعّل الآن لفتح جميع الميزات.</string>
+    <string name="license_premium_export_message">تصدير نسخ القوالب متاح فقط في النسخة المفعّلة.\n\nفعّل الآن لتصدير قوالبك.</string>
+    <string name="license_premium_import_message">استيراد نسخ القوالب متاح فقط في النسخة المفعّلة.\n\nفعّل الآن لاستيراد القوالب.</string>
+    <string name="license_premium_template_message">هذا القالب المميز متاح فقط في النسخة المفعّلة.\n\nفعّل التطبيق لاستخدام جميع القوالب.</string>
+    <string name="license_premium_readymade_message">هذا العنصر الجاهز متاح فقط في النسخة المفعّلة.\n\nفعّل الآن لاستخدام جميع العناصر.</string>
+    <string name="license_export_limit_title">انتهى عدد التصديرات المجانية</string>
+    <string name="license_export_limit_message">لقد استخدمت جميع التصديرات المجانية (%1$d تصدير).\n\nفعّل التطبيق للحصول على تصدير بدون حدود.</string>
+    <string name="license_trial_expired_title">انتهت الفترة التجريبية</string>
+    <string name="license_trial_expired_message">انتهت فترة التجربة المجانية (%1$d يوم).\n\nفعّل التطبيق للاستمرار في استخدام جميع الميزات.</string>
+    <string name="license_premium_template_snack">هذا القالب متاح فقط في النسخة المفعّلة من التطبيق.</string>
+    <string name="license_remaining_exports">التصديرات المتبقية: %1$d من %2$d</string>
+    <string name="license_export_sync_error">يرجى الاتصال بالإنترنت للتصدير</string>
+
+    <!-- Server Sync Dialog -->
+    <string name="license_sync_title">التحقق من التطبيق</string>
+    <string name="license_sync_loading">جاري الاتصال بالسيرفر…</string>
+    <string name="license_sync_error">فشل الاتصال: %s</string>
+    <string name="license_btn_retry">إعادة المحاولة</string>
+    <string name="license_btn_have_code">لديك كود تفعيل؟</string>
+
     <string name="notification_permission_dialog_title">السماح بإشعارات التصدير؟</string>
     <string name="notification_permission_dialog_message">لكي يستمر التصدير بشكل موثوق في الخلفية، يتوقع نظام أندرويد وجود إشعار للخدمة الأمامية. عند السماح بالإشعارات ستتمكن من متابعة نسبة التقدم حتى خارج هذه الشاشة.\n\nيمكنك أيضا متابعة التصدير بدون تفعيل الإشعارات.</string>
     <string name="notification_permission_dialog_allow">السماح بالإشعارات</string>
@@ -310,4 +347,19 @@
     <string name="notification_permission_denied_export_continues">الإشعارات معطلة. سيستمر التصدير بدون عرض التقدم في إشعارات النظام.</string>
     <string name="editor_delete_element_title">حذف العنصر</string>
     <string name="editor_delete_element_message">هل تريد حذف هذا العنصر؟</string>
+
+    <!-- Image Source Picker -->
+    <string name="image_source_title">اختيار صورة من</string>
+    <string name="image_source_gallery">المعرض</string>
+    <string name="image_source_files">الملفات</string>
+
+    <!-- Custom Font Picker -->
+    <string name="font_pick_custom">اختيار خط مخصص…</string>
+    <string name="font_invalid_format">صيغة غير صالحة. يرجى اختيار ملف بامتداد .ttf أو .otf</string>
+    <string name="font_delete_confirm_title">إزالة الخط</string>
+    <string name="font_delete_confirm_message">سيتم إزالة الخط وإعادة تعيين جميع العناصر التي تستخدمه إلى الخط الافتراضي.</string>
+    <string name="action_delete">حذف</string>
+
 </resources>
+
+

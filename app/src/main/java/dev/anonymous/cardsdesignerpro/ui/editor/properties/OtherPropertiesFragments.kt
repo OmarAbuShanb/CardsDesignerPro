@@ -1,11 +1,13 @@
 package dev.anonymous.cardsdesignerpro.ui.editor.properties
 
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import dev.anonymous.cardsdesignerpro.R
@@ -26,6 +28,13 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
     val viewModel: EditorViewModel by activityViewModels()
     private var updating = false
     private var fontAdapter: FontSpinnerAdapter? = null
+
+    private val fontPickerLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri ?: return@registerForActivityResult
+        importCustomFont(uri)
+    }
 
     override fun onCreateView(i: LayoutInflater, c: ViewGroup?, s: Bundle?): View {
         _b = FragmentPropDateBinding.inflate(i, c, false)
@@ -68,7 +77,7 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
             setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         }
 
-        fontAdapter = FontSpinnerAdapter(requireContext(), getAvailableFonts(requireContext()))
+        rebuildFontAdapter()
         b.spinnerFont.adapter = fontAdapter
 
         val el = viewModel.selectedElement as? TemplateElement.DateElement ?: return
@@ -124,14 +133,85 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
         b.spinnerFont.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
                 if (updating) return
+                val allFonts = getAvailableFonts(requireContext(), viewModel.getCustomFontsForCurrentTemplate())
+                val newFont = allFonts[pos].second
+                if (newFont == PICK_CUSTOM_FONT_SENTINEL) {
+                    fontPickerLauncher.launch(arrayOf(
+                        "font/*", "application/x-font-ttf",
+                        "application/x-font-opentype", "application/octet-stream"
+                    ))
+                    val e = viewModel.selectedElement as? TemplateElement.DateElement
+                    if (e != null) {
+                        val idx = allFonts.indexOfFirst { it.second == e.fontName }.coerceAtLeast(0)
+                        b.spinnerFont.setSelection(idx)
+                    }
+                    return
+                }
                 val e = viewModel.selectedElement as? TemplateElement.DateElement ?: return
-                val newFont = getAvailableFonts(requireContext())[pos].second
                 if (e.fontName == newFont) return
                 viewModel.updateElement(e.copy(fontName = newFont))
             }
 
             override fun onNothingSelected(p: AdapterView<*>?) {}
         }
+    }
+
+    private fun rebuildFontAdapter(selectFontName: String? = null) {
+        val oldPreview = fontAdapter?.previewText ?: "نص تجريبي"
+        val customFonts = viewModel.getCustomFontsForCurrentTemplate()
+        val fonts = getAvailableFonts(requireContext(), customFonts)
+        fontAdapter = FontSpinnerAdapter(
+            requireContext(), fonts,
+            previewText = oldPreview,
+            fontsDir = viewModel.getFontDirForCurrentTemplate()
+        ).also { adapter ->
+            adapter.onDeleteCustomFont = { fileName -> confirmDeleteFont(fileName) }
+        }
+        b.spinnerFont.adapter = fontAdapter
+        if (selectFontName != null) {
+            val idx = fonts.indexOfFirst { it.second == selectFontName }.coerceAtLeast(0)
+            b.spinnerFont.setSelection(idx)
+        }
+    }
+
+    private fun confirmDeleteFont(fileName: String) {
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.font_delete_confirm_title)
+            .setMessage(R.string.font_delete_confirm_message)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.action_delete) { _, _ ->
+                viewModel.deleteCustomFont(fileName)
+                rebuildFontAdapter()
+                val e = viewModel.selectedElement as? TemplateElement.DateElement
+                if (e != null) {
+                    val allFonts = getAvailableFonts(requireContext(), viewModel.getCustomFontsForCurrentTemplate())
+                    val idx = allFonts.indexOfFirst { it.second == e.fontName }.coerceAtLeast(0)
+                    b.spinnerFont.setSelection(idx)
+                }
+            }
+            .show()
+    }
+
+    private fun importCustomFont(uri: Uri) {
+        val ctx = requireContext()
+        val fontsDir = viewModel.getFontDirForCurrentTemplate()
+        val displayName = ctx.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            val nameIdx = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+            if (cursor.moveToFirst() && nameIdx >= 0) cursor.getString(nameIdx) else null
+        } ?: "custom_font_${System.currentTimeMillis()}.ttf"
+        val ext = displayName.substringAfterLast('.', "ttf").lowercase()
+        if (ext != "ttf" && ext != "otf") {
+            android.widget.Toast.makeText(ctx, R.string.font_invalid_format, android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
+        val outFile = java.io.File(fontsDir, displayName)
+        ctx.contentResolver.openInputStream(uri)?.use { input ->
+            outFile.outputStream().use { output -> input.copyTo(output) }
+        }
+        val customKey = "custom:${outFile.name}"
+        val e = viewModel.selectedElement as? TemplateElement.DateElement ?: return
+        viewModel.updateElement(e.copy(fontName = customKey))
+        rebuildFontAdapter(selectFontName = customKey)
     }
 
     private fun populate(e: TemplateElement.DateElement, formats: Array<DateFormat>) {
@@ -174,7 +254,8 @@ class DatePropertiesFragment : Fragment(), PropertyFragment {
             fontAdapter?.notifyDataSetChanged()
         }
 
-        val fontIdx = getAvailableFonts(requireContext()).indexOfFirst { it.second == e.fontName }.coerceAtLeast(0)
+        val allFonts = getAvailableFonts(requireContext(), viewModel.getCustomFontsForCurrentTemplate())
+        val fontIdx = allFonts.indexOfFirst { it.second == e.fontName }.coerceAtLeast(0)
         if (b.spinnerFont.selectedItemPosition != fontIdx) b.spinnerFont.setSelection(fontIdx)
         updating = false
     }

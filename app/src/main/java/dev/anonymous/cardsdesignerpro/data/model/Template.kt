@@ -1,7 +1,7 @@
 package dev.anonymous.cardsdesignerpro.data.model
 
-import kotlinx.serialization.Serializable
 import androidx.annotation.StringRes
+import kotlinx.serialization.Serializable
 
 /**
  * Root template model. Version field enables forward-compatible migrations.
@@ -10,7 +10,7 @@ import androidx.annotation.StringRes
  *  - [isBackSideEnabled] toggles the back face in the editor.
  *  - [backElements] holds the back-face element list (null = feature not yet activated).
  *  - [activeSide] persists which face was last focused in the editor.
- * All new fields are optional with safe defaults → existing templates load unchanged.
+ * All new fields are optional with safe defaults so existing templates load unchanged.
  */
 @Serializable
 data class Template(
@@ -24,7 +24,7 @@ data class Template(
     /** Back-face elements. null = back side not enabled. emptyList = enabled but empty. */
     val backElements: List<TemplateElement>? = null,
     val isBackSideEnabled: Boolean = false,
-    /** Last active side in the editor — persisted so reopening restores focus. */
+    /** Last active side in the editor; persisted so reopening restores focus. */
     val activeSide: CardSide = CardSide.FRONT,
     val exportSettings: ExportSettings? = null,
     val isShortNumbersEnabled: Boolean = false
@@ -33,7 +33,6 @@ data class Template(
 enum class CardSide { FRONT, BACK }
 
 enum class ImageScaleType { FIT_XY, CENTER_CROP }
-
 
 @Serializable
 data class CardStyle(
@@ -46,14 +45,14 @@ data class CardStyle(
     val backgroundImagePath: String? = null,
     /** "FIT_XY", "CENTER_CROP", "FIT_CENTER" etc. (persisted as String for forward config safety). */
     val backgroundImageScaleType: String = ImageScaleType.FIT_XY.name,
-    /** Whether Username and Password styles are kept fully in sync */
+    /** Whether Username and Password styles are kept fully in sync. */
     val linkCredentialsStyle: Boolean = false,
 )
 
 @Serializable
 data class ExportSettings(
     val pageSize: PageSize = PageSize.A4,
-    /** Index into [CardLayoutPreset.ALL] — default = 55 cards (5×11, recommended). */
+    /** Index into [CardLayoutPreset.ALL]; default = 55 cards (5x11, recommended). */
     val selectedLayoutIndex: Int = CardLayoutPreset.RECOMMENDED_INDEX,
     val horizontalSpacingDp: Float = 2f,
     val verticalSpacingDp: Float = 2f,
@@ -61,7 +60,7 @@ data class ExportSettings(
     val flipEdge: FlipEdge = FlipEdge.LONG_EDGE,
     /** When true, export only the front face even if back side is enabled. */
     val exportFrontOnly: Boolean = false,
-    /** Rendering quality — controls bitmap resolution for images, QR codes, and patterns. */
+    /** Rendering quality; controls bitmap resolution for images, QR codes, and patterns. */
     val quality: ExportQuality = ExportQuality.HIGH,
     /** Adds page numbers to exported pages (only shown when a document has multiple pages). */
     val showPageNumbers: Boolean = false,
@@ -89,37 +88,43 @@ data class CardLayoutPreset(
 
     companion object {
         val ALL: List<CardLayoutPreset> = listOf(
-            // ── 6 أعمدة ──
-            CardLayoutPreset(6, 9),    //  0 → 54
-            CardLayoutPreset(6, 10),   //  1 → 60
-            CardLayoutPreset(6, 11),   //  2 → 66
-            CardLayoutPreset(6, 12),   //  3 → 72
-            CardLayoutPreset(6, 13),   //  4 → 78
-            // ── 5 أعمدة ──
-            CardLayoutPreset(5, 8),    //  5 → 40
-            CardLayoutPreset(5, 9),    //  6 → 45
-            CardLayoutPreset(5, 10),   //  7 → 50
-            CardLayoutPreset(5, 11, isRecommended = true),  //  8 → 55 ★ موصى به
-            CardLayoutPreset(5, 12),   //  9 → 60
-            CardLayoutPreset(5, 13),   // 10 → 65
-            CardLayoutPreset(5, 14),   // 11 → 70
-            // ── 4 أعمدة ──
-            CardLayoutPreset(4, 9),    // 12 → 36
-            CardLayoutPreset(4, 10),   // 13 → 40
-            CardLayoutPreset(4, 11),   // 14 → 44
-            CardLayoutPreset(4, 12),   // 15 → 48
-            CardLayoutPreset(4, 13),   // 16 → 52
-            CardLayoutPreset(4, 14),   // 17 → 56
-            CardLayoutPreset(4, 15),   // 18 → 60
-            // ── 3 أعمدة ──
-            CardLayoutPreset(3, 6),    // 19 → 18
-            CardLayoutPreset(3, 7),    // 20 → 21
-            CardLayoutPreset(3, 8),    // 21 → 24
-            CardLayoutPreset(3, 9),    // 22 → 27
+            // 8 columns
+            CardLayoutPreset(8, 9),    //  0 -> 72
+            CardLayoutPreset(8, 10),   //  1 -> 80
+            // 7 columns
+            CardLayoutPreset(7, 10),   //  2 -> 70
+            CardLayoutPreset(7, 11),   //  3 -> 77
+            // 6 columns
+            CardLayoutPreset(6, 9),    //  4 -> 54
+            CardLayoutPreset(6, 10),   //  5 -> 60
+            CardLayoutPreset(6, 11),   //  6 -> 66
+            CardLayoutPreset(6, 12),   //  7 -> 72
+            CardLayoutPreset(6, 13),   //  8 -> 78
+            // 5 columns
+            CardLayoutPreset(5, 8),    //  9 -> 40
+            CardLayoutPreset(5, 9),    // 10 -> 45
+            CardLayoutPreset(5, 10),   // 11 -> 50
+            CardLayoutPreset(5, 11, isRecommended = true),  // 12 -> 55 recommended
+            CardLayoutPreset(5, 12),   // 13 -> 60
+            CardLayoutPreset(5, 13),   // 14 -> 65
+            CardLayoutPreset(5, 14),   // 15 -> 70
+            // 4 columns
+            CardLayoutPreset(4, 9),    // 16 -> 36
+            CardLayoutPreset(4, 10),   // 17 -> 40
+            CardLayoutPreset(4, 11),   // 18 -> 44
+            CardLayoutPreset(4, 12),   // 19 -> 48
+            CardLayoutPreset(4, 13),   // 20 -> 52
+            CardLayoutPreset(4, 14),   // 21 -> 56
+            CardLayoutPreset(4, 15),   // 22 -> 60
+            // 3 columns
+            CardLayoutPreset(3, 6),    // 23 -> 18
+            CardLayoutPreset(3, 7),    // 24 -> 21
+            CardLayoutPreset(3, 8),    // 25 -> 24
+            CardLayoutPreset(3, 9),    // 26 -> 27
         )
 
-        /** Index of the recommended preset (55 cards, 5×11). */
-        const val RECOMMENDED_INDEX = 8
+        /** Index of the recommended preset (55 cards, 5x11). */
+        const val RECOMMENDED_INDEX = 12
     }
 }
 
@@ -137,11 +142,11 @@ enum class PageSize(
 /**
  * Controls how back-side cards are mirrored to align with the front when printing duplex.
  *
- * LONG_EDGE  (recommended, most printers): columns reversed per row.
- *   Front [r,c=0] ↔ Back [r, cols-1-c]
+ * LONG_EDGE (recommended, most printers): columns reversed per row.
+ *   Front [r,c=0] <-> Back [r, cols-1-c]
  *
  * SHORT_EDGE: rows reversed, columns unchanged.
- *   Front [r=0,c] ↔ Back [rows-1, c]
+ *   Front [r=0,c] <-> Back [rows-1, c]
  */
 @Serializable
 enum class FlipEdge(@param:StringRes val labelRes: Int) {
@@ -156,12 +161,12 @@ enum class FlipEdge(@param:StringRes val labelRes: Int) {
  * (QR codes) need proportionally more pixels than large ones (card backgrounds,
  * regular images) to appear sharp.
  *
- * **Note:** SVG images used as element images or card backgrounds are rendered
- * as vector graphics directly and are NOT affected by these quality settings.
+ * Note: SVG images used as element images or card backgrounds are rendered
+ * as vector graphics directly and are not affected by these quality settings.
  *
- * @property renderScale  Base multiplier for bitmap request dimensions.
- * @property maxImageDim  Cap for card backgrounds and regular image elements.
- * @property maxQrDim     Cap for QR code bitmaps (never exceeds 1024 for memory safety).
+ * @property renderScale Base multiplier for bitmap request dimensions.
+ * @property maxImageDim Cap for card backgrounds and regular image elements.
+ * @property maxQrDim Cap for QR code bitmaps (never exceeds 1024 for memory safety).
  */
 @Serializable
 enum class ExportQuality(
@@ -169,14 +174,14 @@ enum class ExportQuality(
     val maxImageDim: Int,
     val maxQrDim: Int,
 ) {
-    /** الجودة الكاملة — أقصى وضوح للطباعة */
-    FULL(    renderScale = 4.0f,  maxImageDim = 1536, maxQrDim = 900),
-    /** جودة عالية — الافتراضي */
-    HIGH(    renderScale = 3.5f,  maxImageDim = 1408, maxQrDim = 712),
-    /** جودة جيدة — توازن بين الحجم والجودة */
-    GOOD(    renderScale = 3.0f,  maxImageDim = 1280, maxQrDim = 525),
-    /** جودة متوسطة — ملفات أصغر */
-    MEDIUM(  renderScale = 2.5f,  maxImageDim = 1152, maxQrDim = 338),
-    /** جودة منخفضة — أسرع تصدير للمسودات */
-    LOW(     renderScale = 2.0f,  maxImageDim = 1024, maxQrDim = 150);
+    /** Full quality: highest clarity for printing. */
+    FULL(renderScale = 4.0f, maxImageDim = 1536, maxQrDim = 900),
+    /** High quality: default. */
+    HIGH(renderScale = 3.5f, maxImageDim = 1408, maxQrDim = 712),
+    /** Good quality: balanced size and clarity. */
+    GOOD(renderScale = 3.0f, maxImageDim = 1280, maxQrDim = 525),
+    /** Medium quality: smaller files. */
+    MEDIUM(renderScale = 2.5f, maxImageDim = 1152, maxQrDim = 338),
+    /** Low quality: fastest draft export. */
+    LOW(renderScale = 2.0f, maxImageDim = 1024, maxQrDim = 150);
 }

@@ -15,6 +15,7 @@ import dev.anonymous.cardsdesignerpro.data.model.TemplateElement
 import dev.anonymous.cardsdesignerpro.data.parser.CsvParser
 import dev.anonymous.cardsdesignerpro.data.parser.ExcelParser
 import dev.anonymous.cardsdesignerpro.data.parser.ParseResult
+import dev.anonymous.cardsdesignerpro.data.parser.PdfParser
 import dev.anonymous.cardsdesignerpro.data.repository.TemplateRepository
 import dev.anonymous.cardsdesignerpro.util.PdfExporter
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -145,7 +146,7 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
     fun addFiles(uris: List<Uri>, displayNames: List<String>, isShort: Boolean = false) {
         val current =
             if (isShort) _uiState.value.selectedShortFiles.toMutableList() else _uiState.value.selectedFiles.toMutableList()
-        val supported = setOf("csv", "xlsx", "xls")
+        val supported = setOf("csv", "xlsx", "xls", "pdf")
         uris.forEachIndexed { i, uri ->
             val name = displayNames.getOrElse(i) { uri.lastPathSegment ?: "file" }
             val ext = name.substringAfterLast('.', "").lowercase()
@@ -215,6 +216,8 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
                         uri,
                         isXlsx = false
                     )
+
+                    name.endsWith(".pdf", ignoreCase = true) -> PdfParser.parse(ctx, uri)
 
                     else -> null
                 }

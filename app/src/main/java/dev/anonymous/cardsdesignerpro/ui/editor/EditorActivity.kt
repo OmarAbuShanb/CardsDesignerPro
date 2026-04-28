@@ -3,6 +3,7 @@ package dev.anonymous.cardsdesignerpro.ui.editor
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import androidx.activity.addCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -11,6 +12,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dev.anonymous.cardsdesignerpro.R
+import dev.anonymous.cardsdesignerpro.data.license.LicenseManager
 import dev.anonymous.cardsdesignerpro.data.model.CardSide
 import dev.anonymous.cardsdesignerpro.databinding.ActivityEditorBinding
 import dev.anonymous.cardsdesignerpro.ui.common.TemplateNameDialogFragment
@@ -34,6 +36,14 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
         super.onCreate(savedInstanceState)
         binding = ActivityEditorBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Block screenshots for non-activated users
+        if (!LicenseManager.getInstance(this).isActivated) {
+            window.setFlags(
+                WindowManager.LayoutParams.FLAG_SECURE,
+                WindowManager.LayoutParams.FLAG_SECURE
+            )
+        }
 
         val templateId = intent.getStringExtra(EXTRA_TEMPLATE_ID) ?: run { finish(); return }
         viewModel.init(templateId)
