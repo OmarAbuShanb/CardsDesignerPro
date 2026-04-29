@@ -223,6 +223,24 @@ sealed class TemplateElement {
         /** Whether dash caps are rounded. */
         val isDashRounded: Boolean = false,
     ) : TemplateElement()
+
+    // ── Line ──────────────────────────────────────────────────────────────────
+
+    @Serializable
+    @SerialName("line")
+    data class LineElement(
+        override val id: String,
+        override val x: Float,
+        override val y: Float,
+        override val width: Float,
+        override val height: Float,
+        override val isVisible: Boolean = true,
+        override val rotation: Float = 0f,
+        /** Line color ARGB hex. */
+        val color: String = "#000000",
+        /** Whether the line endpoints are rounded. */
+        val roundedCaps: Boolean = false,
+    ) : TemplateElement()
 }
 
 // ── Supporting enums ──────────────────────────────────────────────────────────

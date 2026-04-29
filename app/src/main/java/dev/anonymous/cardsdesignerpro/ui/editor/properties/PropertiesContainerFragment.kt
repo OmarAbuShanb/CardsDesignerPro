@@ -56,6 +56,7 @@ class PropertiesContainerFragment : Fragment(), PropertyFragment {
                     is TemplateElement.DateElement     -> DatePropertiesFragment()
                     is TemplateElement.FrameElement    -> FramePropertiesFragment()
                     is TemplateElement.ShapeElement    -> ShapePropertiesFragment()
+                    is TemplateElement.LineElement     -> LinePropertiesFragment()
                     else -> NoSelectionFragment()
                 }
             }

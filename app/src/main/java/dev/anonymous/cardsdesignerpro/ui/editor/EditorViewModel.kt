@@ -416,6 +416,16 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         )
     }
 
+    fun addLineElement() {
+        val w = 80f
+        val h = 2f   // thin line
+        addElement(
+            TemplateElement.LineElement(
+                id = newId(), x = centerX(w), y = centerY(h), width = w, height = h,
+            )
+        )
+    }
+
     /** Duplicates an element by id, places the copy slightly offset and selects it. */
     fun duplicateElement(id: String) {
         val original = currentElements.firstOrNull { it.id == id } ?: return
@@ -426,6 +436,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
             is TemplateElement.ShapeElement -> original.copy(id = newId, x = original.x + offset, y = original.y + offset)
             is TemplateElement.TextElement  -> original.copy(id = newId, x = original.x + offset, y = original.y + offset)
             is TemplateElement.ImageElement -> original.copy(id = newId, x = original.x + offset, y = original.y + offset)
+            is TemplateElement.LineElement  -> original.copy(id = newId, x = original.x + offset, y = original.y + offset)
             else -> return // Only these elements are allowed to be duplicated
         }
         addElement(copy)
@@ -499,6 +510,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 is TemplateElement.DateElement -> el.copy(isVisible = !el.isVisible)
                 is TemplateElement.FrameElement -> el.copy(isVisible = !el.isVisible)
                 is TemplateElement.ShapeElement -> el.copy(isVisible = !el.isVisible)
+                is TemplateElement.LineElement -> el.copy(isVisible = !el.isVisible)
                 is TemplateElement.CardBackground -> el
             }
         }
@@ -555,6 +567,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 is TemplateElement.DateElement -> el.copy(x = el.x + dx, y = el.y + dy)
                 is TemplateElement.FrameElement -> el.copy(x = el.x + dx, y = el.y + dy)
                 is TemplateElement.ShapeElement -> el.copy(x = el.x + dx, y = el.y + dy)
+                is TemplateElement.LineElement -> el.copy(x = el.x + dx, y = el.y + dy)
                 is TemplateElement.CardBackground -> el
             }
         }
@@ -646,6 +659,12 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                     width = safeW,
                     height = safeH
                 )
+                is TemplateElement.LineElement -> el.copy(
+                    x = oldCX - safeW / 2f,
+                    y = oldCY - safeH / 2f,
+                    width = safeW,
+                    height = safeH
+                )
 
                 is TemplateElement.CardBackground -> el
             }
@@ -657,9 +676,35 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         val safeW = newWidth.coerceAtLeast(10f)
         mutateElement(id) { el ->
             when (el) {
-                is TemplateElement.ShapeElement -> el.copy(width = safeW)
+                is TemplateElement.ShapeElement -> {
+                    val dW = safeW - el.width
+                    if (dW == 0f) return@mutateElement el
+                    // Compensate position to keep the left edge anchored during rotation
+                    val rad = Math.toRadians(el.rotation.toDouble())
+                    val cos = kotlin.math.cos(rad).toFloat()
+                    val sin = kotlin.math.sin(rad).toFloat()
+                    val newX = el.x + (dW / 2f) * (cos - 1f)
+                    val newY = el.y + (dW / 2f) * sin
+                    el.copy(width = safeW, x = newX, y = newY)
+                }
                 else -> el
             }
+        }
+    }
+
+    fun resizeLineWidth(id: String, newWidth: Float) {
+        val safeW = newWidth.coerceAtLeast(5f)
+        mutateElement(id) { el ->
+            if (el !is TemplateElement.LineElement) return@mutateElement el
+            val dW = safeW - el.width
+            if (dW == 0f) return@mutateElement el
+            // Compensate position to keep the left edge (starting point) anchored during rotation
+            val rad = Math.toRadians(el.rotation.toDouble())
+            val cos = kotlin.math.cos(rad).toFloat()
+            val sin = kotlin.math.sin(rad).toFloat()
+            val newX = el.x + (dW / 2f) * (cos - 1f)
+            val newY = el.y + (dW / 2f) * sin
+            el.copy(width = safeW, x = newX, y = newY)
         }
     }
 
@@ -670,6 +715,9 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     /**
      * Right-center pill handle for TextElement: changes width and recalculates
      * the element height so the box always wraps the text content exactly.
+     *
+     * For rotated elements the position is compensated so the visual top-left
+     * corner stays fixed (at rotation=0 this is a no-op: x,y unchanged).
      */
     fun resizeTextWidth(id: String, newWidth: Float, pxPerDp: Float? = null) {
         val safeW = newWidth.coerceAtLeast(20f)
@@ -683,7 +731,15 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
             maxWidthDp = safeW,
             pxPerDp = pxPerDp
         )
-        val newEl = el.copy(width = safeW, height = after.heightDp)
+        // Keep the visual top-left corner fixed when the element is rotated.
+        val dW = safeW - el.width
+        val dH = after.heightDp - el.height
+        val rad = Math.toRadians(el.rotation.toDouble())
+        val cosR = kotlin.math.cos(rad).toFloat()
+        val sinR = kotlin.math.sin(rad).toFloat()
+        val newX = el.x + (dW / 2f) * (cosR - 1f) - (dH / 2f) * sinR
+        val newY = el.y + (dH / 2f) * (cosR - 1f) + (dW / 2f) * sinR
+        val newEl = el.copy(x = newX, y = newY, width = safeW, height = after.heightDp)
         val prev = uiState.value
         val newList = currentSideElements(prev.template).map { if (it.id == id) newEl else it }
         update(
@@ -1107,11 +1163,21 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         (1..count).joinToString("") { (it % 10).toString() }
 
     /** Top-center handle: top edge moves, bottom edge stays fixed. */
-    fun resizeShapeHeight(id: String, newY: Float, newHeight: Float) {
+    fun resizeShapeHeight(id: String, newHeight: Float) {
         val safeH = newHeight.coerceAtLeast(10f)
         mutateElement(id) { el ->
             when (el) {
-                is TemplateElement.ShapeElement -> el.copy(y = newY, height = safeH)
+                is TemplateElement.ShapeElement -> {
+                    val dH = safeH - el.height
+                    if (dH == 0f) return@mutateElement el
+                    // Compensate position to keep the bottom edge anchored during rotation
+                    val rad = Math.toRadians(el.rotation.toDouble())
+                    val cos = kotlin.math.cos(rad).toFloat()
+                    val sin = kotlin.math.sin(rad).toFloat()
+                    val newX = el.x + (dH / 2f) * sin
+                    val newY = el.y - (dH / 2f) * (1f + cos)
+                    el.copy(height = safeH, x = newX, y = newY)
+                }
                 else -> el
             }
         }
@@ -1129,6 +1195,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 is TemplateElement.DateElement -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
                 is TemplateElement.FrameElement -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
                 is TemplateElement.ShapeElement -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
+                is TemplateElement.LineElement -> el.copy(rotation = (el.rotation + angleDelta) % 360f)
                 is TemplateElement.CardBackground -> el
             }
         }

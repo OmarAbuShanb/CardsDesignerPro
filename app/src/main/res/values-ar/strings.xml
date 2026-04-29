@@ -119,6 +119,7 @@
     <string name="btn_add_date">تاريخ</string>
     <string name="btn_add_frame">إطار البطاقة</string>
     <string name="btn_add_shape">شكل هندسي</string>
+    <string name="btn_add_line">خط</string>
     <string name="btn_add_pack">عناصر جاهزة</string>
 
     <!-- Pack Browser -->
@@ -180,6 +181,11 @@
     <string name="prop_shape_corner_radius">استدارة الزوايا</string>
     <string name="prop_shape_dashed">حدود منقطة</string>
 
+    <!-- Line element properties -->
+    <string name="prop_line_color">لون الخط</string>
+    <string name="prop_line_rounded_caps">حواف مدورة</string>
+    <string name="prop_line_thickness">سُمك الخط</string>
+
     <!-- Elements list -->
     <string name="elem_card_background">الخلفية</string>
     <string name="elem_text">نص</string>
@@ -196,6 +202,7 @@
     <string name="elem_date">تاريخ</string>
     <string name="elem_frame">إطار البطاقة</string>
     <string name="elem_shape">شكل هندسي</string>
+    <string name="elem_line">خط</string>
     <string name="pdf_quality_warning">يتم عرض الملف بجودة مخففة لتجنب بطء جهازك القديم ولحماية الذاكرة.</string>
     <string name="btn_change_image">تغيير الصورة</string>
     <string name="btn_clear">مسح</string>

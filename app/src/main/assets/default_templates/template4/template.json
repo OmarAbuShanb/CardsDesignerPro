@@ -145,7 +145,7 @@
       "isDashRounded": false
     },
     {
-      "type": "shape",
+      "type": "line",
       "id": "divider_top",
       "x": 24.0,
       "y": 106.0,
@@ -153,17 +153,11 @@
       "height": 2.0,
       "isVisible": true,
       "rotation": 0.0,
-      "fillColor": "#8D999C",
-      "strokeColor": "#000000",
-      "strokeWidthDp": 0.0,
-      "cornerRadiusDp": 0.0,
-      "isDashed": false,
-      "dashLengthDp": 10.0,
-      "dashGapDp": 5.0,
-      "isDashRounded": false
+      "color": "#8D999C",
+      "roundedCaps": false
     },
     {
-      "type": "shape",
+      "type": "line",
       "id": "divider_user",
       "x": 24.0,
       "y": 206.0,
@@ -171,17 +165,11 @@
       "height": 2.0,
       "isVisible": true,
       "rotation": 0.0,
-      "fillColor": "#8D999C",
-      "strokeColor": "#000000",
-      "strokeWidthDp": 0.0,
-      "cornerRadiusDp": 0.0,
-      "isDashed": false,
-      "dashLengthDp": 10.0,
-      "dashGapDp": 5.0,
-      "isDashRounded": false
+      "color": "#8D999C",
+      "roundedCaps": false
     },
     {
-      "type": "shape",
+      "type": "line",
       "id": "divider_pass",
       "x": 24.0,
       "y": 306.0,
@@ -189,17 +177,11 @@
       "height": 2.0,
       "isVisible": true,
       "rotation": 0.0,
-      "fillColor": "#8D999C",
-      "strokeColor": "#000000",
-      "strokeWidthDp": 0.0,
-      "cornerRadiusDp": 0.0,
-      "isDashed": false,
-      "dashLengthDp": 10.0,
-      "dashGapDp": 5.0,
-      "isDashRounded": false
+      "color": "#8D999C",
+      "roundedCaps": false
     },
     {
-      "type": "shape",
+      "type": "line",
       "id": "divider_package",
       "x": 24.0,
       "y": 416.0,
@@ -207,17 +189,11 @@
       "height": 2.0,
       "isVisible": true,
       "rotation": 0.0,
-      "fillColor": "#8D999C",
-      "strokeColor": "#000000",
-      "strokeWidthDp": 0.0,
-      "cornerRadiusDp": 0.0,
-      "isDashed": false,
-      "dashLengthDp": 10.0,
-      "dashGapDp": 5.0,
-      "isDashRounded": false
+      "color": "#8D999C",
+      "roundedCaps": false
     },
     {
-      "type": "shape",
+      "type": "line",
       "id": "package_split",
       "x": 209.0,
       "y": 306.0,
@@ -225,14 +201,8 @@
       "height": 110.0,
       "isVisible": true,
       "rotation": 0.0,
-      "fillColor": "#8D999C",
-      "strokeColor": "#000000",
-      "strokeWidthDp": 0.0,
-      "cornerRadiusDp": 0.0,
-      "isDashed": false,
-      "dashLengthDp": 10.0,
-      "dashGapDp": 5.0,
-      "isDashRounded": false
+      "color": "#8D999C",
+      "roundedCaps": false
     },
     {
       "type": "frame",

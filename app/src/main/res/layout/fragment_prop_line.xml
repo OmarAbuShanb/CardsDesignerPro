@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Line color -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="6dp"
+            android:text="@string/prop_line_color"
+            android:textAppearance="?attr/textAppearanceLabelMedium" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <dev.anonymous.cardsdesignerpro.common.widget.ColorPreviewView
+                android:id="@+id/cpv_line_color"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="12dp" />
+
+            <dev.anonymous.cardsdesignerpro.common.widget.ColorHexFieldView
+                android:id="@+id/field_line_color_hex"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <!-- Line thickness -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="6dp"
+            android:text="@string/prop_line_thickness"
+            android:textAppearance="?attr/textAppearanceLabelMedium" />
+
+        <dev.anonymous.cardsdesignerpro.common.widget.StepperView
+            android:id="@+id/stepper_thickness"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp" />
+
+        <!-- Rounded caps -->
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:id="@+id/cb_rounded_caps"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/prop_line_rounded_caps" />
+
+    </LinearLayout>
+</ScrollView>

@@ -1,0 +1,13 @@
+<svg width="220" height="70" viewBox="0 0 220 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10,60 A 50 50 0 0 1 60,10" stroke="#0088CC" stroke-width="12"
+        stroke-linecap="round" />
+    <path d="M30,60 A 30 30 0 0 1 60,30" stroke="#0088CC" stroke-width="12"
+        stroke-linecap="round" />
+    <circle cx="55" cy="55" r="10" fill="#0088CC" />
+    <text x="75" y="60" font-family="sans-serif" font-size="52" font-weight="900"
+        letter-spacing="-2" fill="#0088CC">wi
+    </text>
+    <text x="135" y="60" font-family="sans-serif" font-size="52" font-weight="900"
+        letter-spacing="-2" fill="#E91E63">fi
+    </text>
+</svg>

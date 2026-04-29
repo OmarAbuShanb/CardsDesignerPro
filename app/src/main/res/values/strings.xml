@@ -126,6 +126,7 @@
     <string name="btn_add_date">Date</string>
     <string name="btn_add_frame">Card Frame</string>
     <string name="btn_add_shape">Shape</string>
+    <string name="btn_add_line">Line</string>
     <string name="btn_add_pack">Ready Elements</string>
 
     <!-- Pack Browser -->
@@ -187,6 +188,11 @@
     <string name="prop_shape_corner_radius">Corner Radius</string>
     <string name="prop_shape_dashed">Dashed Border</string>
 
+    <!-- Line element properties -->
+    <string name="prop_line_color">Line Color</string>
+    <string name="prop_line_rounded_caps">Rounded Caps</string>
+    <string name="prop_line_thickness">Line Thickness</string>
+
     <!-- Elements list -->
     <string name="elem_card_background">Background</string>
     <string name="elem_text">Text</string>
@@ -203,6 +209,7 @@
     <string name="elem_date">Date</string>
     <string name="elem_frame">Card Frame</string>
     <string name="elem_shape">Shape</string>
+    <string name="elem_line">Line</string>
     <string name="pdf_quality_warning">The file is displayed in reduced quality to prevent slowing down your old device and to protect memory.</string>
     <string name="btn_change_image">Change Image</string>
     <string name="btn_clear">Clear</string>

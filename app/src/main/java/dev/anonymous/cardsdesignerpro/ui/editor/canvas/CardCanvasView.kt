@@ -55,7 +55,8 @@ class CardCanvasView @JvmOverloads constructor(
         fun onCardBackgroundSelected()
         fun onCardHeightDrag(deltaRatio: Float)
         fun onShapeWidthResized(id: String, newWidth: Float)
-        fun onShapeHeightResized(id: String, newY: Float, newHeight: Float)
+        fun onShapeHeightResized(id: String, newHeight: Float)
+        fun onLineWidthResized(id: String, newWidth: Float)
         fun onTextWidthResized(id: String, newWidth: Float, pxPerDp: Float)
         /** Called during bottom-right drag on a text element: all values are absolute targets.
          *  [newWidth] is in template-dp; [newSizeSp] is the target font size.
@@ -222,6 +223,7 @@ class CardCanvasView @JvmOverloads constructor(
 
     // ── Handle icons (lazy) ───────────────────────────────────────────────────
     private val iconResize: Drawable? by lazy { loadIcon(R.drawable.ic_handle_resize) }
+    private val iconResizeH: Drawable? by lazy { loadIcon(R.drawable.ic_handle_resize_h) }
     private val iconRotate: Drawable? by lazy { loadIcon(R.drawable.ic_handle_rotate) }
     private val iconDelete: Drawable? by lazy { loadIcon(R.drawable.ic_handle_delete) }
     private val iconMove:   Drawable? by lazy { loadIcon(R.drawable.ic_handle_move)   }
@@ -387,22 +389,22 @@ class CardCanvasView @JvmOverloads constructor(
         val el = t.elements.firstOrNull { it.id == id } ?: return
         // Frame fills the entire card — no handles needed
         if (el is TemplateElement.FrameElement) return
-        // Preview mode (ShapeElement eye-button): hide dashes + handles,
-        // but keep the eye icon visible so user can toggle back.
-        if (!showSelectionOverlay) {
-            val cx = (el.x + el.width  / 2) * scaleX
-            val cy = (el.y + el.height / 2) * scaleY
-            val (hw, hh) = elementHalfSizes(el)
-            canvas.withRotation(el.rotation, cx, cy) {
-                drawHandle(this, cx - hw - HANDLE_OFF, cy + hh + HANDLE_OFF, iconVisOff)
-            }
-            return
-        }
 
         val cx = (el.x + el.width / 2) * scaleX
         val cy = (el.y + el.height / 2) * scaleY
         // For text elements: use measured text bounds; for others: use model bounds
         val (hw, hh) = elementHalfSizes(el)
+        val layout = computeHandleLayout(hw, hh, el)
+        val dhw = layout.dhw; val dhh = layout.dhh
+
+        // Preview mode (ShapeElement eye-button): hide dashes + handles,
+        // but keep the eye icon visible so user can toggle back.
+        if (!showSelectionOverlay) {
+            canvas.withRotation(el.rotation, cx, cy) {
+                drawHandle(this, cx - dhw - HANDLE_OFF, cy + dhh + HANDLE_OFF, iconVisOff)
+            }
+            return
+        }
 
         canvas.withRotation(el.rotation, cx, cy) {
             // Two-stripe dashed border: hidden when user toggles the eye-handle for preview
@@ -412,65 +414,64 @@ class CardCanvasView @JvmOverloads constructor(
                 selBorderDark.pathEffect = DashPathEffect(floatArrayOf(dashOn, dashOff), 0f)
                 selBorderLight.pathEffect =
                     DashPathEffect(floatArrayOf(dashOn, dashOff), (dashOn + dashOff) / 2)
+                // Border follows the REAL element bounds (not the spread-enforced ones)
                 val rect = RectF(cx - hw, cy - hh, cx + hw, cy + hh)
                 drawRect(rect, selBorderDark)
                 drawRect(rect, selBorderLight)
                 selBorderDark.pathEffect = null; selBorderLight.pathEffect = null
             }
-            // Handles:
-            //  top-left      → delete
-            //  top-right     → rotate
-            //  bottom-right  → resize (proportional for ShapeElement)
-            //  bottom-left   → overlay toggle (eye): hides/shows the dashed selection border
-            //  bottom-center → move
-            //  right edge    → width  (ShapeElement only, pill style)
-            //  top edge      → height (ShapeElement only, pill style)
-            drawHandle(this, cx + hw + HANDLE_OFF, cy + hh + HANDLE_OFF, iconResize)
-            drawHandle(this, cx + hw + HANDLE_OFF, cy - hh - HANDLE_OFF, iconRotate)
-            drawHandle(this, cx - hw - HANDLE_OFF, cy - hh - HANDLE_OFF, iconDelete)
-            // ShapeElement-only: pill handles on right/top edges + eye toggle at bottom-left
+            // Handles — use spread-enforced positions so they never overlap
+            val dhw = layout.dhw; val dhh = layout.dhh
+            val resizeIcon = if (el is TemplateElement.LineElement) iconResizeH else iconResize
+            drawHandle(this, cx + dhw + HANDLE_OFF, cy + dhh + HANDLE_OFF, resizeIcon)   // bottom-right → resize
+            drawHandle(this, cx + dhw + HANDLE_OFF, cy - dhh - HANDLE_OFF, iconRotate)   // top-right    → rotate
+            drawHandle(this, cx - dhw - HANDLE_OFF, cy - dhh - HANDLE_OFF, iconDelete)   // top-left     → delete
+            // ShapeElement/LineElement: eye toggle at bottom-left
+            if (el is TemplateElement.ShapeElement || el is TemplateElement.LineElement) {
+                drawHandle(this, cx - dhw - HANDLE_OFF, cy + dhh + HANDLE_OFF,
+                    if (showSelectionOverlay) iconVisOn else iconVisOff)  // bottom-left → eye
+            }
+            // ShapeElement-only: pill handles
             if (el is TemplateElement.ShapeElement) {
-                // Pass the full edge length so the pill scales with the element size
-                drawPillHandle(
-                    this,
-                    cx + hw,
-                    cy,
-                    isVertical = true,
-                    edgePx = hh * 2f
-                )  // right edge → width
-                drawPillHandle(
-                    this,
-                    cx,
-                    cy - hh,
-                    isVertical = false,
-                    edgePx = hw * 2f
-                )  // top edge  → height
-                drawHandle(
-                    this,
-                    cx - hw - HANDLE_OFF,
-                    cy + hh + HANDLE_OFF,                  // bottom-left → eye
-                    if (showSelectionOverlay) iconVisOn else iconVisOff
-                )
+                if (layout.showPillW) drawPillHandle(this, cx + hw, cy, isVertical = true, edgePx = hh * 2f)
+                if (layout.showPillH) drawPillHandle(this, cx, cy - hh, isVertical = false, edgePx = hw * 2f)
             }
             // TextElement-only: right-edge pill handle for width resize
-            if (el is TemplateElement.TextElement) {
-                drawPillHandle(
-                    this,
-                    cx + hw,
-                    cy,
-                    isVertical = true,
-                    edgePx = hh * 2f
-                )  // right edge → width
+            if (el is TemplateElement.TextElement && layout.showPillW) {
+                drawPillHandle(this, cx + hw, cy, isVertical = true, edgePx = hh * 2f)
             }
             // Connector line: bottom-center of rect → move handle
             val connDash = DashPathEffect(floatArrayOf(6f, 5f), 0f)
             connectorDark.pathEffect = connDash
             connectorLight.pathEffect = DashPathEffect(floatArrayOf(6f, 5f), 5.5f)
-            drawLine(cx, cy + hh, cx, cy + hh + HANDLE_OFF * 2 - HR, connectorDark)
-            drawLine(cx, cy + hh, cx, cy + hh + HANDLE_OFF * 2 - HR, connectorLight)
+            drawLine(cx, cy + dhh, cx, cy + dhh + HANDLE_OFF * 2 - HR, connectorDark)
+            drawLine(cx, cy + dhh, cx, cy + dhh + HANDLE_OFF * 2 - HR, connectorLight)
             connectorDark.pathEffect = null; connectorLight.pathEffect = null
-            drawHandle(this, cx, cy + hh + HANDLE_OFF * 2, iconMove) // bottom-center → move
+            drawHandle(this, cx, cy + dhh + HANDLE_OFF * 2, iconMove) // bottom-center → move
         }
+    }
+
+    /**
+     * Precomputed handle positions with minimum-spread enforcement.
+     * [dhw]/[dhh] are the half-sizes used for handle placement (≥ [MIN_HANDLE_SPREAD]).
+     * [showPillW]/[showPillH] indicate whether pill handles fit without overlapping corners.
+     */
+    private data class HandleLayout(
+        val dhw: Float, val dhh: Float,
+        val showPillW: Boolean, val showPillH: Boolean
+    )
+
+    /** Minimum half-size for handle placement so corner handles never overlap. */
+    private val MIN_HANDLE_SPREAD = HR + 4f * dp
+    /** Minimum element half-size for pill handles to be visible (avoids pill ↔ corner overlap). */
+    private val MIN_PILL_HALF = HR
+
+    private fun computeHandleLayout(hw: Float, hh: Float, el: TemplateElement): HandleLayout {
+        val dhw = hw.coerceAtLeast(MIN_HANDLE_SPREAD)
+        val dhh = hh.coerceAtLeast(MIN_HANDLE_SPREAD)
+        val showPillW = hh >= MIN_PILL_HALF  // right-edge pill needs enough vertical space
+        val showPillH = hw >= MIN_PILL_HALF   // top-edge pill needs enough horizontal space
+        return HandleLayout(dhw, dhh, showPillW, showPillH)
     }
 
     /**
@@ -630,6 +631,8 @@ class CardCanvasView @JvmOverloads constructor(
         val cy = (el.y + el.height / 2) * scaleY
         // MUST match the positions used in drawElementOverlay()
         val (hw, hh) = elementHalfSizes(el)
+        val hlayout = computeHandleLayout(hw, hh, el)
+        val dhw = hlayout.dhw; val dhh = hlayout.dhh
 
         // ── Inverse-rotate touch into element's unrotated local space ───────
         val rad = Math.toRadians(el.rotation.toDouble())
@@ -641,8 +644,8 @@ class CardCanvasView @JvmOverloads constructor(
 
         // Preview mode: only allow eye-tap (restore overlay) and body drag
         if (!showSelectionOverlay) {
-            if (el is TemplateElement.ShapeElement &&
-                dist(lx, ly, cx - hw - HANDLE_OFF, cy + hh + HANDLE_OFF) < HR * 2f) {
+            if ((el is TemplateElement.ShapeElement || el is TemplateElement.LineElement) &&
+                dist(lx, ly, cx - dhw - HANDLE_OFF, cy + dhh + HANDLE_OFF) < HR * 2f) {
                 showSelectionOverlay = true   // restore overlay
                 invalidate()
                 mode = Mode.CONSUMED
@@ -658,34 +661,43 @@ class CardCanvasView @JvmOverloads constructor(
             return
         }
 
-        // Delete handle (top-left, offset)
-        if (dist(lx, ly, cx - hw - HANDLE_OFF, cy - hh - HANDLE_OFF) < HR * 2f) {
+        // Delete handle (top-left, offset) — uses spread-enforced position
+        if (dist(lx, ly, cx - dhw - HANDLE_OFF, cy - dhh - HANDLE_OFF) < HR * 2f) {
             listener?.onElementDeleteRequested(id)
             mode = Mode.CONSUMED
             return
         }
-        // Eye handle (bottom-left) — ShapeElement only: hides ALL overlay for preview
-        if (el is TemplateElement.ShapeElement &&
-            dist(lx, ly, cx - hw - HANDLE_OFF, cy + hh + HANDLE_OFF) < HR * 2f) {
+        // Eye handle (bottom-left) — ShapeElement/LineElement only: hides ALL overlay for preview
+        if ((el is TemplateElement.ShapeElement || el is TemplateElement.LineElement) &&
+            dist(lx, ly, cx - dhw - HANDLE_OFF, cy + dhh + HANDLE_OFF) < HR * 2f) {
             showSelectionOverlay = false   // hides dashes + ALL handles → full preview
             invalidate()
             mode = Mode.CONSUMED
             return
         }
         // Move handle — bottom-center (further out for clear separation from frame)
-        if (dist(lx, ly, cx, cy + hh + HANDLE_OFF * 2) < HR * 2f) {
+        if (dist(lx, ly, cx, cy + dhh + HANDLE_OFF * 2) < HR * 2f) {
             mode = Mode.DRAG
             dragStartElX = el.x; dragStartElY = el.y
             dragStartTouchX = x; dragStartTouchY = y
             return
         }
-        if (dist(lx, ly, cx + hw + HANDLE_OFF, cy - hh - HANDLE_OFF) < HR * 2f) {   // rotate (top-right)
+        if (dist(lx, ly, cx + dhw + HANDLE_OFF, cy - dhh - HANDLE_OFF) < HR * 2f) {   // rotate (top-right)
             mode = Mode.ROTATE
             rotateStartTouchAngle = atan2((y - cy).toDouble(), (x - cx).toDouble()).toFloat()
             resizeStartRotation = el.rotation
             return
         }
-        if (dist(lx, ly, cx + hw + HANDLE_OFF, cy + hh + HANDLE_OFF) < HR * 2f) {   // resize (bottom-right)
+        if (dist(lx, ly, cx + dhw + HANDLE_OFF, cy + dhh + HANDLE_OFF) < HR * 2f) {   // resize (bottom-right)
+            if (el is TemplateElement.LineElement) {
+                // LineElement: width-only resize via bottom-right handle (rotation-aware)
+                mode = Mode.RESIZE_W
+                resizeStartW = el.width
+                resizeStartX = x
+                resizeStartY = y
+                resizeStartRotation = el.rotation
+                return
+            }
             mode = Mode.RESIZE
             resizeStartW        = el.width
             resizeStartH        = el.height
@@ -717,39 +729,48 @@ class CardCanvasView @JvmOverloads constructor(
             }
             return
         }
-        // Shape-only pill handles: use a NARROW RECTANGULAR hit zone along each edge
-        // (much tighter than HR*3f circle, prevents false triggers from body drags)
-        if (el is TemplateElement.ShapeElement) {
-            val pillHitShort = 16f * dp   // how far perpendicular to edge counts as a hit
-            val pillHitLong  = hh * 0.6f  // how far along the edge (capped at 60% of half-height)
-            // Right edge: touch must be within pillHitShort of cx+hw and within pillHitLong of cy
+        // Shape-only pill handles — only when visible (element large enough)
+        if (el is TemplateElement.ShapeElement && hlayout.showPillW) {
+            val pillHitShort = 16f * dp
+            val pillVisualHalf = ((hh * 2f * 0.35f).coerceIn(10f * dp, 40f * dp)) / 2f
+            val pillHitLong  = pillVisualHalf + 8f * dp
             if (kotlin.math.abs(lx - (cx + hw)) < pillHitShort &&
                 kotlin.math.abs(ly - cy)        < pillHitLong) {
                 mode = Mode.RESIZE_W
                 resizeStartW = el.width
                 resizeStartX = x
+                resizeStartY = y
+                resizeStartRotation = el.rotation
                 return
             }
-            val pillHitLong2 = hw * 0.6f  // how far along the top edge
-            // Top edge: touch must be within pillHitShort of cy-hh and within pillHitLong of cx
+        }
+        if (el is TemplateElement.ShapeElement && hlayout.showPillH) {
+            val pillHitShort = 16f * dp
+            val pillVisualHalf = ((hw * 2f * 0.35f).coerceIn(10f * dp, 40f * dp)) / 2f
+            val pillHitLong  = pillVisualHalf + 8f * dp
             if (kotlin.math.abs(ly - (cy - hh)) < pillHitShort &&
-                kotlin.math.abs(lx - cx)        < pillHitLong2) {
+                kotlin.math.abs(lx - cx)        < pillHitLong) {
                 mode = Mode.RESIZE_H
                 resizeStartH        = el.height
+                resizeStartX        = x
                 resizeStartY        = y
+                resizeStartRotation = el.rotation
                 resizeShapeStartElY = el.y
                 return
             }
         }
-        // TextElement right-edge pill handle: width resize (height recalculates automatically)
-        if (el is TemplateElement.TextElement) {
+        // TextElement right-edge pill handle — only when visible
+        if (el is TemplateElement.TextElement && hlayout.showPillW) {
             val pillHitShort = 16f * dp
-            val pillHitLong  = hh * 0.6f
+            val pillVisualHalf = ((hh * 2f * 0.35f).coerceIn(10f * dp, 40f * dp)) / 2f
+            val pillHitLong  = pillVisualHalf + 8f * dp
             if (kotlin.math.abs(lx - (cx + hw)) < pillHitShort &&
                 kotlin.math.abs(ly - cy)        < pillHitLong) {
                 mode = Mode.RESIZE_W
                 resizeStartW = el.width
                 resizeStartX = x
+                resizeStartY = y
+                resizeStartRotation = el.rotation
                 return
             }
         }
@@ -853,12 +874,23 @@ class CardCanvasView @JvmOverloads constructor(
                 listener?.onCardHeightDrag((y - lastY) / cardWidthPx)
             }
             Mode.RESIZE_W -> {
-                // Drag right-center handle: changes width only, left edge stays fixed
+                // Drag right-center handle: changes width only.
+                // For rotated elements, project the screen-space drag vector onto
+                // the element's local X axis so the resize follows the rotation.
                 val el = activeElements.firstOrNull { it.id == id } ?: return
-                val rawW = (resizeStartW + (x - resizeStartX) / scaleX).coerceAtLeast(10f)
+                val rad = Math.toRadians(resizeStartRotation.toDouble())
+                val cosR = kotlin.math.cos(rad).toFloat()
+                val sinR = kotlin.math.sin(rad).toFloat()
+                val screenDx = (x - resizeStartX) / scaleX
+                val screenDy = (y - resizeStartY) / scaleY
+                val localDx = screenDx * cosR + screenDy * sinR
+                val rawW = (resizeStartW + localDx).coerceAtLeast(10f)
                 if (el is TemplateElement.TextElement) {
                     // TextElement: no snap-to-square; height is auto-recalculated by ViewModel
                     listener?.onTextWidthResized(id, rawW, scaleX)
+                } else if (el is TemplateElement.LineElement) {
+                    // LineElement: plain width resize, no snap
+                    listener?.onLineWidthResized(id, rawW)
                 } else {
                     // ShapeElement: snap to square
                     val newW = if (kotlin.math.abs(rawW - el.height) < SHAPE_SQUARE_SNAP) {
@@ -877,9 +909,14 @@ class CardCanvasView @JvmOverloads constructor(
             Mode.RESIZE_H -> {
                 // Drag top-center handle: top edge moves, bottom edge stays fixed
                 val el = activeElements.firstOrNull { it.id == id } ?: return
-                val deltaY     = (y - resizeStartY) / scaleY
-                val bottomEdge = resizeShapeStartElY + resizeStartH
-                val rawH = (resizeStartH - deltaY).coerceAtLeast(10f)
+                val rad = Math.toRadians(resizeStartRotation.toDouble())
+                val cosR = kotlin.math.cos(rad).toFloat()
+                val sinR = kotlin.math.sin(rad).toFloat()
+                val screenDx = (x - resizeStartX) / scaleX
+                val screenDy = (y - resizeStartY) / scaleY
+                val localDy = -screenDx * sinR + screenDy * cosR
+                val rawH = (resizeStartH - localDy).coerceAtLeast(10f)
+
                 // Snap to square: if height ≈ width, lock them equal
                 val newH = if (kotlin.math.abs(rawH - el.width) < SHAPE_SQUARE_SNAP) {
                     if (!shapeSquareSnapped) {
@@ -891,8 +928,7 @@ class CardCanvasView @JvmOverloads constructor(
                     shapeSquareSnapped = false
                     rawH
                 }
-                val newY = bottomEdge - newH
-                listener?.onShapeHeightResized(id, newY, newH)
+                listener?.onShapeHeightResized(id, newH)
             }
             Mode.NONE, Mode.CONSUMED -> {}
         }
@@ -910,13 +946,17 @@ class CardCanvasView @JvmOverloads constructor(
             val ecx = (el.x + el.width / 2) * scaleX
             val ecy = (el.y + el.height / 2) * scaleY
             val (hw, hh) = elementHalfSizes(el)
+            // For LineElement, enforce a minimum touch target of 12dp around the line
+            val minHitHalf = if (el is TemplateElement.LineElement) 12f * resources.displayMetrics.density else 0f
+            val hitHw = maxOf(hw, minHitHalf)
+            val hitHh = maxOf(hh, minHitHalf)
             val rad = Math.toRadians(el.rotation.toDouble())
             val cosR = kotlin.math.cos(rad).toFloat()
             val sinR = kotlin.math.sin(rad).toFloat()
             val dx = x - ecx; val dy = y - ecy
             val lx = ecx + dx * cosR + dy * sinR
             val ly = ecy - dx * sinR + dy * cosR
-            return lx in (ecx - hw)..(ecx + hw) && ly in (ecy - hh)..(ecy + hh)
+            return lx in (ecx - hitHw)..(ecx + hitHw) && ly in (ecy - hitHh)..(ecy + hitHh)
         }
 
         // Tap outside card bounds → deselect

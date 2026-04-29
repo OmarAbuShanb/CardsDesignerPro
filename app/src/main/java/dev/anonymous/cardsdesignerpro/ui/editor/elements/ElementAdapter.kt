@@ -66,7 +66,8 @@ class ElementAdapter(
 
             val canDuplicate = el is TemplateElement.ShapeElement ||
                                el is TemplateElement.TextElement ||
-                               el is TemplateElement.ImageElement
+                               el is TemplateElement.ImageElement ||
+                               el is TemplateElement.LineElement
             binding.btnDuplicate.visibility = if (canDuplicate) View.VISIBLE else View.GONE
 
             binding.root.setOnClickListener { onSelect(el.id) }
@@ -111,6 +112,7 @@ private fun TemplateElement.labelRes(ctx: android.content.Context): String {
         is TemplateElement.DateElement    -> R.string.elem_date
         is TemplateElement.FrameElement   -> R.string.elem_frame
         is TemplateElement.ShapeElement   -> R.string.elem_shape
+        is TemplateElement.LineElement    -> R.string.elem_line
         else                              -> R.string.elem_image
     })
 }

@@ -754,8 +754,9 @@ class ExportCardsActivity : AppCompatActivity() {
             binding.spinnerTemplate.setSelection(state.selectedTemplateIndex)
 
         // Card layout spinner
-        val layoutIdx = state.settings.selectedLayoutIndex
-            .coerceIn(0, CardLayoutPreset.ALL.lastIndex)
+        val layoutIdx = CardLayoutPreset.indexFor(
+            state.settings.layoutColumns, state.settings.layoutRows
+        )
         if (binding.spinnerCardLayout.selectedItemPosition != layoutIdx)
             binding.spinnerCardLayout.setSelection(layoutIdx)
 

@@ -7,6 +7,7 @@ import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.anonymous.cardsdesignerpro.data.model.ExportQuality
+import dev.anonymous.cardsdesignerpro.data.model.CardLayoutPreset
 import dev.anonymous.cardsdesignerpro.data.model.ExportSettings
 import dev.anonymous.cardsdesignerpro.data.model.FlipEdge
 import dev.anonymous.cardsdesignerpro.data.model.PageSize
@@ -254,7 +255,8 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
 
 
     fun updateCardLayout(index: Int) {
-        mutateSettings { it.copy(selectedLayoutIndex = index) }
+        val preset = CardLayoutPreset.ALL.getOrNull(index) ?: return
+        mutateSettings { it.copy(layoutColumns = preset.columns, layoutRows = preset.rows) }
     }
 
     fun updateHorizontalSpacing(v: Float) {

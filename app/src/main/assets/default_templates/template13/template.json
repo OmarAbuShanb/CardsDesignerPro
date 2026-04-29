@@ -12,7 +12,7 @@
   "backCard": null,
   "elements": [
     {
-      "type": "shape",
+      "type": "line",
       "id": "top_line",
       "x": 0.0,
       "y": 22.0,
@@ -20,14 +20,8 @@
       "height": 3.0,
       "isVisible": true,
       "rotation": 0.0,
-      "fillColor": "#424242",
-      "strokeColor": "#FF000000",
-      "strokeWidthDp": 0.0,
-      "cornerRadiusDp": 0.0,
-      "isDashed": false,
-      "dashLengthDp": 10.0,
-      "dashGapDp": 5.0,
-      "isDashRounded": false
+      "color": "#424242",
+      "roundedCaps": false
     },
     {
       "type": "text",
@@ -361,7 +355,7 @@
       "tintColor": null
     },
     {
-      "type": "shape",
+      "type": "line",
       "id": "title_underline",
       "x": 160.11111,
       "y": 65.27777,
@@ -369,14 +363,8 @@
       "height": 3.0,
       "isVisible": true,
       "rotation": 0.0,
-      "fillColor": "#BDBDBD",
-      "strokeColor": "#FF000000",
-      "strokeWidthDp": 0.0,
-      "cornerRadiusDp": 0.0,
-      "isDashed": false,
-      "dashLengthDp": 10.0,
-      "dashGapDp": 5.0,
-      "isDashRounded": false
+      "color": "#BDBDBD",
+      "roundedCaps": false
     },
     {
       "type": "shape",
@@ -423,7 +411,7 @@
       "height": 112.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/misc/credentials_chevron_bg.svg",
+      "imagePath": "pack:packs/fields/credentials_chevron_bg.svg",
       "tintColor": null
     },
     {
@@ -445,7 +433,7 @@
       "isDashRounded": false
     },
     {
-      "type": "shape",
+      "type": "line",
       "id": "contacts_divider",
       "x": 282.0,
       "y": 251.0,
@@ -453,14 +441,8 @@
       "height": 18.0,
       "isVisible": true,
       "rotation": 0.0,
-      "fillColor": "#D0D0D0",
-      "strokeColor": "#FF000000",
-      "strokeWidthDp": 0.0,
-      "cornerRadiusDp": 1.0,
-      "isDashed": false,
-      "dashLengthDp": 10.0,
-      "dashGapDp": 5.0,
-      "isDashRounded": false
+      "color": "#D0D0D0",
+      "roundedCaps": false
     },
     {
       "type": "shape",
@@ -481,7 +463,7 @@
       "isDashRounded": false
     },
     {
-      "type": "shape",
+      "type": "line",
       "id": "left_line",
       "x": -72.0,
       "y": 160.0,
@@ -489,17 +471,11 @@
       "height": 3.0,
       "isVisible": true,
       "rotation": 90.0,
-      "fillColor": "#424242",
-      "strokeColor": "#FF000000",
-      "strokeWidthDp": 0.0,
-      "cornerRadiusDp": 0.0,
-      "isDashed": false,
-      "dashLengthDp": 10.0,
-      "dashGapDp": 5.0,
-      "isDashRounded": false
+      "color": "#424242",
+      "roundedCaps": false
     },
     {
-      "type": "shape",
+      "type": "line",
       "id": "bottom_line",
       "x": 0.0,
       "y": 320.0,
@@ -507,14 +483,8 @@
       "height": 4.0,
       "isVisible": true,
       "rotation": 0.0,
-      "fillColor": "#424242",
-      "strokeColor": "#FF000000",
-      "strokeWidthDp": 0.0,
-      "cornerRadiusDp": 0.0,
-      "isDashed": false,
-      "dashLengthDp": 10.0,
-      "dashGapDp": 5.0,
-      "isDashRounded": false
+      "color": "#424242",
+      "roundedCaps": false
     },
     {
       "type": "card_background",

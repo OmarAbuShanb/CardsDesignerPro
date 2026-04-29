@@ -247,7 +247,7 @@
       "cornerRadiusDp": 10.0
     },
     {
-      "type": "shape",
+      "type": "line",
       "id": "top_divider",
       "x": 0.0,
       "y": 0.0,
@@ -255,8 +255,8 @@
       "height": 4.0,
       "isVisible": true,
       "rotation": 0.0,
-      "fillColor": "#EEAA44",
-      "strokeWidthDp": 0.0
+      "color": "#EEAA44",
+      "roundedCaps": false
     },
     {
       "type": "shape",
@@ -271,7 +271,7 @@
       "strokeWidthDp": 0.0
     },
     {
-      "type": "shape",
+      "type": "line",
       "id": "bottom_divider",
       "x": 0.0,
       "y": 232.0,
@@ -279,8 +279,8 @@
       "height": 8.0,
       "isVisible": true,
       "rotation": 0.0,
-      "fillColor": "#EEAA44",
-      "strokeWidthDp": 0.0
+      "color": "#EEAA44",
+      "roundedCaps": false
     },
     {
       "type": "shape",

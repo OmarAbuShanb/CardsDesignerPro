@@ -52,8 +52,10 @@ data class CardStyle(
 @Serializable
 data class ExportSettings(
     val pageSize: PageSize = PageSize.A4,
-    /** Index into [CardLayoutPreset.ALL]; default = 55 cards (5x11, recommended). */
-    val selectedLayoutIndex: Int = CardLayoutPreset.RECOMMENDED_INDEX,
+    /** Columns in the card grid layout. */
+    val layoutColumns: Int = CardLayoutPreset.RECOMMENDED.columns,
+    /** Rows in the card grid layout. */
+    val layoutRows: Int = CardLayoutPreset.RECOMMENDED.rows,
     val horizontalSpacingDp: Float = 2f,
     val verticalSpacingDp: Float = 2f,
     /** Which paper edge the sheet is flipped on for duplex alignment. */
@@ -65,11 +67,12 @@ data class ExportSettings(
     /** Adds page numbers to exported pages (only shown when a document has multiple pages). */
     val showPageNumbers: Boolean = false,
 ) {
-    /** Resolves the selected preset, falling back to the recommended one. */
+    /** Resolves the selected preset from [CardLayoutPreset.ALL],
+     *  falling back to the recommended preset if no match is found. */
     val selectedPreset: CardLayoutPreset
-        get() = CardLayoutPreset.ALL.getOrElse(selectedLayoutIndex) {
-            CardLayoutPreset.ALL[CardLayoutPreset.RECOMMENDED_INDEX]
-        }
+        get() = CardLayoutPreset.ALL.firstOrNull {
+            it.columns == layoutColumns && it.rows == layoutRows
+        } ?: CardLayoutPreset.RECOMMENDED
 }
 
 /**
@@ -123,8 +126,14 @@ data class CardLayoutPreset(
             CardLayoutPreset(3, 9),    // 26 -> 27
         )
 
-        /** Index of the recommended preset (55 cards, 5x11). */
-        const val RECOMMENDED_INDEX = 12
+        /** The recommended preset (5×11 = 55 cards). */
+        val RECOMMENDED: CardLayoutPreset = ALL.first { it.isRecommended }
+
+        /** Returns the index of a preset matching [columns]×[rows], or the recommended index. */
+        fun indexFor(columns: Int, rows: Int): Int {
+            val idx = ALL.indexOfFirst { it.columns == columns && it.rows == rows }
+            return if (idx >= 0) idx else ALL.indexOf(RECOMMENDED)
+        }
     }
 }
 

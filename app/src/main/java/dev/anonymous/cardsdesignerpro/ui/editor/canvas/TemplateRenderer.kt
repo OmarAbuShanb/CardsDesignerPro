@@ -172,6 +172,9 @@ class TemplateRenderer(private val context: Context) {
 
                     is TemplateElement.ShapeElement ->
                         drawShape(this, el, cardLeft, cardTop, scaleX, scaleY)
+
+                    is TemplateElement.LineElement ->
+                        drawLineElement(this, el, cardLeft, cardTop, scaleX, scaleY)
                 }
             }
         }
@@ -309,6 +312,34 @@ class TemplateRenderer(private val context: Context) {
                 drawRoundRect(rect, cr, cr, paint)
             }
 
+        }
+    }
+
+    // ── Line ──────────────────────────────────────────────────────────────────
+
+    private fun drawLineElement(
+        canvas: Canvas,
+        el: TemplateElement.LineElement,
+        left: Float, top: Float, sX: Float, sY: Float
+    ) {
+        val l = left + el.x * sX
+        val t = top + el.y * sY
+        val r = l + el.width * sX
+        val b = t + el.height * sY
+        val cx = (l + r) / 2f
+        val cy = (t + b) / 2f
+        val rect = RectF(l, t, r, b)
+
+        canvas.withRotation(el.rotation, cx, cy) {
+            paint.reset(); paint.isAntiAlias = true
+            paint.style = Paint.Style.FILL
+            paint.color = parseColor(el.color)
+            if (el.roundedCaps) {
+                val cr = el.height * sY / 2f   // half-height = fully rounded ends
+                drawRoundRect(rect, cr, cr, paint)
+            } else {
+                drawRect(rect, paint)
+            }
         }
     }
 

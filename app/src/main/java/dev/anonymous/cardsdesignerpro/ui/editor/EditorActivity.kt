@@ -413,8 +413,11 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
     override fun onShapeWidthResized(id: String, newWidth: Float) =
         viewModel.resizeShapeWidth(id, newWidth)
 
-    override fun onShapeHeightResized(id: String, newY: Float, newHeight: Float) =
-        viewModel.resizeShapeHeight(id, newY, newHeight)
+    override fun onShapeHeightResized(id: String, newHeight: Float) =
+        viewModel.resizeShapeHeight(id, newHeight)
+
+    override fun onLineWidthResized(id: String, newWidth: Float) =
+        viewModel.resizeLineWidth(id, newWidth)
 
     override fun onTextWidthResized(id: String, newWidth: Float, pxPerDp: Float) =
         viewModel.resizeTextWidth(id, newWidth, pxPerDp)

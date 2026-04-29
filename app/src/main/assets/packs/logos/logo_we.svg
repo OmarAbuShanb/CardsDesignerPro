@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100" width="200" height="100">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-5 0 200 100" width="200" height="100">
     <!-- W in Orange -->
     <path fill="#EC9D44" d="M10,20 l20,60 l15,-40 l15,40 l20,-60 h15 l-30,80 l-20,-50 l-20,50 l-30,-80 z" />
     <!-- WIFI waves in Orange -->

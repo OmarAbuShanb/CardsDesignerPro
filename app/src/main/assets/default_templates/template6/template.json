@@ -159,7 +159,7 @@
       "fontName": "cairo"
     },
     {
-      "type": "image",
+      "type": "line",
       "id": "line_1",
       "x": 30.0,
       "y": 75.0,
@@ -167,11 +167,11 @@
       "height": 4.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/dividers/line.svg",
-      "tintColor": "#FFFFFF"
+      "color": "#FFFFFF",
+      "roundedCaps": false
     },
     {
-      "type": "image",
+      "type": "line",
       "id": "line_2",
       "x": 30.0,
       "y": 140.0,
@@ -179,8 +179,8 @@
       "height": 4.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/dividers/line.svg",
-      "tintColor": "#FFFFFF"
+      "color": "#FFFFFF",
+      "roundedCaps": false
     },
     {
       "type": "image",

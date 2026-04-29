@@ -349,7 +349,7 @@
       "cornerRadiusDp": 15.0
     },
     {
-      "type": "shape",
+      "type": "line",
       "id": "title_rule",
       "x": 214.0,
       "y": 94.0,
@@ -357,7 +357,8 @@
       "height": 2.0,
       "isVisible": true,
       "rotation": 0.0,
-      "fillColor": "#DCE5E7"
+      "color": "#DCE5E7",
+      "roundedCaps": false
     },
     {
       "type": "shape",

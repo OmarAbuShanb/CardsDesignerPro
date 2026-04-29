@@ -149,7 +149,7 @@
       "height": 60.0,
       "isVisible": true,
       "rotation": -90.0,
-      "imagePath": "pack:packs/misc/rawifi_logo.svg"
+      "imagePath": "pack:packs/logos/rawifi_logo.svg"
     },
     {
       "type": "image",

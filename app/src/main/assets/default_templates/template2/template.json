@@ -246,15 +246,16 @@
       "cornerRadiusDp": 13.0
     },
     {
-      "type": "image",
+      "type": "line",
       "id": "divider_line_svg",
       "x": 50.0,
-      "y": 85.0,
+      "y": 88.5,
       "width": 700.0,
-      "height": 10.0,
+      "height": 3.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/dividers/line.svg"
+      "color": "#000000",
+      "roundedCaps": false
     },
     {
       "type": "frame",
