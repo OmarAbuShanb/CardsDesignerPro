@@ -14,18 +14,4 @@ object AppConstants {
     /** Maximum successful PDF exports allowed during the free trial. */
     const val MAX_TRIAL_EXPORTS = 15
 
-    /**
-     * Default template directory names that are considered premium.
-     * Templates not in this set are free for all users.
-     */
-    val PREMIUM_TEMPLATE_DIRS: Set<String> = setOf(
-        "template6",
-        "template7",
-        "template8",
-        "template9",
-        "template10",
-        "template11",
-        "template12",
-        "template13",
-    )
 }

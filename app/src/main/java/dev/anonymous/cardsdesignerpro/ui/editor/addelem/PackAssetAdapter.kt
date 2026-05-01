@@ -46,12 +46,20 @@ class PackAssetAdapter(
     class VH(private val binding: ItemPackAssetBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(assetPath: String, context: Context) {
             try {
-                val svg = context.assets.open(assetPath).use { SVG.getFromInputStream(it) }
-                val picture = svg.renderToPicture()
-                binding.ivPackAsset.setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null)
-                binding.ivPackAsset.setImageDrawable(
-                    android.graphics.drawable.PictureDrawable(picture)
-                )
+                if (assetPath.endsWith(".svg", ignoreCase = true)) {
+                    val svg = context.assets.open(assetPath).use { SVG.getFromInputStream(it) }
+                    val picture = svg.renderToPicture()
+                    binding.ivPackAsset.setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null)
+                    binding.ivPackAsset.setImageDrawable(
+                        android.graphics.drawable.PictureDrawable(picture)
+                    )
+                } else {
+                    val drawable = context.assets.open(assetPath).use {
+                        android.graphics.drawable.Drawable.createFromStream(it, null)
+                    }
+                    binding.ivPackAsset.setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
+                    binding.ivPackAsset.setImageDrawable(drawable)
+                }
             } catch (e: Exception) {
                 binding.ivPackAsset.setImageDrawable(null)
             }

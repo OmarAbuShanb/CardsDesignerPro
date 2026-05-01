@@ -1,6 +1,7 @@
 {
   "id": "default_card_template_1",
-  "name": "قالب هندسي (سكود نت)",
+  "name": "قالب هندسي متطور",
+  "isFree": true,
   "card": {
     "widthDp": 600.0,
     "heightRatio": 0.45,

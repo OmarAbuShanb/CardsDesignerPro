@@ -1,26 +1,36 @@
 {
+  "version": 3,
   "id": "template_7",
-  "name": "قالب 7 (سوبر نت)",
+  "name": "قالب احترافي مميز",
+  "isFree": false,
   "card": {
     "widthDp": 600.0,
-    "heightRatio": 0.40,
-    "backgroundColor": "#3EB2F0"
+    "heightRatio": 0.4,
+    "backgroundColor": "#3EB2F0",
+    "backgroundImagePath": null,
+    "backgroundImageScaleType": "FIT_XY",
+    "linkCredentialsStyle": true
   },
+  "backCard": null,
   "elements": [
     {
       "type": "text",
       "id": "title_text",
-      "x": 200.0,
-      "y": 10.0,
-      "width": 200.0,
-      "height": 40.0,
+      "x": 211.17113,
+      "y": -9.888889,
+      "width": 207.65775,
+      "height": 79.77778,
       "isVisible": true,
       "rotation": 0.0,
-      "text": "ســـوبــر نــت",
+      "text": "ديفيلوبر نــت",
       "textColor": "#FFFFFF",
-      "textSizeSp": 36.0,
+      "bgColor": null,
       "isBold": true,
-      "fontName": "cairo"
+      "fontName": "cairo",
+      "textSizeSp": 36.147877,
+      "textStrokeWidth": 0.0,
+      "textStrokeColor": "#000000",
+      "textAlign": "CENTER"
     },
     {
       "type": "image",
@@ -31,7 +41,8 @@
       "height": 40.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/misc/wifi_cloud.svg"
+      "imagePath": "pack:packs/misc/wifi_cloud.svg",
+      "tintColor": null
     },
     {
       "type": "image",
@@ -42,67 +53,65 @@
       "height": 40.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/misc/wifi_cloud.svg"
+      "imagePath": "pack:packs/misc/wifi_cloud.svg",
+      "tintColor": null
     },
     {
       "type": "text",
       "id": "price_text_1",
-      "x": 30.0,
-      "y": 95.0,
-      "width": 80.0,
-      "height": 30.0,
+      "x": 16.362068,
+      "y": 70.666664,
+      "width": 100.053635,
+      "height": 93.454544,
       "isVisible": true,
       "rotation": 0.0,
-      "text": "10 الف",
+      "text": "30\nشيكل",
       "textColor": "#3EB2F0",
-      "textSizeSp": 22.0,
+      "bgColor": null,
       "isBold": true,
-      "fontName": "cairo"
-    },
-    {
-      "type": "text",
-      "id": "price_text_2",
-      "x": 30.0,
-      "y": 125.0,
-      "width": 80.0,
-      "height": 30.0,
-      "isVisible": true,
-      "rotation": 0.0,
-      "text": "ريال",
-      "textColor": "#3EB2F0",
-      "textSizeSp": 20.0,
-      "isBold": true,
-      "fontName": "cairo"
+      "fontName": "lora",
+      "textSizeSp": 31.87316,
+      "textStrokeWidth": 0.0,
+      "textStrokeColor": "#FF1300FF",
+      "textAlign": "CENTER"
     },
     {
       "type": "text",
       "id": "quota_text",
-      "x": 10.0,
-      "y": 205.0,
-      "width": 100.0,
-      "height": 30.0,
+      "x": -8.836098,
+      "y": 195.94444,
+      "width": 95.44997,
+      "height": 48.11111,
       "isVisible": true,
       "rotation": 0.0,
-      "text": "15 جيجا",
+      "text": "2 ميجا",
       "textColor": "#FFFFFF",
-      "textSizeSp": 20.0,
+      "bgColor": null,
       "isBold": true,
-      "fontName": "cairo"
+      "fontName": "cairo",
+      "textSizeSp": 19.069086,
+      "textStrokeWidth": 0.0,
+      "textStrokeColor": "#000000",
+      "textAlign": "CENTER"
     },
     {
       "type": "text",
       "id": "validity_text",
-      "x": 120.0,
-      "y": 205.0,
-      "width": 150.0,
-      "height": 30.0,
+      "x": 101.180565,
+      "y": 197.134,
+      "width": 168.74998,
+      "height": 45.732,
       "isVisible": true,
       "rotation": 0.0,
-      "text": "الصلاحية: 40 يوم",
+      "text": "الصلاحية: 30 يوم",
       "textColor": "#FFFFFF",
-      "textSizeSp": 16.0,
+      "bgColor": null,
       "isBold": true,
-      "fontName": "cairo"
+      "fontName": "cairo",
+      "textSizeSp": 18.0,
+      "textStrokeWidth": 0.0,
+      "textStrokeColor": "#000000",
+      "textAlign": "CENTER"
     },
     {
       "type": "text",
@@ -115,9 +124,13 @@
       "rotation": 0.0,
       "text": "الاسم",
       "textColor": "#FFFFFF",
-      "textSizeSp": 26.0,
+      "bgColor": null,
       "isBold": true,
-      "fontName": "cairo"
+      "fontName": "cairo",
+      "textSizeSp": 26.0,
+      "textStrokeWidth": 0.0,
+      "textStrokeColor": "#000000",
+      "textAlign": "CENTER"
     },
     {
       "type": "image",
@@ -134,16 +147,21 @@
     {
       "type": "username",
       "id": "username_text",
-      "x": 190.0,
-      "y": 75.0,
-      "width": 220.0,
-      "height": 40.0,
+      "x": 157.91377,
+      "y": 70.666664,
+      "width": 284.17245,
+      "height": 48.666668,
       "isVisible": true,
       "rotation": 0.0,
       "digitCount": 12,
-      "textColor": "#545454",
-      "textSizeSp": 24.0,
-      "isBold": true
+      "textColor": "#000000",
+      "bgColor": null,
+      "isBold": true,
+      "fontName": "default",
+      "textSizeSp": 31.00063,
+      "isShortVariant": false,
+      "textStrokeWidth": 0.0,
+      "textStrokeColor": "#000000"
     },
     {
       "type": "text",
@@ -156,9 +174,13 @@
       "rotation": 0.0,
       "text": "الرمز",
       "textColor": "#FFFFFF",
-      "textSizeSp": 26.0,
+      "bgColor": null,
       "isBold": true,
-      "fontName": "cairo"
+      "fontName": "cairo",
+      "textSizeSp": 26.0,
+      "textStrokeWidth": 0.0,
+      "textStrokeColor": "#000000",
+      "textAlign": "CENTER"
     },
     {
       "type": "image",
@@ -175,31 +197,40 @@
     {
       "type": "password",
       "id": "password_text",
-      "x": 190.0,
-      "y": 135.0,
-      "width": 220.0,
-      "height": 40.0,
+      "x": 157.91377,
+      "y": 130.66667,
+      "width": 284.17245,
+      "height": 48.666668,
       "isVisible": true,
       "rotation": 0.0,
       "digitCount": 6,
-      "textColor": "#545454",
-      "textSizeSp": 24.0,
-      "isBold": true
+      "textColor": "#000000",
+      "bgColor": null,
+      "isBold": true,
+      "fontName": "default",
+      "textSizeSp": 31.00063,
+      "isShortVariant": false,
+      "textStrokeWidth": 0.0,
+      "textStrokeColor": "#000000"
     },
     {
       "type": "text",
       "id": "support_text",
-      "x": 370.0,
-      "y": 205.0,
+      "x": 383.3333,
+      "y": 199.09091,
       "width": 220.0,
-      "height": 30.0,
+      "height": 41.818184,
       "isVisible": true,
       "rotation": 0.0,
-      "text": "خدمة العملاء: 737455151",
+      "text": "خدمة العملاء: 0597152714",
       "textColor": "#FFFFFF",
-      "textSizeSp": 16.0,
+      "bgColor": null,
       "isBold": false,
-      "fontName": "cairo"
+      "fontName": "cairo",
+      "textSizeSp": 16.0,
+      "textStrokeWidth": 0.0,
+      "textStrokeColor": "#000000",
+      "textAlign": "CENTER"
     },
     {
       "type": "shape",
@@ -213,7 +244,11 @@
       "fillColor": "#FFFFFF",
       "strokeColor": "#1A2228",
       "strokeWidthDp": 2.0,
-      "cornerRadiusDp": 25.0
+      "cornerRadiusDp": 25.0,
+      "isDashed": false,
+      "dashLengthDp": 10.0,
+      "dashGapDp": 5.0,
+      "isDashRounded": false
     },
     {
       "type": "shape",
@@ -227,12 +262,16 @@
       "fillColor": "#FFFFFF",
       "strokeColor": "#1A2228",
       "strokeWidthDp": 2.0,
-      "cornerRadiusDp": 25.0
+      "cornerRadiusDp": 25.0,
+      "isDashed": false,
+      "dashLengthDp": 10.0,
+      "dashGapDp": 5.0,
+      "isDashRounded": false
     },
     {
       "type": "shape",
       "id": "price_circle",
-      "x": 20.0,
+      "x": 16.388885,
       "y": 70.0,
       "width": 100.0,
       "height": 100.0,
@@ -241,7 +280,11 @@
       "fillColor": "#FFFFFF",
       "strokeColor": "#1A2228",
       "strokeWidthDp": 3.0,
-      "cornerRadiusDp": 50.0
+      "cornerRadiusDp": 50.0,
+      "isDashed": false,
+      "dashLengthDp": 10.0,
+      "dashGapDp": 5.0,
+      "isDashRounded": false
     },
     {
       "type": "image",
@@ -252,7 +295,8 @@
       "height": 40.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/misc/dark_polygon.svg"
+      "imagePath": "pack:packs/misc/dark_polygon.svg",
+      "tintColor": null
     },
     {
       "type": "card_background",
@@ -264,5 +308,20 @@
       "isVisible": true,
       "rotation": 0.0
     }
-  ]
+  ],
+  "backElements": null,
+  "isBackSideEnabled": false,
+  "activeSide": "FRONT",
+  "exportSettings": {
+    "pageSize": "A4",
+    "layoutColumns": 4,
+    "layoutRows": 14,
+    "horizontalSpacingDp": 4.0,
+    "verticalSpacingDp": 2.0,
+    "flipEdge": "LONG_EDGE",
+    "exportFrontOnly": false,
+    "quality": "HIGH",
+    "showPageNumbers": false
+  },
+  "isShortNumbersEnabled": false
 }

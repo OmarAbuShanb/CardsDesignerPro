@@ -1,11 +1,17 @@
 {
+  "version": 3,
   "id": "default_card_template_3",
-  "name": "قالب WE WIFI",
+  "name": "قالب موجات عصري",
+  "isFree": true,
   "card": {
     "widthDp": 800.0,
     "heightRatio": 0.525,
-    "backgroundColor": "#FFFFFF"
+    "backgroundColor": "#FFFFFF",
+    "backgroundImagePath": null,
+    "backgroundImageScaleType": "FIT_XY",
+    "linkCredentialsStyle": true
   },
+  "backCard": null,
   "elements": [
     {
       "type": "text",
@@ -18,37 +24,51 @@
       "rotation": 0.0,
       "text": "احتفظ بالبطاقة حتى نهاية صلاحيتها",
       "textColor": "#4B90A5",
-      "textSizeSp": 22.0,
+      "bgColor": null,
       "isBold": true,
-      "fontName": "default"
+      "fontName": "default",
+      "textSizeSp": 22.0,
+      "textStrokeWidth": 0.0,
+      "textStrokeColor": "#000000",
+      "textAlign": "CENTER"
     },
     {
       "type": "password",
       "id": "password_text",
-      "x": 385.0,
-      "y": 255.0,
-      "width": 345.0,
-      "height": 60.0,
+      "x": 325.7368,
+      "y": 250.48148,
+      "width": 463.52643,
+      "height": 69.03703,
       "isVisible": true,
       "rotation": 0.0,
       "digitCount": 6,
       "textColor": "#4B90A5",
-      "textSizeSp": 36.0,
-      "isBold": true
+      "bgColor": null,
+      "isBold": true,
+      "fontName": "default",
+      "textSizeSp": 48.367973,
+      "isShortVariant": false,
+      "textStrokeWidth": 0.0,
+      "textStrokeColor": "#000000"
     },
     {
       "type": "username",
       "id": "username_text",
-      "x": 385.0,
-      "y": 165.0,
-      "width": 345.0,
-      "height": 60.0,
+      "x": 325.7368,
+      "y": 160.48148,
+      "width": 463.52643,
+      "height": 69.03703,
       "isVisible": true,
       "rotation": 0.0,
       "digitCount": 12,
       "textColor": "#4B90A5",
-      "textSizeSp": 36.0,
-      "isBold": true
+      "bgColor": null,
+      "isBold": true,
+      "fontName": "default",
+      "textSizeSp": 48.367973,
+      "isShortVariant": false,
+      "textStrokeWidth": 0.0,
+      "textStrokeColor": "#000000"
     },
     {
       "type": "text",
@@ -62,54 +82,69 @@
       "text": "يوم",
       "textColor": "#FFFFFF",
       "bgColor": "#F4BA46",
-      "textSizeSp": 40.157894,
       "isBold": true,
-      "fontName": "default"
+      "fontName": "default",
+      "textSizeSp": 40.157894,
+      "textStrokeWidth": 0.0,
+      "textStrokeColor": "#000000",
+      "textAlign": "CENTER"
     },
     {
       "type": "text",
       "id": "text_30",
-      "x": 464.44437,
-      "y": 47.777786,
+      "x": 457.5,
+      "y": 32.166664,
       "width": 200.0,
-      "height": 110.0,
+      "height": 144.0,
       "isVisible": true,
       "rotation": 0.0,
       "text": "30",
       "textColor": "#668A94",
-      "textSizeSp": 100.0,
+      "bgColor": null,
       "isBold": false,
-      "fontName": "default"
+      "fontName": "jet_brains_mono",
+      "textSizeSp": 100.0,
+      "textStrokeWidth": 0.0,
+      "textStrokeColor": "#000000",
+      "textAlign": "CENTER"
     },
     {
       "type": "text",
       "id": "text_desc",
-      "x": 120.0,
-      "y": 75.0,
-      "width": 300.0,
-      "height": 40.0,
+      "x": 165.02118,
+      "y": 84.46295,
+      "width": 209.95764,
+      "height": 39.40741,
       "isVisible": true,
       "rotation": 0.0,
       "text": "وين ما تكون احنا بنكون",
       "textColor": "#6A8C64",
-      "textSizeSp": 20.0,
+      "bgColor": null,
       "isBold": true,
-      "fontName": "default"
+      "fontName": "default",
+      "textSizeSp": 22.784643,
+      "textStrokeWidth": 0.0,
+      "textStrokeColor": "#000000",
+      "textAlign": "CENTER"
     },
     {
       "type": "text",
       "id": "text_wi_wifi",
-      "x": 120.0,
-      "y": 20.0,
-      "width": 300.0,
-      "height": 55.0,
+      "x": 197.49225,
+      "y": 13.629627,
+      "width": 145.01549,
+      "height": 76.44444,
       "isVisible": true,
       "rotation": 0.0,
-      "text": "وي وايفاي",
+      "text": "وي نت",
       "textColor": "#EEAA44",
-      "textSizeSp": 48.0,
+      "bgColor": null,
       "isBold": true,
-      "fontName": "default"
+      "fontName": "default",
+      "textSizeSp": 55.323517,
+      "textStrokeWidth": 0.0,
+      "textStrokeColor": "#000000",
+      "textAlign": "CENTER"
     },
     {
       "type": "image",
@@ -120,7 +155,8 @@
       "height": 30.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/pass_icon.svg"
+      "imagePath": "pack:packs/icons/pass_icon.svg",
+      "tintColor": null
     },
     {
       "type": "image",
@@ -131,7 +167,8 @@
       "height": 30.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/user_icon.svg"
+      "imagePath": "pack:packs/icons/user_icon.svg",
+      "tintColor": null
     },
     {
       "type": "image",
@@ -142,7 +179,8 @@
       "height": 70.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/fields/input_field_red.svg"
+      "imagePath": "pack:packs/fields/input_field_red.svg",
+      "tintColor": null
     },
     {
       "type": "image",
@@ -153,7 +191,8 @@
       "height": 70.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/fields/input_field_red.svg"
+      "imagePath": "pack:packs/fields/input_field_red.svg",
+      "tintColor": null
     },
     {
       "type": "image",
@@ -164,7 +203,8 @@
       "height": 90.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/misc/scan_me.svg"
+      "imagePath": "pack:packs/misc/scan_me.svg",
+      "tintColor": null
     },
     {
       "type": "qr",
@@ -176,13 +216,15 @@
       "isVisible": true,
       "rotation": 0.0,
       "host": "192.168.1.1",
+      "logoPath": null,
       "logoSizeFraction": 0.0,
       "tintLogo": false,
       "qrColor": "#4B90A5",
       "backgroundColor": "#FFFFFF",
-      "pixelShape": "square",
-      "eyeShape": "square",
-      "qrPadding": 0.05
+      "pixelShape": "round",
+      "eyeShape": "round",
+      "qrPadding": 0.05,
+      "linkToShortNumbers": false
     },
     {
       "type": "image",
@@ -193,18 +235,26 @@
       "height": 70.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/logos/logo_we.svg"
+      "imagePath": "pack:packs/logos/logo_we.svg",
+      "tintColor": null
     },
     {
-      "type": "image",
+      "type": "shape",
       "id": "bg_pattern_layer",
-      "x": 251.11131,
-      "y": -25.925596,
-      "width": 484.4444,
-      "height": 484.4444,
+      "x": 299.55575,
+      "y": 22.518844,
+      "width": 387.55552,
+      "height": 387.55552,
       "isVisible": true,
       "rotation": -29.42277,
-      "imagePath": "pack:packs/misc/bg_pattern.svg"
+      "fillColor": "#00000000",
+      "strokeColor": "#F4BA46",
+      "strokeWidthDp": 4.0,
+      "cornerRadiusDp": 48.0,
+      "isDashed": true,
+      "dashLengthDp": 7.0,
+      "dashGapDp": 5.0,
+      "isDashRounded": false
     },
     {
       "type": "card_background",
@@ -216,5 +266,20 @@
       "isVisible": true,
       "rotation": 0.0
     }
-  ]
+  ],
+  "backElements": null,
+  "isBackSideEnabled": false,
+  "activeSide": "FRONT",
+  "exportSettings": {
+    "pageSize": "A4",
+    "layoutColumns": 5,
+    "layoutRows": 13,
+    "horizontalSpacingDp": 2.0,
+    "verticalSpacingDp": 3.0,
+    "flipEdge": "LONG_EDGE",
+    "exportFrontOnly": false,
+    "quality": "HIGH",
+    "showPageNumbers": false
+  },
+  "isShortNumbersEnabled": false
 }

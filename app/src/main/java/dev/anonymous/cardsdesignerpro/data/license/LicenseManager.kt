@@ -205,11 +205,7 @@ class LicenseManager private constructor(private val context: Context) {
         }
     }
 
-    /**
-     * Checks if a default template directory is premium (requires activation).
-     */
-    fun isPremiumTemplate(dirName: String): Boolean =
-        dirName in AppConstants.PREMIUM_TEMPLATE_DIRS
+
 
     // ── State Computation ────────────────────────────────────────────────────
 

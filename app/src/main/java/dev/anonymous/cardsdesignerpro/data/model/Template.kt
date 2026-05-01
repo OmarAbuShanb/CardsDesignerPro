@@ -27,7 +27,8 @@ data class Template(
     /** Last active side in the editor; persisted so reopening restores focus. */
     val activeSide: CardSide = CardSide.FRONT,
     val exportSettings: ExportSettings? = null,
-    val isShortNumbersEnabled: Boolean = false
+    val isShortNumbersEnabled: Boolean = false,
+    val isFree: Boolean = true
 )
 
 enum class CardSide { FRONT, BACK }

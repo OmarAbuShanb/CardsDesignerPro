@@ -98,6 +98,19 @@
     <string name="btn_preview_pdf">فتح باستخدام</string>
     <string name="export_failed_message">فشل تصدير الملف. يرجى المحاولة مجدداً.</string>
 
+    <string name="btn_choose_directory">اختيار مجلد الحفظ</string>
+    <string name="label_save_location">مكان الحفظ</string>
+    <string name="btn_change_directory">تغيير المجلد</string>
+    <string name="error_directory_missing">يرجى اختيار مجلد حفظ صالح أولاً.</string>
+    <string name="error_directory_invalid">مجلد الحفظ المحدد لم يعد متاحاً. يرجى اختيار مجلد جديد.</string>
+    <string name="error_directory_create_file">فشل إنشاء الملف في المجلد المحدد.</string>
+    <string name="label_not_selected">لم يتم التحديد بعد</string>
+    <string name="error_file_invalid_data">تنسيق الملف غير صالح أو لا يحتوي على بيانات.</string>
+    <string name="error_short_data_missing">يرجى اختيار ملف بيانات مختصرة أولاً.</string>
+    <string name="error_invalid_file_selected">يرجى إزالة ملف البيانات غير الصالح قبل التصدير.</string>
+    <string name="error_invalid_short_file_selected">يرجى إزالة ملف البيانات المختصرة غير الصالح قبل التصدير.</string>
+    <string name="error_no_templates">لا توجد قوالب متاحة</string>
+
     <!-- Editor Screen -->
     <string name="editor_back_confirm_title">تجاهل التغييرات؟</string>
     <string name="editor_back_confirm_message">ستضيع التغييرات غير المحفوظة. هل تريد المتابعة؟</string>

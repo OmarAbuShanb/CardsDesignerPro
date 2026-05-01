@@ -118,14 +118,13 @@ class PagePreviewView @JvmOverloads constructor(
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val w = MeasureSpec.getSize(widthMeasureSpec)
         val l = layout
-        val h = if (l != null) (w * l.pageHeightPt / l.pageWidthPt).toInt() else w
+        // Default to A4 portrait ratio (297/210 ≈ 1.414) if no layout is selected
+        val h = if (l != null) (w * l.pageHeightPt / l.pageWidthPt).toInt() else (w * 1.414f).toInt()
         setMeasuredDimension(w, h.coerceAtLeast(1))
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        template ?: return
-        layout ?: return
 
         val viewW = width.toFloat()
         val viewH = height.toFloat()
@@ -133,6 +132,9 @@ class PagePreviewView @JvmOverloads constructor(
         // Background + shadow
         canvas.drawRoundRect(RectF(6f, 6f, viewW + 6f, viewH + 6f), 4f, 4f, shadowPaint)
         canvas.drawRect(0f, 0f, viewW, viewH, bgPaint)
+
+        template ?: return
+        layout ?: return
 
         // Draw the best available bitmap: cached (latest) or stale (previous)
         val bmp = cachedBitmap ?: staleBitmap

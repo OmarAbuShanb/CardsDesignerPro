@@ -102,15 +102,27 @@ class AddElementFragment : Fragment() {
         }
     }
 
-    /** Parses an SVG from assets and returns (width, height) in px. Returns (0,0) on failure. */
+    /** Parses an SVG or image from assets and returns (width, height) in px. Returns (0,0) on failure. */
     private fun readSvgDimensions(assetPath: String): Pair<Int, Int> {
         return runCatching {
-            val svg = requireContext().assets.open(assetPath).use {
-                com.caverock.androidsvg.SVG.getFromInputStream(it)
+            if (assetPath.endsWith(".svg", ignoreCase = true)) {
+                val svg = requireContext().assets.open(assetPath).use {
+                    com.caverock.androidsvg.SVG.getFromInputStream(it)
+                }
+                val w = if (svg.documentWidth > 0f) svg.documentWidth.toInt() else 24
+                val h = if (svg.documentHeight > 0f) svg.documentHeight.toInt() else 24
+                w to h
+            } else {
+                val options = android.graphics.BitmapFactory.Options().apply {
+                    inJustDecodeBounds = true
+                }
+                requireContext().assets.open(assetPath).use {
+                    android.graphics.BitmapFactory.decodeStream(it, null, options)
+                }
+                val w = if (options.outWidth > 0) options.outWidth else 24
+                val h = if (options.outHeight > 0) options.outHeight else 24
+                w to h
             }
-            val w = if (svg.documentWidth > 0f) svg.documentWidth.toInt() else 24
-            val h = if (svg.documentHeight > 0f) svg.documentHeight.toInt() else 24
-            w to h
         }.getOrDefault(0 to 0)
     }
 

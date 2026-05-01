@@ -1,7 +1,8 @@
 {
   "version": 2,
   "id": "default_card_template_5",
-  "name": "قالب FastNet",
+  "name": "قالب انسيابي سريع",
+  "isFree": true,
   "card": {
     "widthDp": 600.0,
     "heightRatio": 0.49,

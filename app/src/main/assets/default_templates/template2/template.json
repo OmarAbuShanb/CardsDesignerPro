@@ -1,83 +1,112 @@
 {
+  "version": 2,
   "id": "default_card_template_2",
-  "name": "قالب مكس نت (أفقي)",
+  "name": "قالب أفقي كلاسيكي",
+  "isFree": true,
   "card": {
     "widthDp": 800.0,
     "heightRatio": 0.5875,
-    "backgroundColor": "#FFFFFF"
+    "backgroundColor": "#FFFFFF",
+    "backgroundImagePath": null,
+    "backgroundImageScaleType": "FIT_XY",
+    "linkCredentialsStyle": true
   },
+  "backCard": null,
   "elements": [
     {
       "type": "text",
       "id": "text_support",
-      "x": 50.0,
-      "y": 410.0,
-      "width": 700.0,
-      "height": 40.0,
+      "x": 121.88577,
+      "y": 416.96298,
+      "width": 556.22845,
+      "height": 40.88889,
       "isVisible": true,
       "rotation": 0.0,
-      "text": "الدعم الفني : 0594837261 صفحة الدخول : www.mix.ps",
+      "text": "الدعم الفني : 0597152714 صفحة الدخول : www.dev.ps",
       "textColor": "#2E69F2",
-      "textSizeSp": 22.0,
-      "isBold": false
+      "bgColor": null,
+      "isBold": false,
+      "fontName": "default",
+      "textSizeSp": 24.628277,
+      "textStrokeWidth": 0.0,
+      "textStrokeColor": "#000000",
+      "textAlign": "CENTER"
     },
     {
       "type": "text",
       "id": "text_warning",
-      "x": 150.0,
-      "y": 370.0,
-      "width": 500.0,
-      "height": 40.0,
+      "x": 250.00688,
+      "y": 379.38925,
+      "width": 299.98624,
+      "height": 41.62963,
       "isVisible": true,
       "rotation": 0.0,
       "text": "البطاقة المباعة لا ترد ولا تستبدل",
       "textColor": "#C0392B",
-      "textSizeSp": 22.0,
+      "bgColor": null,
       "isBold": false,
-      "fontName": "default"
+      "fontName": "default",
+      "textSizeSp": 25.267082,
+      "textStrokeWidth": 0.0,
+      "textStrokeColor": "#000000",
+      "textAlign": "CENTER"
     },
     {
       "type": "password",
       "id": "password_text",
-      "x": 195.0,
-      "y": 270.0,
-      "width": 330.0,
-      "height": 80.0,
+      "x": 111.63519,
+      "y": 276.22223,
+      "width": 517.47034,
+      "height": 67.55556,
       "isVisible": true,
       "rotation": 0.0,
-      "digitCount": 12,
+      "digitCount": 6,
       "textColor": "#000000",
-      "textSizeSp": 30.0,
-      "isBold": true
+      "bgColor": null,
+      "isBold": true,
+      "fontName": "default",
+      "textSizeSp": 47.04276,
+      "isShortVariant": false,
+      "textStrokeWidth": 0.0,
+      "textStrokeColor": "#000000"
     },
     {
       "type": "username",
       "id": "username_text",
-      "x": 195.0,
-      "y": 180.0,
-      "width": 330.0,
-      "height": 80.0,
+      "x": 111.63519,
+      "y": 186.22223,
+      "width": 517.47034,
+      "height": 67.55556,
       "isVisible": true,
       "rotation": 0.0,
       "digitCount": 12,
       "textColor": "#000000",
-      "textSizeSp": 30.0,
-      "isBold": true
+      "bgColor": null,
+      "isBold": true,
+      "fontName": "default",
+      "textSizeSp": 47.04276,
+      "isShortVariant": false,
+      "textStrokeWidth": 0.0,
+      "textStrokeColor": "#000000"
     },
     {
       "type": "text",
       "id": "text_5m",
-      "x": 571.25,
-      "y": 102.5,
-      "width": 50.0,
-      "height": 50.0,
+      "x": 535.6833,
+      "y": 108.53703,
+      "width": 121.13341,
+      "height": 37.925926,
       "isVisible": true,
       "rotation": 0.0,
       "text": "5M",
       "textColor": "#FFFFFF",
-      "textSizeSp": 16.0,
+      "bgColor": null,
       "isBold": true,
-      "fontName": "default"
+      "fontName": "default",
+      "textSizeSp": 22.070698,
+      "textStrokeWidth": 0.0,
+      "textStrokeColor": "#000000",
+      "textAlign": "CENTER"
     },
     {
       "type": "text",
@@ -90,9 +119,13 @@
       "rotation": 0.0,
       "text": "ساعة 2",
       "textColor": "#FFFFFF",
-      "textSizeSp": 20.0,
+      "bgColor": null,
       "isBold": true,
-      "fontName": "default"
+      "fontName": "default",
+      "textSizeSp": 20.0,
+      "textStrokeWidth": 0.0,
+      "textStrokeColor": "#000000",
+      "textAlign": "CENTER"
     },
     {
       "type": "text",
@@ -105,23 +138,32 @@
       "rotation": 0.0,
       "text": "شيكل 2",
       "textColor": "#444444",
-      "textSizeSp": 20.0,
+      "bgColor": null,
       "isBold": true,
-      "fontName": "default"
+      "fontName": "default",
+      "textSizeSp": 20.0,
+      "textStrokeWidth": 0.0,
+      "textStrokeColor": "#000000",
+      "textAlign": "CENTER"
     },
     {
       "type": "text",
       "id": "network_name",
-      "x": 250.0,
-      "y": 20.0,
-      "width": 300.0,
-      "height": 60.0,
+      "x": 208.04445,
+      "y": 11.703705,
+      "width": 383.9111,
+      "height": 84.59259,
       "isVisible": true,
       "rotation": 0.0,
-      "text": "Mix Net",
+      "text": "Dev Net",
       "textColor": "#000000",
-      "textSizeSp": 48.0,
-      "isBold": true
+      "bgColor": null,
+      "isBold": true,
+      "fontName": "default",
+      "textSizeSp": 61.985184,
+      "textStrokeWidth": 0.0,
+      "textStrokeColor": "#000000",
+      "textAlign": "CENTER"
     },
     {
       "type": "image",
@@ -159,7 +201,11 @@
       "fillColor": "#182333",
       "strokeColor": "#000000",
       "strokeWidthDp": 0.0,
-      "cornerRadiusDp": 32.0
+      "cornerRadiusDp": 32.0,
+      "isDashed": false,
+      "dashLengthDp": 10.0,
+      "dashGapDp": 5.0,
+      "isDashRounded": false
     },
     {
       "type": "shape",
@@ -173,7 +219,11 @@
       "fillColor": "",
       "strokeColor": "#1c2536",
       "strokeWidthDp": 3.0,
-      "cornerRadiusDp": 37.0
+      "cornerRadiusDp": 37.0,
+      "isDashed": false,
+      "dashLengthDp": 10.0,
+      "dashGapDp": 5.0,
+      "isDashRounded": false
     },
     {
       "type": "shape",
@@ -187,7 +237,11 @@
       "fillColor": "#182333",
       "strokeColor": "#000000",
       "strokeWidthDp": 0.0,
-      "cornerRadiusDp": 32.0
+      "cornerRadiusDp": 32.0,
+      "isDashed": false,
+      "dashLengthDp": 10.0,
+      "dashGapDp": 5.0,
+      "isDashRounded": false
     },
     {
       "type": "shape",
@@ -201,7 +255,11 @@
       "fillColor": "",
       "strokeColor": "#1c2536",
       "strokeWidthDp": 3.0,
-      "cornerRadiusDp": 37.0
+      "cornerRadiusDp": 37.0,
+      "isDashed": false,
+      "dashLengthDp": 10.0,
+      "dashGapDp": 5.0,
+      "isDashRounded": false
     },
     {
       "type": "shape",
@@ -215,7 +273,11 @@
       "fillColor": "#606674",
       "strokeColor": "#000000",
       "strokeWidthDp": 0.0,
-      "cornerRadiusDp": 25.0
+      "cornerRadiusDp": 25.0,
+      "isDashed": false,
+      "dashLengthDp": 10.0,
+      "dashGapDp": 5.0,
+      "isDashRounded": false
     },
     {
       "type": "shape",
@@ -229,7 +291,11 @@
       "fillColor": "#2E69F2",
       "strokeColor": "#000000",
       "strokeWidthDp": 0.0,
-      "cornerRadiusDp": 8.0
+      "cornerRadiusDp": 8.0,
+      "isDashed": false,
+      "dashLengthDp": 10.0,
+      "dashGapDp": 5.0,
+      "isDashRounded": false
     },
     {
       "type": "shape",
@@ -243,7 +309,11 @@
       "fillColor": "#EEEEEE",
       "strokeColor": "#000000",
       "strokeWidthDp": 0.0,
-      "cornerRadiusDp": 13.0
+      "cornerRadiusDp": 13.0,
+      "isDashed": false,
+      "dashLengthDp": 10.0,
+      "dashGapDp": 5.0,
+      "isDashRounded": false
     },
     {
       "type": "line",
@@ -285,5 +355,20 @@
       "isVisible": true,
       "rotation": 0.0
     }
-  ]
+  ],
+  "backElements": null,
+  "isBackSideEnabled": false,
+  "activeSide": "FRONT",
+  "exportSettings": {
+    "pageSize": "A4",
+    "layoutColumns": 5,
+    "layoutRows": 12,
+    "horizontalSpacingDp": 2.0,
+    "verticalSpacingDp": 2.0,
+    "flipEdge": "LONG_EDGE",
+    "exportFrontOnly": false,
+    "quality": "HIGH",
+    "showPageNumbers": false
+  },
+  "isShortNumbersEnabled": false
 }

@@ -199,33 +199,6 @@
                         android:layout_marginBottom="20dp" />
                 </LinearLayout>
 
-                <!-- Progress -->
-                <com.google.android.material.progressindicator.LinearProgressIndicator
-                    android:id="@+id/progress_export"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:visibility="gone"
-                    app:trackCornerRadius="4dp" />
-
-                <!-- Separate export button -->
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_export_separate"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:layout_marginBottom="8dp"
-                    android:text="@string/btn_export_separate"
-                    android:visibility="gone" />
-
-                <!-- Primary export button -->
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_export"
-                    style="@style/Widget.Material3.Button"
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:text="@string/btn_export" />
-
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
 
@@ -247,7 +220,8 @@
             android:layout_height="match_parent"
             android:clickable="true"
             android:focusable="true"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingHorizontal="12dp">
 
             <LinearLayout
                 android:id="@+id/drag_header_area"
@@ -278,7 +252,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:paddingHorizontal="20dp"
                     android:paddingBottom="40dp">
 
                     <!-- ── File picker ── -->
@@ -301,6 +274,11 @@
                             android:id="@+id/btn_choose_file"
                             style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:minWidth="0dp"
+                            android:textSize="12sp"
+                            android:minHeight="0dp"
+                            android:padding="12dp"
                             android:layout_height="wrap_content"
                             android:text="@string/btn_choose_file" />
                     </LinearLayout>
@@ -341,6 +319,11 @@
                                 style="@style/Widget.Material3.Button.OutlinedButton"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginStart="4dp"
+                                android:minWidth="0dp"
+                                android:textSize="12sp"
+                                android:minHeight="0dp"
+                                android:padding="12dp"
                                 android:text="@string/btn_choose_file" />
                         </LinearLayout>
 
@@ -349,7 +332,7 @@
                             android:id="@+id/rv_selected_short_files"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginBottom="8dp"
+                            android:layout_marginBottom="16dp"
                             android:nestedScrollingEnabled="false" />
 
                         <!-- Count mismatch warning -->
@@ -362,6 +345,89 @@
                             android:padding="8dp"
                             android:textAppearance="?attr/textAppearanceLabelMedium"
                             android:textColor="?attr/colorError"
+                            android:visibility="gone" />
+
+                    </LinearLayout>
+
+                    <!-- Export Location & Buttons -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="16dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/label_save_location"
+                                android:textAppearance="?attr/textAppearanceTitleSmall" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginEnd="4dp"
+                                android:text=":"
+                                android:textAppearance="?attr/textAppearanceTitleSmall" />
+
+                            <TextView
+                                android:id="@+id/tv_selected_directory"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:ellipsize="end"
+                                android:maxLines="2"
+                                android:text="@string/label_not_selected"
+                                android:textAlignment="viewStart"
+                                android:textAppearance="?attr/textAppearanceBodyMedium"
+                                android:textDirection="locale" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btn_choose_directory"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="4dp"
+                                android:minWidth="0dp"
+                                android:textSize="12sp"
+                                android:minHeight="0dp"
+                                android:padding="12dp"
+                                android:text="@string/btn_choose_directory" />
+
+                        </LinearLayout>
+
+                        <!-- Progress -->
+                        <com.google.android.material.progressindicator.LinearProgressIndicator
+                            android:id="@+id/progress_export"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="12dp"
+                            android:visibility="gone"
+                            app:trackCornerRadius="4dp" />
+
+                        <!-- Separate export button -->
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_export_separate"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            android:layout_marginBottom="8dp"
+                            android:text="@string/btn_export_separate"
+                            android:visibility="gone" />
+
+                        <!-- Primary export button -->
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_export"
+                            style="@style/Widget.Material3.Button"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            android:text="@string/btn_export"
                             android:visibility="gone" />
 
                     </LinearLayout>

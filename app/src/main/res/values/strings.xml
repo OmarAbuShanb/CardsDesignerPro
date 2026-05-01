@@ -103,6 +103,19 @@
     <string name="notification_permission_dialog_export_anyway">Export Anyway</string>
     <string name="notification_permission_denied_export_continues">Notifications are disabled. Export will continue without system notification progress.</string>
 
+    <string name="btn_choose_directory">Choose Save Folder</string>
+    <string name="label_save_location">Save Location</string>
+    <string name="btn_change_directory">Change Folder</string>
+    <string name="error_directory_missing">Please select a valid save folder first.</string>
+    <string name="error_directory_invalid">The selected folder is no longer available. Please select a new one.</string>
+    <string name="error_directory_create_file">Failed to create file in the selected folder.</string>
+    <string name="label_not_selected">Not selected yet</string>
+    <string name="error_file_invalid_data">Invalid file format or empty data.</string>
+    <string name="error_short_data_missing">Please select a short data file first.</string>
+    <string name="error_invalid_file_selected">Please remove the invalid data file before exporting.</string>
+    <string name="error_invalid_short_file_selected">Please remove the invalid short data file before exporting.</string>
+    <string name="error_no_templates">No templates available</string>
+
     <!-- Editor Screen -->
     <string name="editor_back_confirm_title">Discard Changes?</string>
     <string name="editor_back_confirm_message">Unsaved changes will be lost. Do you want to continue?</string>

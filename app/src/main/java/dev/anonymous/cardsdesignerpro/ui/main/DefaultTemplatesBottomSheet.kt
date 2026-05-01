@@ -34,7 +34,7 @@ class DefaultTemplatesBottomSheet : BottomSheetDialogFragment() {
         val adapter = DefaultTemplateAdapter { dirName, template ->
             // Premium template gate
             val lm = LicenseManager.getInstance(requireContext())
-            if (lm.isPremiumTemplate(dirName) && !lm.isActivated) {
+            if (!template.isFree && !lm.isActivated) {
                 LicenseDialogs.showPremiumTemplateDialog(requireActivity()) {
                     LicenseDialogs.showActivationDialog(requireActivity()) {}
                 }

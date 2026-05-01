@@ -3,6 +3,7 @@ package dev.anonymous.cardsdesignerpro.ui.export
 import android.app.Application
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -23,6 +24,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import androidx.core.net.toUri
 
 /** A single file chosen by the user for export data. */
 data class SelectedFile(
@@ -62,6 +64,8 @@ data class ExportUiState(
     val hasBackSide: Boolean = false,
     val backLayout: PdfExporter.LayoutInfo? = null,
     val isShortNumbersEnabled: Boolean = false,
+    val selectedDirectoryUri: Uri? = null,
+    val selectedDirectoryName: String? = null,
 ) {
     /** Convenience: true when at least one file is still being parsed. */
     val isParsingFile: Boolean get() = selectedFiles.any { it.isParsing }
@@ -122,12 +126,18 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
                 templates.indexOfFirst { it.id == lastId }.coerceAtLeast(0) else 0
             val t = templates.getOrNull(selectedIdx)
             val defaultSettings = t?.exportSettings ?: ExportSettings()
+            val dirUriStr = prefs.getString("selected_dir_uri", null)
+            val dirName = prefs.getString("selected_dir_name", null)
+            val dirUri = dirUriStr?.toUri()
+            
             _uiState.value = _uiState.value.copy(
                 templates = templates,
                 selectedTemplateIndex = selectedIdx,
                 settings = defaultSettings,
                 hasBackSide = t?.isBackSideEnabled == true,
-                isShortNumbersEnabled = t?.isShortNumbersEnabled == true
+                isShortNumbersEnabled = t?.isShortNumbersEnabled == true,
+                selectedDirectoryUri = dirUri,
+                selectedDirectoryName = dirName
             )
             recalcLayout()
         }
@@ -257,6 +267,17 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
     fun updateCardLayout(index: Int) {
         val preset = CardLayoutPreset.ALL.getOrNull(index) ?: return
         mutateSettings { it.copy(layoutColumns = preset.columns, layoutRows = preset.rows) }
+    }
+
+    fun setSaveDirectory(uri: Uri?, name: String?) {
+        _uiState.value = _uiState.value.copy(
+            selectedDirectoryUri = uri,
+            selectedDirectoryName = name
+        )
+        prefs.edit {
+            putString("selected_dir_uri", uri?.toString())
+            putString("selected_dir_name", name)
+        }
     }
 
     fun updateHorizontalSpacing(v: Float) {

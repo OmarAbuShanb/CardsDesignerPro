@@ -55,7 +55,17 @@ class SelectedFileAdapter(
     inner class VH(private val b: ItemSelectedFileBinding) : RecyclerView.ViewHolder(b.root) {
         fun bind(item: SelectedFile) {
             b.tvFileName.text = item.displayName
-            b.tvUnsupported.visibility = if (!item.isSupported) View.VISIBLE else View.GONE
+            val isParsedAndInvalid = !item.isParsing && item.isSupported && (item.parseResult?.isSuccess == false || item.parseResult?.count == 0)
+            val hasError = !item.isSupported || isParsedAndInvalid
+            
+            b.tvUnsupported.visibility = if (hasError) View.VISIBLE else View.GONE
+            b.tvUnsupported.text = if (!item.isSupported) {
+                b.root.context.getString(R.string.label_file_unsupported)
+            } else if (isParsedAndInvalid) {
+                b.root.context.getString(R.string.error_file_invalid_data)
+            } else {
+                ""
+            }
 
             // Always keep badge visible to prevent item height jumps; only change the text
             b.tvCardCount.text = when {

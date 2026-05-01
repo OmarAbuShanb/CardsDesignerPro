@@ -36,6 +36,7 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.core.content.edit
 
 class ExportCardsActivity : AppCompatActivity() {
 
@@ -98,9 +99,9 @@ class ExportCardsActivity : AppCompatActivity() {
         viewModel.addFiles(uris, names, isShort = true)
     }
 
-    /** Single PDF — used for single-face or interleaved-dual export */
-    private val singlePdfSaver = registerForActivityResult(
-        ActivityResultContracts.CreateDocument("application/pdf")
+    /** Directory picker for saving files */
+    private val directoryPicker = registerForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
     ) { uri: Uri? ->
         if (uri == null) return@registerForActivityResult
         runCatching {
@@ -109,44 +110,9 @@ class ExportCardsActivity : AppCompatActivity() {
                 Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
             )
         }
-        val state = viewModel.uiState.value
-        if (state.hasBackSide && !state.settings.exportFrontOnly)
-            viewModel.exportDual(uri)
-        else
-            viewModel.export(uri)
-    }
-
-    /** Front PDF saver — step 1 of separate export */
-    private var pendingFrontUri: Uri? = null
-    private val frontPdfSaver = registerForActivityResult(
-        ActivityResultContracts.CreateDocument("application/pdf")
-    ) { uri: Uri? ->
-        if (uri == null) return@registerForActivityResult
-        runCatching {
-            contentResolver.takePersistableUriPermission(
-                uri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            )
-        }
-        pendingFrontUri = uri
-        val name = viewModel.selectedTemplate?.name ?: "cards"
-        backPdfSaver.launch("${name}_${getString(R.string.back_side_filename)}_${timestamp()}.pdf")
-    }
-
-    /** Back PDF saver — step 2 of separate export */
-    private val backPdfSaver = registerForActivityResult(
-        ActivityResultContracts.CreateDocument("application/pdf")
-    ) { uri: Uri? ->
-        val frontUri = pendingFrontUri ?: return@registerForActivityResult
-        pendingFrontUri = null
-        if (uri == null) return@registerForActivityResult
-        runCatching {
-            contentResolver.takePersistableUriPermission(
-                uri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            )
-        }
-        viewModel.exportSeparate(frontUri, uri)
+        val dir = androidx.documentfile.provider.DocumentFile.fromTreeUri(this, uri)
+        val name = dir?.name ?: "Selected Folder"
+        viewModel.setSaveDirectory(uri, name)
     }
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
@@ -465,6 +431,7 @@ class ExportCardsActivity : AppCompatActivity() {
     private fun setupExportButtons() {
         binding.btnExport.setOnClickListener { handleExportClick(isSeparate = false) }
         binding.btnExportSeparate.setOnClickListener { handleExportClick(isSeparate = true) }
+        binding.btnChooseDirectory.setOnClickListener { directoryPicker.launch(null) }
     }
 
     private fun setupNotificationPermissionFlow() {
@@ -517,9 +484,9 @@ class ExportCardsActivity : AppCompatActivity() {
             return
         }
 
-        exportPrefs.edit()
-            .putBoolean(PREF_NOTIFICATION_PERMISSION_REQUESTED, true)
-            .apply()
+        exportPrefs.edit {
+            putBoolean(PREF_NOTIFICATION_PERMISSION_REQUESTED, true)
+        }
 
         viewModel.setPendingExportMode(
             if (isSeparate) {
@@ -552,11 +519,104 @@ class ExportCardsActivity : AppCompatActivity() {
      * 3. Validate digit lengths — show mismatch dialog if needed.
      * 4. Proceed to launch the PDF saver.
      */
+    private fun validateExportPreconditions(): Boolean {
+        val state = viewModel.uiState.value
+
+        if (state.templates.isEmpty() || viewModel.selectedTemplate == null) {
+            Snackbar.make(binding.root, R.string.error_no_templates, Snackbar.LENGTH_SHORT).show()
+            return false
+        }
+
+        if (state.isParsingFile) {
+            Snackbar.make(binding.root, R.string.error_file_still_parsing, Snackbar.LENGTH_SHORT).show()
+            return false
+        }
+
+        val parse = state.combinedParseResult
+        if (parse == null || parse.count == 0) {
+            Snackbar.make(binding.root, R.string.error_no_valid_file, Snackbar.LENGTH_SHORT).show()
+            return false
+        }
+
+        val dirUri = state.selectedDirectoryUri
+        if (dirUri == null) {
+            Snackbar.make(binding.root, R.string.error_directory_missing, Snackbar.LENGTH_LONG).show()
+            return false
+        }
+
+        val documentTree = androidx.documentfile.provider.DocumentFile.fromTreeUri(this, dirUri)
+        if (documentTree == null || !documentTree.exists() || !documentTree.canWrite()) {
+            Snackbar.make(binding.root, R.string.error_directory_invalid, Snackbar.LENGTH_LONG).show()
+            viewModel.setSaveDirectory(null, null)
+            return false
+        }
+
+        return true
+    }
+
     private fun handleExportClick(isSeparate: Boolean) {
-        // License guard — must pass before any other checks
+        if (!validateExportPreconditions()) return
+
+        val state = viewModel.uiState.value
+        val parse = state.combinedParseResult ?: return
+
+        val hasInvalidNormalFile = state.selectedFiles.any {
+            !it.isSupported || it.parseResult?.isSuccess == false || it.parseResult?.count == 0
+        }
+
+        if (hasInvalidNormalFile) {
+            Snackbar.make(binding.root, R.string.error_invalid_file_selected, Snackbar.LENGTH_LONG).show()
+            return
+        }
+
+        if (state.isShortNumbersEnabled) {
+            val shortParse = state.combinedShortParseResult
+
+            if (shortParse == null || shortParse.count == 0) {
+                Snackbar.make(binding.root, R.string.error_short_data_missing, Snackbar.LENGTH_LONG).show()
+                return
+            }
+
+            val hasInvalidShortFile = state.selectedShortFiles.any {
+                !it.isSupported || it.parseResult?.isSuccess == false || it.parseResult?.count == 0
+            }
+
+            if (hasInvalidShortFile) {
+                Snackbar.make(binding.root, R.string.error_invalid_short_file_selected, Snackbar.LENGTH_LONG).show()
+                return
+            }
+
+            if (parse.count != shortParse.count) {
+                Snackbar.make(
+                    binding.root,
+                    getString(R.string.short_numbers_warning_format, parse.count, shortParse.count),
+                    Snackbar.LENGTH_LONG
+                ).show()
+                return
+            }
+        }
+
+        val mismatches = viewModel.validateDigitLengths()
+        if (mismatches.isNotEmpty()) {
+            showMismatchDialog(mismatches) {
+                if (validateExportPreconditions()) {
+                    checkLicenseAndProceed(isSeparate)
+                }
+            }
+            return
+        }
+
+        checkLicenseAndProceed(isSeparate)
+    }
+
+    private fun checkLicenseAndProceed(isSeparate: Boolean) {
+        if (!validateExportPreconditions()) return
+
         val lm = LicenseManager.getInstance(this)
+
         if (!lm.canAccess(PremiumFeature.PDF_EXPORT)) {
-            when (lm.licenseState.value.status) {
+            val status = lm.licenseState.value.status
+            when (status) {
                 LicenseStatus.TRIAL_EXPIRED ->
                     LicenseDialogs.showTrialExpiredDialog(this) {
                         LicenseDialogs.showActivationDialog(this) {}
@@ -576,79 +636,65 @@ class ExportCardsActivity : AppCompatActivity() {
         // Scenario A — trial users must increment export count on server before exporting
         if (!lm.isActivated) {
             lm.incrementServerExportCount(
-                onSuccess = { _ -> proceedWithExport(isSeparate) },
+                onSuccess = { _ -> launchExportWithNotificationPermissionGate(isSeparate) },
                 onFailure = { _ ->
                     Snackbar.make(
                         binding.root,
                         R.string.license_export_sync_error,
                         Snackbar.LENGTH_LONG
                     ).setAction(R.string.license_btn_retry) {
-                        handleExportClick(isSeparate)
+                        checkLicenseAndProceed(isSeparate)
                     }.show()
                 }
             )
             return
         }
 
-        proceedWithExport(isSeparate)
-    }
-
-    /**
-     * Continues the export flow after all license/sync checks pass.
-     */
-    private fun proceedWithExport(isSeparate: Boolean) {
-
-        val state = viewModel.uiState.value
-
-        // Guard 1: file still being parsed
-        if (state.isParsingFile) {
-            Snackbar.make(binding.root, R.string.error_file_still_parsing, Snackbar.LENGTH_SHORT)
-                .show()
-            return
-        }
-
-        // Guard 2: no valid data
-        val parse = state.combinedParseResult
-        if (parse == null || parse.count == 0) {
-            Snackbar.make(binding.root, R.string.error_no_valid_file, Snackbar.LENGTH_SHORT).show()
-            return
-        }
-
-        // Guard 3: short-numbers count mismatch
-        if (state.isShortNumbersEnabled) {
-            val shortParse = state.combinedShortParseResult
-            if (shortParse != null && parse.count > 0 && shortParse.count > 0 && parse.count != shortParse.count) {
-                Snackbar.make(
-                    binding.root,
-                    getString(R.string.short_numbers_warning_format, parse.count, shortParse.count),
-                    Snackbar.LENGTH_LONG
-                ).show()
-                return
-            }
-        }
-
-        // Guard 4: digit-length mismatch — show dialog but allow the user to continue anyway
-        val mismatches = viewModel.validateDigitLengths()
-        if (mismatches.isNotEmpty()) {
-            showMismatchDialog(mismatches) { launchExportWithNotificationPermissionGate(isSeparate) }
-            return
-        }
-
         launchExportWithNotificationPermissionGate(isSeparate)
     }
 
-    /** Launches the appropriate PDF saver picker without any extra checks. */
+    /** Creates the document in the selected directory and launches the export without extra checks. */
     private fun doLaunchExport(isSeparate: Boolean) {
+        if (!validateExportPreconditions()) return
+
+        val template = viewModel.selectedTemplate
+        if (template == null) {
+            Snackbar.make(binding.root, R.string.error_no_templates, Snackbar.LENGTH_SHORT).show()
+            return
+        }
+
         val state = viewModel.uiState.value
-        val name = viewModel.selectedTemplate?.name ?: "cards"
+        val name = template.name
+        val dirUri = state.selectedDirectoryUri ?: return
+        val documentTree = androidx.documentfile.provider.DocumentFile.fromTreeUri(this, dirUri) ?: return
+
         if (isSeparate) {
-            frontPdfSaver.launch("${name}_${getString(R.string.front_filename)}_${timestamp()}.pdf")
+            val frontName = "${name}_${getString(R.string.front_filename)}_${timestamp()}.pdf"
+            val backName = "${name}_${getString(R.string.back_side_filename)}_${timestamp()}.pdf"
+
+            val frontFile = documentTree.createFile("application/pdf", frontName)
+            val backFile = documentTree.createFile("application/pdf", backName)
+
+            if (frontFile != null && backFile != null) {
+                viewModel.exportSeparate(frontFile.uri, backFile.uri)
+            } else {
+                Snackbar.make(binding.root, R.string.error_directory_create_file, Snackbar.LENGTH_LONG).show()
+            }
         } else {
             val fname = if (state.hasBackSide && !state.settings.exportFrontOnly)
                 "${name}_${getString(R.string.dual_filename)}_${timestamp()}.pdf"
             else
                 "${name}_${getString(R.string.front_filename)}_${timestamp()}.pdf"
-            singlePdfSaver.launch(fname)
+
+            val singleFile = documentTree.createFile("application/pdf", fname)
+            if (singleFile != null) {
+                if (state.hasBackSide && !state.settings.exportFrontOnly)
+                    viewModel.exportDual(singleFile.uri)
+                else
+                    viewModel.export(singleFile.uri)
+            } else {
+                Snackbar.make(binding.root, R.string.error_directory_create_file, Snackbar.LENGTH_LONG).show()
+            }
         }
     }
 
@@ -734,23 +780,32 @@ class ExportCardsActivity : AppCompatActivity() {
 
         // Template spinner
         val templates = state.templates
-        if (binding.spinnerTemplate.adapter == null ||
-            (binding.spinnerTemplate.adapter as? ArrayAdapter<*>)?.count != templates.size
-        ) {
+        val templateNames = if (templates.isEmpty()) {
+            listOf(getString(R.string.error_no_templates))
+        } else {
+            templates.map { it.name }
+        }
+
+        val oldNames = binding.spinnerTemplate.tag as? List<*>
+        if (oldNames != templateNames) {
+            binding.spinnerTemplate.tag = templateNames
             binding.spinnerTemplate.adapter = ArrayAdapter(
                 this,
-                android.R.layout.simple_spinner_item, templates.map { it.name }).also {
+                android.R.layout.simple_spinner_item, templateNames).also {
                 it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             }
             binding.spinnerTemplate.onItemSelectedListener =
                 object : AdapterView.OnItemSelectedListener {
-                    override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) =
-                        viewModel.selectTemplate(pos)
+                    override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
+                        if (templates.isNotEmpty()) {
+                            viewModel.selectTemplate(pos)
+                        }
+                    }
 
                     override fun onNothingSelected(p: AdapterView<*>?) {}
                 }
         }
-        if (binding.spinnerTemplate.selectedItemPosition != state.selectedTemplateIndex)
+        if (templates.isNotEmpty() && binding.spinnerTemplate.selectedItemPosition != state.selectedTemplateIndex)
             binding.spinnerTemplate.setSelection(state.selectedTemplateIndex)
 
         // Card layout spinner
@@ -886,9 +941,36 @@ class ExportCardsActivity : AppCompatActivity() {
             if (state.settings.flipEdge == FlipEdge.LONG_EDGE) R.id.btn_flip_long else R.id.btn_flip_short
         if (binding.toggleFlipEdge.checkedButtonId != flipId) binding.toggleFlipEdge.check(flipId)
 
+        // Export location & directory button
+        if (state.selectedDirectoryUri != null) {
+            binding.tvSelectedDirectory.text = state.selectedDirectoryName
+            binding.tvSelectedDirectory.visibility = View.VISIBLE
+            binding.btnChooseDirectory.text = getString(R.string.btn_change_directory)
+        } else {
+            binding.tvSelectedDirectory.visibility = View.VISIBLE
+            binding.tvSelectedDirectory.text = getString(R.string.label_not_selected)
+            binding.btnChooseDirectory.text = getString(R.string.btn_choose_directory)
+        }
+
+        val hasTemplate = state.templates.isNotEmpty() && viewModel.selectedTemplate != null
+        val hasData = state.combinedParseResult != null && state.combinedParseResult.count > 0
+        val hasDir = state.selectedDirectoryUri != null
+        val showExport = hasTemplate && hasData && hasDir
+
         // Export buttons
-        binding.btnExportSeparate.visibility = if (showDual) View.VISIBLE else View.GONE
-        binding.btnExport.setText(if (showDual) R.string.btn_export_dual else R.string.btn_export)
+        if (showExport) {
+            binding.btnExport.visibility = View.VISIBLE
+            if (showDual) {
+                binding.btnExportSeparate.visibility = View.VISIBLE
+                binding.btnExport.setText(R.string.btn_export_dual)
+            } else {
+                binding.btnExportSeparate.visibility = View.GONE
+                binding.btnExport.setText(R.string.btn_export)
+            }
+        } else {
+            binding.btnExport.visibility = View.GONE
+            binding.btnExportSeparate.visibility = View.GONE
+        }
 
         val exporting = state.isExporting
         binding.progressExport.visibility = if (exporting) View.VISIBLE else View.GONE
