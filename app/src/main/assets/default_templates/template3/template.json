@@ -2,7 +2,6 @@
   "version": 3,
   "id": "default_card_template_3",
   "name": "قالب موجات عصري",
-  "isFree": true,
   "card": {
     "widthDp": 800.0,
     "heightRatio": 0.525,
@@ -129,7 +128,7 @@
     },
     {
       "type": "text",
-      "id": "text_wi_wifi",
+      "id": "text_wi_net",
       "x": 197.49225,
       "y": 13.629627,
       "width": 145.01549,
@@ -149,25 +148,25 @@
     {
       "type": "image",
       "id": "icon_pass_svg",
-      "x": 336.0,
-      "y": 270.0,
-      "width": 30.0,
-      "height": 30.0,
+      "x": 331.55557,
+      "y": 261.1111,
+      "width": 47.77778,
+      "height": 47.77778,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/pass_icon.svg",
+      "imagePath": "pack:packs/credential_icons/pass_icon.svg",
       "tintColor": null
     },
     {
       "type": "image",
       "id": "icon_user_svg",
-      "x": 336.0,
-      "y": 180.0,
-      "width": 30.0,
-      "height": 30.0,
+      "x": 329.7037,
+      "y": 169.25926,
+      "width": 51.481483,
+      "height": 51.481483,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/user_icon.svg",
+      "imagePath": "pack:packs/credential_icons/user_icon.svg",
       "tintColor": null
     },
     {
@@ -241,10 +240,10 @@
     {
       "type": "shape",
       "id": "bg_pattern_layer",
-      "x": 299.55575,
-      "y": 22.518844,
-      "width": 387.55552,
-      "height": 387.55552,
+      "x": 299.55576,
+      "y": 22.518845,
+      "width": 387.5555,
+      "height": 387.5555,
       "isVisible": true,
       "rotation": -29.42277,
       "fillColor": "#00000000",
@@ -281,5 +280,6 @@
     "quality": "HIGH",
     "showPageNumbers": false
   },
-  "isShortNumbersEnabled": false
+  "isShortNumbersEnabled": false,
+  "isFree": true
 }

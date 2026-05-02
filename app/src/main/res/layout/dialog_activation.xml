@@ -14,20 +14,48 @@
         android:textAppearance="?attr/textAppearanceBodyMedium"
         android:lineSpacingExtra="4dp" />
 
-    <!-- WhatsApp link -->
-    <TextView
-        android:id="@+id/tv_whatsapp_link"
+    <!-- Contact via WhatsApp -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_contact_whatsapp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="@string/license_whatsapp_click"
-        android:textAppearance="?attr/textAppearanceBodyMedium"
-        android:textColor="?attr/colorPrimary"
-        android:textStyle="bold"
-        android:drawablePadding="8dp"
-        android:clickable="true"
-        android:focusable="true"
-        android:background="?attr/selectableItemBackground" />
+        android:text="@string/license_contact_whatsapp" />
+
+    <!-- Android ID info and copy -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="8dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/license_copy_android_id"
+            android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+        <ImageButton
+            android:id="@+id/btn_info_android_id"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_info_outline_24"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="8dp"
+            android:contentDescription="@string/license_info_android_id" />
+
+        <ImageButton
+            android:id="@+id/btn_copy_android_id"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_duplicate_24"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="8dp"
+            android:layout_marginStart="4dp"
+            android:contentDescription="@string/license_copy_android_id" />
+    </LinearLayout>
 
     <!-- Activation code input -->
     <com.google.android.material.textfield.TextInputLayout

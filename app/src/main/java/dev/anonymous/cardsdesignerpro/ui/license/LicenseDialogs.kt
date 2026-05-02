@@ -1,9 +1,13 @@
 package dev.anonymous.cardsdesignerpro.ui.license
 
 import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.view.LayoutInflater
+import android.view.View
 import android.widget.EditText
 import android.widget.TextView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -29,11 +33,36 @@ object LicenseDialogs {
             .inflate(R.layout.dialog_activation, null)
 
         val etCode = dialogView.findViewById<EditText>(R.id.et_activation_code)
-        val tvWhatsApp = dialogView.findViewById<TextView>(R.id.tv_whatsapp_link)
+        
+        val btnWhatsApp = dialogView.findViewById<View>(R.id.btn_contact_whatsapp)
+        val btnInfoAndroidId = dialogView.findViewById<View>(R.id.btn_info_android_id)
+        val btnCopyAndroidId = dialogView.findViewById<View>(R.id.btn_copy_android_id)
 
-        // WhatsApp click — opens wa.me with device hash in the message
-        tvWhatsApp.setOnClickListener {
-            openWhatsAppWithDeviceHash(activity)
+        // WhatsApp click — opens wa.me
+        btnWhatsApp.setOnClickListener {
+            openWhatsAppContact(activity)
+        }
+
+        // Info click
+        btnInfoAndroidId.setOnClickListener {
+            MaterialAlertDialogBuilder(activity)
+                .setTitle(R.string.license_android_id_info_title)
+                .setMessage(R.string.license_android_id_info_message)
+                .setPositiveButton(R.string.btn_close, null)
+                .show()
+        }
+
+        // Copy click
+        btnCopyAndroidId.setOnClickListener {
+            val androidId = DeviceIdProvider.getHashedId(activity)
+            val clipboard = activity.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val clip = ClipData.newPlainText("Android ID", androidId)
+            clipboard.setPrimaryClip(clip)
+            Snackbar.make(
+                dialogView,
+                R.string.license_android_id_copied,
+                Snackbar.LENGTH_SHORT
+            ).show()
         }
 
         val dialog = MaterialAlertDialogBuilder(activity)
@@ -141,9 +170,8 @@ object LicenseDialogs {
 
     // ── WhatsApp ─────────────────────────────────────────────────────────────
 
-    private fun openWhatsAppWithDeviceHash(activity: Activity) {
-        val deviceHash = DeviceIdProvider.getHashedId(activity)
-        val message = activity.getString(R.string.license_whatsapp_message, deviceHash)
+    private fun openWhatsAppContact(activity: Activity) {
+        val message = activity.getString(R.string.license_whatsapp_message)
         val phone = AppConstants.DEVELOPER_WHATSAPP_NUMBER
         val url = "https://wa.me/${phone.replace("+", "")}?text=${Uri.encode(message)}"
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))

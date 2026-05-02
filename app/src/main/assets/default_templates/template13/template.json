@@ -129,7 +129,7 @@
       "height": 75.22916,
       "isVisible": true,
       "rotation": 18.0,
-      "imagePath": "pack:packs/icons/wifi_icon.svg",
+      "imagePath": "pack:packs/general_icons/wifi_icon.svg",
       "tintColor": "#424242"
     },
     {
@@ -179,7 +179,7 @@
       "height": 18.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/ic_clock_circle.svg",
+      "imagePath": "pack:packs/credential_icons/ic_clock_circle.svg",
       "tintColor": "#FFFFFF"
     },
     {
@@ -229,7 +229,7 @@
       "height": 20.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/user_icon.svg",
+      "imagePath": "pack:packs/credential_icons/user_icon.svg",
       "tintColor": "#FFFFFF"
     },
     {
@@ -241,7 +241,7 @@
       "height": 20.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/lock_icon.svg",
+      "imagePath": "pack:packs/credential_icons/lock_icon.svg",
       "tintColor": "#FFFFFF"
     },
     {
@@ -253,7 +253,7 @@
       "height": 22.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/ic_whatsapp_solid.svg",
+      "imagePath": "pack:packs/general_icons/ic_whatsapp_solid.svg",
       "tintColor": "#616161"
     },
     {
@@ -284,7 +284,7 @@
       "height": 22.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/ic_whatsapp_solid.svg",
+      "imagePath": "pack:packs/general_icons/ic_whatsapp_solid.svg",
       "tintColor": "#616161"
     },
     {

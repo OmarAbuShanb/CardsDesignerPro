@@ -137,12 +137,15 @@
 
     <!-- Pack Browser -->
     <string name="pack_title">عناصر جاهزة</string>
-    <string name="pack_tab_icons">أيقونات</string>
-    <string name="pack_tab_fields">حقول</string>
-    <string name="pack_tab_dividers">قواسم</string>
-    <string name="pack_tab_logos">شعارات</string>
-    <string name="pack_tab_patterns">أنماط</string>
+    <string name="pack_tab_credential_icons">أيقونات الإدخال</string>
+    <string name="pack_tab_general_icons">الأيقونات العامة</string>
+    <string name="pack_tab_fields">الحقول</string>
+    <string name="pack_tab_dividers">القواسم</string>
+    <string name="pack_tab_logos">الشعارات</string>
+    <string name="pack_tab_visual_shapes">الأشكال البصرية</string>
+    <string name="pack_tab_corners">الزوايا</string>
     <string name="pack_tab_misc">متنوع</string>
+    <string name="pack_tab_characters">الشخصيات</string>
 
     <!-- Editor – Properties -->
     <string name="prop_no_selection">قم بتحديد أي عنصر لتغيير خصائصه</string>
@@ -329,9 +332,14 @@
     <string name="license_trial_expired_btn">انتهت الفترة المجانية — انقر للتفعيل</string>
     <string name="license_export_limit_btn">انتهت التصديرات — انقر للتفعيل</string>
     <string name="license_activate_title">تفعيل التطبيق</string>
-    <string name="license_activate_benefits">تفعيل التطبيق يفتح لك:\n\n• تصدير PDF بدون حدود\n• العناصر الجاهزة\n• القوالب المميزة\n• استيراد وتصدير نسخ القوالب\n• إزالة حظر لقطات الشاشة في المحرر</string>
-    <string name="license_whatsapp_click">📱 أرسل هاش الجهاز عبر واتساب للحصول على كود التفعيل</string>
-    <string name="license_whatsapp_message">مرحباً، أريد تفعيل تطبيق مصمم البطاقات برو.\n\nهاش الجهاز:\n%s</string>
+    <string name="license_activate_benefits">تفعيل التطبيق يفتح لك:\n\n• تصدير PDF بدون حدود\n• العناصر الجاهزة\n• القوالب المميزة\n• استيراد وتصدير القوالب\n• تلقي آخر التحديثات أولاً بأول\n• وغيرها المزيد...</string>
+    <string name="license_contact_whatsapp">تواصل عبر الواتساب</string>
+    <string name="license_whatsapp_message">مرحباً، أريد تفعيل تطبيق مصمم البطاقات برو.</string>
+    <string name="license_copy_android_id">نسخ Android ID</string>
+    <string name="license_info_android_id">ما هو Android ID؟</string>
+    <string name="license_android_id_info_title">ما هو Android ID؟</string>
+    <string name="license_android_id_info_message">Android ID هو معرف فريد يقوم النظام بإنشائه لكل هاتف ولكل تطبيق، ونحن نستخدمه لربط مفتاح التفعيل بجهازك فقط للحد من تسريب المفتاح. وهو خاص بالتطبيق ولا يتغير حتى لو قمت بحذف التطبيق.</string>
+    <string name="license_android_id_copied">تم نسخ Android ID بنجاح</string>
     <string name="license_hint_activation_code">كود التفعيل</string>
     <string name="license_btn_activate">تفعيل</string>
     <string name="license_btn_activate_now">تفعيل الآن</string>

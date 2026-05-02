@@ -231,7 +231,7 @@
       "height": 51.666668,
       "isVisible": true,
       "rotation": 90.0,
-      "imagePath": "pack:packs/icons/wifi_icon.svg",
+      "imagePath": "pack:packs/general_icons/wifi_icon.svg",
       "tintColor": "#1A2228"
     },
     {
@@ -243,7 +243,7 @@
       "height": 37.77778,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/avatar_icon.svg",
+      "imagePath": "pack:packs/credential_icons/avatar_icon.svg",
       "tintColor": "#1A2228"
     },
     {
@@ -255,7 +255,7 @@
       "height": 35.555557,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/lock_icon.svg",
+      "imagePath": "pack:packs/credential_icons/lock_icon.svg",
       "tintColor": "#1A2228"
     },
     {
@@ -267,7 +267,7 @@
       "height": 30.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/phone_wifi_icon.svg",
+      "imagePath": "pack:packs/general_icons/phone_wifi_icon.svg",
       "tintColor": "#1A2228"
     },
     {
@@ -411,7 +411,7 @@
       "height": 240.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/misc/right_dark_shape.svg",
+      "imagePath": "pack:packs/visual_shapes/right_dark_shape.svg",
       "tintColor": null
     },
     {

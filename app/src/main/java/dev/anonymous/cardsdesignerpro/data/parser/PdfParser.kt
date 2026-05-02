@@ -13,9 +13,9 @@ import kotlinx.coroutines.withContext
  * Parses PDF files that contain card credential data in a grid/table layout.
  * Returns the same [ParseResult] format as [CsvParser] and [ExcelParser].
  *
- * ## Supported extraction patterns
+ * ## Supported extraction visual_shapes
  *
- * The parser handles **two patterns** that [PDFTextStripper] may produce,
+ * The parser handles **two visual_shapes** that [PDFTextStripper] may produce,
  * depending on the internal structure of the PDF:
  *
  * **Pattern 1 – Vertical / sequential** (most common output):
@@ -38,7 +38,7 @@ import kotlinx.coroutines.withContext
  * Package  pkg1    Package  pkg2    Package  pkg3
  * ```
  *
- * Both patterns are supported transparently.
+ * Both visual_shapes are supported transparently.
  *
  * - The **package** row is **ignored** — only username and password are extracted.
  * - Label matching is **case-insensitive**.

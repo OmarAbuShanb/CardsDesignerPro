@@ -221,7 +221,7 @@ class CardCanvasView @JvmOverloads constructor(
 
     private fun isTextEl(el: TemplateElement) = textMeasureInfo(el) != null
 
-    // ── Handle icons (lazy) ───────────────────────────────────────────────────
+    // ── Handle credential_icons (lazy) ───────────────────────────────────────────────────
     private val iconResize: Drawable? by lazy { loadIcon(R.drawable.ic_handle_resize) }
     private val iconResizeH: Drawable? by lazy { loadIcon(R.drawable.ic_handle_resize_h) }
     private val iconRotate: Drawable? by lazy { loadIcon(R.drawable.ic_handle_rotate) }

@@ -3,15 +3,15 @@
 
     <!-- QR pixel (dark dot) shapes -->
     <string-array name="qr_pixel_shapes">
-        <item>Square (Default)</item>
-        <item>Rounded</item>
+        <item>Rounded (Default)</item>
+        <item>Square</item>
         <item>Circle</item>
     </string-array>
 
     <!-- QR eye (corner ball + frame) shapes -->
     <string-array name="qr_eye_shapes">
-        <item>Square (Default)</item>
-        <item>Rounded</item>
+        <item>Rounded (Default)</item>
+        <item>Square</item>
         <item>Circle</item>
     </string-array>
 

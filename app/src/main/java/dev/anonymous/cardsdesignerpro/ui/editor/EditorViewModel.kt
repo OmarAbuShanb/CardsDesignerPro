@@ -347,6 +347,33 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
 
     fun addUsernameElement(isShort: Boolean = false) {
         val digitCount = if (isShort) 5 else 12
+        val linked = currentElements.firstOrNull {
+            activeCardStyle.linkCredentialsStyle &&
+                    it is TemplateElement.PasswordElement &&
+                    it.isShortVariant == isShort
+        } as? TemplateElement.PasswordElement
+        if (linked != null) {
+            addElement(
+                TemplateElement.UsernameElement(
+                    id = newId(),
+                    x = centerX(linked.width),
+                    y = centerY(linked.height),
+                    width = linked.width,
+                    height = linked.height,
+                    rotation = linked.rotation,
+                    digitCount = digitCount,
+                    textColor = linked.textColor,
+                    bgColor = linked.bgColor,
+                    isBold = linked.isBold,
+                    fontName = linked.fontName,
+                    textSizeSp = linked.textSizeSp,
+                    isShortVariant = isShort,
+                    textStrokeWidth = linked.textStrokeWidth,
+                    textStrokeColor = linked.textStrokeColor
+                )
+            )
+            return
+        }
         val dummy = dummyDigits(digitCount)
         val (w, h) = measureTextSize(dummy, 16f, "default", isBold = false)
         addElement(
@@ -360,6 +387,33 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
 
     fun addPasswordElement(isShort: Boolean = false) {
         val digitCount = if (isShort) 5 else 6
+        val linked = currentElements.firstOrNull {
+            activeCardStyle.linkCredentialsStyle &&
+                    it is TemplateElement.UsernameElement &&
+                    it.isShortVariant == isShort
+        } as? TemplateElement.UsernameElement
+        if (linked != null) {
+            addElement(
+                TemplateElement.PasswordElement(
+                    id = newId(),
+                    x = centerX(linked.width),
+                    y = centerY(linked.height),
+                    width = linked.width,
+                    height = linked.height,
+                    rotation = linked.rotation,
+                    digitCount = digitCount,
+                    textColor = linked.textColor,
+                    bgColor = linked.bgColor,
+                    isBold = linked.isBold,
+                    fontName = linked.fontName,
+                    textSizeSp = linked.textSizeSp,
+                    isShortVariant = isShort,
+                    textStrokeWidth = linked.textStrokeWidth,
+                    textStrokeColor = linked.textStrokeColor
+                )
+            )
+            return
+        }
         val dummy = dummyDigits(digitCount)
         val (w, h) = measureTextSize(dummy, 16f, "default", isBold = false)
         addElement(
@@ -1250,9 +1304,12 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
 
 
     fun getImageDirForCurrentTemplate(): java.io.File =
-        repo.getOrCreateImageDir(currentTemplate.id)
+        repo.getImageDir(currentTemplate.id)
 
     fun getFontDirForCurrentTemplate(): java.io.File =
+        repo.getFontDir(currentTemplate.id)
+
+    fun ensureFontDirForCurrentTemplate(): java.io.File =
         repo.getOrCreateFontDir(currentTemplate.id)
 
     /** Returns (displayName, "custom:filename") pairs for all custom fonts in this template. */
@@ -1348,7 +1405,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
 
     private fun syncLinkedCredentials(list: MutableList<TemplateElement>, primary: TemplateElement) {
         if (primary is TemplateElement.UsernameElement) {
-            val idx = list.indexOfFirst { it is TemplateElement.PasswordElement }
+            val idx = list.indexOfFirst { it is TemplateElement.PasswordElement && it.isShortVariant == primary.isShortVariant }
             if (idx != -1) {
                 val peer = list[idx] as TemplateElement.PasswordElement
                 val oldCX = peer.x + peer.width / 2f
@@ -1363,7 +1420,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 )
             }
         } else if (primary is TemplateElement.PasswordElement) {
-            val idx = list.indexOfFirst { it is TemplateElement.UsernameElement }
+            val idx = list.indexOfFirst { it is TemplateElement.UsernameElement && it.isShortVariant == primary.isShortVariant }
             if (idx != -1) {
                 val peer = list[idx] as TemplateElement.UsernameElement
                 val oldCX = peer.x + peer.width / 2f

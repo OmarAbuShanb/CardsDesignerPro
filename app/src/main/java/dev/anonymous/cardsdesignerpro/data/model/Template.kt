@@ -47,7 +47,7 @@ data class CardStyle(
     /** "FIT_XY", "CENTER_CROP", "FIT_CENTER" etc. (persisted as String for forward config safety). */
     val backgroundImageScaleType: String = ImageScaleType.FIT_XY.name,
     /** Whether Username and Password styles are kept fully in sync. */
-    val linkCredentialsStyle: Boolean = false,
+    val linkCredentialsStyle: Boolean = true,
 )
 
 @Serializable
@@ -63,7 +63,7 @@ data class ExportSettings(
     val flipEdge: FlipEdge = FlipEdge.LONG_EDGE,
     /** When true, export only the front face even if back side is enabled. */
     val exportFrontOnly: Boolean = false,
-    /** Rendering quality; controls bitmap resolution for images, QR codes, and patterns. */
+    /** Rendering quality; controls bitmap resolution for images, QR codes, and visual_shapes. */
     val quality: ExportQuality = ExportQuality.HIGH,
     /** Adds page numbers to exported pages (only shown when a document has multiple pages). */
     val showPageNumbers: Boolean = false,

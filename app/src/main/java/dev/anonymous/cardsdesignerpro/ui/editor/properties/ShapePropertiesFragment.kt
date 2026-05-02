@@ -12,6 +12,7 @@ import dev.anonymous.cardsdesignerpro.databinding.FragmentPropShapeBinding
 import dev.anonymous.cardsdesignerpro.ui.common.ColorHexDialogSupport
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorUiState
 import dev.anonymous.cardsdesignerpro.ui.editor.EditorViewModel
+import kotlin.math.roundToInt
 
 class ShapePropertiesFragment : Fragment(), PropertyFragment {
 
@@ -62,7 +63,7 @@ class ShapePropertiesFragment : Fragment(), PropertyFragment {
         val swVal = el.strokeWidthDp.toInt().coerceIn(0, 20)
         if (b.stepperStrokeWidth.value != swVal) b.stepperStrokeWidth.value = swVal
 
-        val crVal = el.cornerRadiusDp.coerceIn(0f, 100f)
+        val crVal = normalizeCornerRadius(el.cornerRadiusDp)
         if (b.sliderCornerRadius.value != crVal) b.sliderCornerRadius.value = crVal
         b.tvCornerRadiusLabel.text = getString(R.string.prop_shape_corner_radius) + ": ${crVal.toInt()}"
 
@@ -157,6 +158,11 @@ class ShapePropertiesFragment : Fragment(), PropertyFragment {
         if (updating) return
         val el = viewModel.selectedElement as? TemplateElement.ShapeElement ?: return
         viewModel.updateElement(transform(el))
+    }
+
+    private fun normalizeCornerRadius(value: Float): Float {
+        val clamped = value.coerceIn(0f, 200f)
+        return (clamped / 2f).roundToInt() * 2f
     }
 
     override fun onUiStateChanged(state: EditorUiState) {

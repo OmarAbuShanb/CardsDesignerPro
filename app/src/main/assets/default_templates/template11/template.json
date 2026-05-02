@@ -22,7 +22,7 @@
       "height": 250.22702,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/misc/male_character_gets_an_idea_while_sitting_on_a_sofa.png",
+      "imagePath": "pack:packs/characters/male_character_gets_an_idea_while_sitting_on_a_sofa.png",
       "tintColor": null
     },
     {
@@ -262,7 +262,7 @@
       "height": 66.66667,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/wifi_icon.svg",
+      "imagePath": "pack:packs/general_icons/wifi_icon.svg",
       "tintColor": "#FFFFFF"
     },
     {
@@ -274,7 +274,7 @@
       "height": 30.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/avatar_icon.svg",
+      "imagePath": "pack:packs/credential_icons/avatar_icon.svg",
       "tintColor": "#FFFFFF"
     },
     {
@@ -286,7 +286,7 @@
       "height": 30.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/lock_icon.svg",
+      "imagePath": "pack:packs/credential_icons/lock_icon.svg",
       "tintColor": "#FFFFFF"
     },
     {
@@ -370,7 +370,7 @@
       "height": 290.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/misc/zain_blob_yellow.svg",
+      "imagePath": "pack:packs/visual_shapes/zain_blob_yellow.svg",
       "tintColor": null
     },
     {

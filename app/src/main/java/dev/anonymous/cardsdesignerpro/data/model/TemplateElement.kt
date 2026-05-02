@@ -142,10 +142,10 @@ sealed class TemplateElement {
         val tintLogo: Boolean = false,
         val qrColor: String = "#000000",
         val backgroundColor: String = "#FFFFFF",
-        /** Dark pixel shape: "square" | "round" | "circle" */
-        val pixelShape: String = "square",
-        /** Eye (ball + frame) shape: "square" | "round" | "circle" */
-        val eyeShape: String = "square",
+        /** Dark pixel shape: "round" | "square" | "circle" */
+        val pixelShape: String = "round",
+        /** Eye (ball + frame) shape: "round" | "square" | "circle" */
+        val eyeShape: String = "round",
         /** Quiet zone padding fraction (0.0 – 0.25). */
         val qrPadding: Float = 0.05f,
         val linkToShortNumbers: Boolean = false,

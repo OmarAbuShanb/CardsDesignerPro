@@ -2,7 +2,6 @@
   "version": 7,
   "id": "1777552589801",
   "name": "قالب كلاسيكي منحني",
-  "isFree": false,
   "card": {
     "widthDp": 600.0,
     "heightRatio": 0.4,
@@ -22,7 +21,7 @@
       "height": 24.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/pass_icon.svg",
+      "imagePath": "pack:packs/credential_icons/pass_icon.svg",
       "tintColor": "#FFFFFF"
     },
     {
@@ -148,7 +147,7 @@
       "height": 24.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/ic_user_filled.svg",
+      "imagePath": "pack:packs/credential_icons/ic_user_filled.svg",
       "tintColor": "#FFFFFF"
     },
     {
@@ -216,13 +215,13 @@
     {
       "type": "image",
       "id": "curve_bg_left",
-      "x": 0.0,
-      "y": 0.0,
-      "width": 220.0,
-      "height": 240.0,
+      "x": -2.5888977,
+      "y": -2.0707092,
+      "width": 122.07071,
+      "height": 244.14142,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/misc/brown_curve_left.svg",
+      "imagePath": "pack:packs/visual_shapes/brown_curve_left.svg",
       "tintColor": null
     },
     {
@@ -250,5 +249,6 @@
     "quality": "HIGH",
     "showPageNumbers": false
   },
-  "isShortNumbersEnabled": false
+  "isShortNumbersEnabled": false,
+  "isFree": false
 }

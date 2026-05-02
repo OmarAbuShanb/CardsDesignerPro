@@ -94,11 +94,11 @@ class ElementAdapter(
 private fun TemplateElement.labelRes(ctx: android.content.Context): String {
     if (this is TemplateElement.ImageElement) {
         return ctx.getString(when {
-            imagePath.contains("packs/icons/")    -> R.string.elem_icon
+            imagePath.contains("packs/credential_icons/")    -> R.string.elem_icon
             imagePath.contains("packs/fields/")   -> R.string.elem_field
             imagePath.contains("packs/dividers/") -> R.string.elem_divider
             imagePath.contains("packs/logos/")    -> R.string.elem_logo
-            imagePath.contains("packs/patterns/") -> R.string.elem_pattern
+            imagePath.contains("packs/visual_shapes/") -> R.string.elem_pattern
             imagePath.contains("packs/misc/")     -> R.string.elem_misc
             else -> R.string.elem_image
         })

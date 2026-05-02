@@ -242,14 +242,14 @@
     },
     {
       "type": "image",
-      "id": "speednet_logo",
+      "id": "server_net_logo",
       "x": 52.0,
       "y": 26.0,
       "width": 72.0,
       "height": 72.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/speednet_logo.svg",
+      "imagePath": "pack:packs/logos/server_net_logo.svg",
       "tintColor": null
     },
     {
@@ -261,7 +261,7 @@
       "height": 46.345993,
       "isVisible": true,
       "rotation": 12.0,
-      "imagePath": "pack:packs/icons/wifi_icon.svg",
+      "imagePath": "pack:packs/general_icons/wifi_icon.svg",
       "tintColor": "#8BC34A"
     },
     {
@@ -273,7 +273,7 @@
       "height": 30.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/ic_user_circle.svg",
+      "imagePath": "pack:packs/credential_icons/ic_user_circle.svg",
       "tintColor": "#FFFFFF"
     },
     {
@@ -285,7 +285,7 @@
       "height": 31.11111,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/ic_lock_circle.svg",
+      "imagePath": "pack:packs/credential_icons/ic_lock_circle.svg",
       "tintColor": "#FFFFFF"
     },
     {
@@ -297,7 +297,7 @@
       "height": 24.666668,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/ic_clock_circle.svg",
+      "imagePath": "pack:packs/credential_icons/ic_clock_circle.svg",
       "tintColor": "#143A42"
     },
     {

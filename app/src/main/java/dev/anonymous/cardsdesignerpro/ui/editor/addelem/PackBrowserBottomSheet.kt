@@ -25,12 +25,15 @@ class PackBrowserBottomSheet : BottomSheetDialogFragment() {
         const val KEY_PACK_PATH = "pack_path"
 
         private val CATEGORIES = listOf(
-            Category("packs/icons",    R.string.pack_tab_icons),
-            Category("packs/fields",   R.string.pack_tab_fields),
-            Category("packs/dividers", R.string.pack_tab_dividers),
-            Category("packs/logos",    R.string.pack_tab_logos),
-            Category("packs/patterns",    R.string.pack_tab_patterns),
-            Category("packs/misc",    R.string.pack_tab_misc),
+            Category("packs/credential_icons",    R.string.pack_tab_credential_icons),
+            Category("packs/general_icons",       R.string.pack_tab_general_icons),
+            Category("packs/fields",              R.string.pack_tab_fields),
+            Category("packs/dividers",            R.string.pack_tab_dividers),
+            Category("packs/logos",               R.string.pack_tab_logos),
+            Category("packs/visual_shapes",       R.string.pack_tab_visual_shapes),
+            Category("packs/corners",             R.string.pack_tab_corners),
+            Category("packs/misc",                R.string.pack_tab_misc),
+            Category("packs/characters",          R.string.pack_tab_characters)
         )
     }
 

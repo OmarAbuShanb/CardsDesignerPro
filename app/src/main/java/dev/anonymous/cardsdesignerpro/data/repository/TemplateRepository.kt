@@ -18,8 +18,8 @@ class TemplateRepository(private val context: Context) {
 
     private fun templateDir(id: String) = File(rootDir, id)
     private fun jsonFile(id: String) = File(templateDir(id), "template.json")
-    private fun imageDir(id: String) = File(templateDir(id), "images")
-    private fun fontDir(id: String) = File(templateDir(id), "fonts")
+    private fun assetImageDir(id: String) = File(templateDir(id), "images")
+    private fun assetFontDir(id: String) = File(templateDir(id), "fonts")
 
     // ── CRUD ─────────────────────────────────────────────────────────────────
 
@@ -72,8 +72,8 @@ class TemplateRepository(private val context: Context) {
         val suffix = " (نسخة)"
         val newName = if (original.name.endsWith(suffix)) original.name else original.name + suffix
 
-        val oldImageDir = imageDir(id)
-        val newImageDir = imageDir(newId)
+        val oldImageDir = assetImageDir(id)
+        val newImageDir = assetImageDir(newId)
 
         // Copy image files and rewrite paths
         val pathMap = mutableMapOf<String, String>()
@@ -150,16 +150,17 @@ class TemplateRepository(private val context: Context) {
         val defaultTemplate =
             runCatching { AppJson.decode(jsonStr) }.getOrNull() ?: return@withContext null
             
-        // Copy SVGs/images from assets to local storage
-        val imageDir = getOrCreateImageDir(newId)
         val assetsImageDir = "default_templates/$sourceDir/images"
-        runCatching {
-            context.assets.list(assetsImageDir)?.forEach { fileName ->
-                val outFile = File(imageDir, fileName)
-                context.assets.open("$assetsImageDir/$fileName").use { inStream ->
-                    outFile.outputStream().use { outStream ->
-                        inStream.copyTo(outStream)
-                    }
+        val assetImageFiles = runCatching {
+            context.assets.list(assetsImageDir)?.filter { it.isNotBlank() } ?: emptyList()
+        }.getOrDefault(emptyList())
+        val needsLocalImageDir = assetImageFiles.isNotEmpty() || jsonStr.contains("images/")
+        val imageDir = if (needsLocalImageDir) getOrCreateImageDir(newId) else getImageDir(newId)
+        assetImageFiles.forEach { fileName ->
+            val outFile = File(imageDir, fileName)
+            context.assets.open("$assetsImageDir/$fileName").use { inStream ->
+                outFile.outputStream().use { outStream ->
+                    inStream.copyTo(outStream)
                 }
             }
         }
@@ -197,18 +198,21 @@ class TemplateRepository(private val context: Context) {
         extracted
     }
 
-    /**
-     * Returns the image directory for a given template id.
-     * Creates it if it doesn't exist.
-     */
-    fun getOrCreateImageDir(id: String): File = imageDir(id).also { it.mkdirs() }
+    /** Returns the image directory for a given template id without creating it. */
+    fun getImageDir(id: String): File = assetImageDir(id)
+
+    /** Returns the image directory for a given template id, creating it if needed. */
+    fun getOrCreateImageDir(id: String): File = assetImageDir(id).also { it.mkdirs() }
+
+    /** Returns the fonts directory for a given template id without creating it. */
+    fun getFontDir(id: String): File = assetFontDir(id)
 
     /** Returns the fonts directory for a given template, creating it if needed. */
-    fun getOrCreateFontDir(id: String): File = fontDir(id).also { it.mkdirs() }
+    fun getOrCreateFontDir(id: String): File = assetFontDir(id).also { it.mkdirs() }
 
     /** Lists custom font files (.ttf / .otf) stored in this template's fonts dir. */
     fun getCustomFonts(id: String): List<File> {
-        val dir = fontDir(id)
+        val dir = assetFontDir(id)
         if (!dir.exists()) return emptyList()
         return dir.listFiles()?.filter {
             val ext = it.extension.lowercase()
@@ -221,7 +225,7 @@ class TemplateRepository(private val context: Context) {
      * referenced by any template element (orphan cleanup).
      */
     suspend fun cleanOrphanImages(template: Template) = withContext(Dispatchers.IO) {
-        val dir = imageDir(template.id)
+        val dir = assetImageDir(template.id)
         if (!dir.exists()) return@withContext
         val referencedFiles = collectAllLocalPaths(template).map { File(it).name }.toSet()
         dir.listFiles()?.forEach { file ->

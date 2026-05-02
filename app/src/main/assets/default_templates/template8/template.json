@@ -2,7 +2,6 @@
   "version": 8,
   "id": "1777556692869",
   "name": "قالب أزرق كلاسيكي",
-  "isFree": false,
   "card": {
     "widthDp": 600.0,
     "heightRatio": 0.4,
@@ -130,25 +129,25 @@
     {
       "type": "image",
       "id": "user_icon",
-      "x": 452.0,
-      "y": 65.0,
-      "width": 28.0,
-      "height": 28.0,
+      "x": 450.6111,
+      "y": 62.5,
+      "width": 33.0,
+      "height": 33.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/ic_user_filled.svg",
+      "imagePath": "pack:packs/credential_icons/ic_user_filled.svg",
       "tintColor": "#FFFFFF"
     },
     {
       "type": "image",
       "id": "pass_icon",
-      "x": 452.0,
-      "y": 135.0,
-      "width": 28.0,
-      "height": 28.0,
+      "x": 448.66666,
+      "y": 130.55556,
+      "width": 36.88889,
+      "height": 36.88889,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/lock_icon.svg",
+      "imagePath": "pack:packs/credential_icons/lock_icon.svg",
       "tintColor": "#FFFFFF"
     },
     {
@@ -178,9 +177,9 @@
     {
       "type": "image",
       "id": "network_logo_img",
-      "x": 443.30954,
-      "y": 64.361115,
-      "width": 210.04762,
+      "x": 475.11273,
+      "y": 86.58333,
+      "width": 164.21906,
       "height": 66.833336,
       "isVisible": true,
       "rotation": -90.0,
@@ -208,7 +207,7 @@
       "height": 240.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/misc/left_blue_bg.svg",
+      "imagePath": "pack:packs/visual_shapes/left_blue_bg.svg",
       "tintColor": null
     },
     {
@@ -236,5 +235,6 @@
     "quality": "HIGH",
     "showPageNumbers": false
   },
-  "isShortNumbersEnabled": false
+  "isShortNumbersEnabled": false,
+  "isFree": true
 }

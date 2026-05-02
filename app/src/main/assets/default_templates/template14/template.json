@@ -242,7 +242,7 @@
       "height": 53.53598,
       "isVisible": true,
       "rotation": 12.0,
-      "imagePath": "pack:packs/icons/wifi_icon.svg",
+      "imagePath": "pack:packs/general_icons/wifi_icon.svg",
       "tintColor": "#163B4D"
     },
     {
@@ -254,7 +254,7 @@
       "height": 43.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/ic_user_circle.svg",
+      "imagePath": "pack:packs/credential_icons/ic_user_circle.svg",
       "tintColor": "#163B4D"
     },
     {
@@ -266,7 +266,7 @@
       "height": 43.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/ic_lock_circle.svg",
+      "imagePath": "pack:packs/credential_icons/ic_lock_circle.svg",
       "tintColor": "#163B4D"
     },
     {
@@ -278,7 +278,7 @@
       "height": 22.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/ic_clock_circle.svg",
+      "imagePath": "pack:packs/credential_icons/ic_clock_circle.svg",
       "tintColor": "#163B4D"
     },
     {
@@ -290,7 +290,7 @@
       "height": 28.0,
       "isVisible": false,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/wifi_icon.svg",
+      "imagePath": "pack:packs/general_icons/wifi_icon.svg",
       "tintColor": "#163B4D"
     },
     {
@@ -302,7 +302,7 @@
       "height": 14.0,
       "isVisible": false,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/ic_phone_solid.svg",
+      "imagePath": "pack:packs/credential_icons/ic_phone_solid.svg",
       "tintColor": "#163B4D"
     },
     {

@@ -223,8 +223,8 @@ class QrPropertiesFragment : Fragment(), PropertyFragment {
     private var updating = false
 
     // Shape option arrays
-    private val pixelShapeValues = listOf("square", "round", "circle")
-    private val eyeShapeValues   = listOf("square", "round", "circle")
+    private val pixelShapeValues = listOf("round", "square", "circle")
+    private val eyeShapeValues   = listOf("round", "square", "circle")
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentPropQrBinding.inflate(inflater, container, false)

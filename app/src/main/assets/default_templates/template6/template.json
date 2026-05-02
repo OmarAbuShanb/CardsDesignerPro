@@ -2,7 +2,6 @@
   "version": 7,
   "id": "1777553934389",
   "name": "قالب عصري بسيط",
-  "isFree": false,
   "card": {
     "widthDp": 600.0,
     "heightRatio": 0.4,
@@ -16,13 +15,13 @@
     {
       "type": "image",
       "id": "66fd343a-9872-4105-a866-2e6f937fa37d",
-      "x": 263.44446,
-      "y": 142.44444,
-      "width": 28.444445,
-      "height": 28.444445,
+      "x": 256.50003,
+      "y": 135.5,
+      "width": 33.444443,
+      "height": 33.444443,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/ic_password_clear.svg",
+      "imagePath": "pack:packs/credential_icons/ic_password_clear.svg",
       "tintColor": "#F44336"
     },
     {
@@ -161,13 +160,13 @@
     {
       "type": "image",
       "id": "user_icon",
-      "x": 263.44446,
-      "y": 77.22223,
+      "x": 259.00003,
+      "y": 71.66667,
       "width": 28.444445,
       "height": 28.444445,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/ic_user_filled.svg",
+      "imagePath": "pack:packs/credential_icons/ic_user_filled.svg",
       "tintColor": "#F44336"
     },
     {
@@ -198,9 +197,9 @@
       "type": "image",
       "id": "credentials_bg",
       "x": 238.48148,
-      "y": -51.518524,
+      "y": 49.953804,
       "width": 343.03705,
-      "height": 343.03705,
+      "height": 140.09239,
       "isVisible": true,
       "rotation": 0.0,
       "imagePath": "pack:packs/fields/ic_credentials_transparent_double_field.svg",
@@ -215,7 +214,7 @@
       "height": 240.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/misc/blue_shape_left.svg",
+      "imagePath": "pack:packs/visual_shapes/blue_shape_left.svg",
       "tintColor": "#F44336"
     },
     {
@@ -243,5 +242,6 @@
     "quality": "HIGH",
     "showPageNumbers": false
   },
-  "isShortNumbersEnabled": false
+  "isShortNumbersEnabled": false,
+  "isFree": false
 }

@@ -141,7 +141,7 @@
       "height": 30.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/avatar_icon.svg",
+      "imagePath": "pack:packs/credential_icons/avatar_icon.svg",
       "tintColor": "#1A2228"
     },
     {
@@ -191,7 +191,7 @@
       "height": 30.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/icons/lock_icon.svg",
+      "imagePath": "pack:packs/credential_icons/lock_icon.svg",
       "tintColor": "#1A2228"
     },
     {
@@ -295,7 +295,7 @@
       "height": 40.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/misc/dark_polygon.svg",
+      "imagePath": "pack:packs/visual_shapes/dark_polygon.svg",
       "tintColor": null
     },
     {

@@ -135,7 +135,7 @@ abstract class CredentialPropertiesFragment : Fragment(), PropertyFragment {
 
     private fun importCustomFont(uri: Uri) {
         val ctx = requireContext()
-        val fontsDir = viewModel.getFontDirForCurrentTemplate()
+        val fontsDir = viewModel.ensureFontDirForCurrentTemplate()
         val displayName = ctx.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
             val nameIdx = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
             if (cursor.moveToFirst() && nameIdx >= 0) cursor.getString(nameIdx) else null
