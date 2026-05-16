@@ -26,13 +26,13 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <dev.anonymous.cardsdesignerpro.common.widget.ColorPreviewView
+            <dev.anonymous.cardsdesignerpro.app.common.widget.ColorPreviewView
                 android:id="@+id/cpv_fill_color"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:layout_marginEnd="12dp" />
 
-            <dev.anonymous.cardsdesignerpro.common.widget.ColorHexFieldView
+            <dev.anonymous.cardsdesignerpro.app.common.widget.ColorHexFieldView
                 android:id="@+id/field_fill_color_hex"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content" />
@@ -53,13 +53,13 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <dev.anonymous.cardsdesignerpro.common.widget.ColorPreviewView
+            <dev.anonymous.cardsdesignerpro.app.common.widget.ColorPreviewView
                 android:id="@+id/cpv_stroke_color"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:layout_marginEnd="12dp" />
 
-            <dev.anonymous.cardsdesignerpro.common.widget.ColorHexFieldView
+            <dev.anonymous.cardsdesignerpro.app.common.widget.ColorHexFieldView
                 android:id="@+id/field_stroke_color_hex"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content" />
@@ -73,7 +73,7 @@
             android:text="@string/prop_shape_stroke_width"
             android:textAppearance="?attr/textAppearanceLabelMedium" />
 
-        <dev.anonymous.cardsdesignerpro.common.widget.StepperView
+        <dev.anonymous.cardsdesignerpro.app.common.widget.StepperView
             android:id="@+id/stepper_stroke_width"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

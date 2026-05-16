@@ -113,7 +113,7 @@
       "id": "network_name",
       "x": 214.0,
       "y": 28.0,
-      "width": 173.88889,
+      "width": 177.22221,
       "height": 79.22222,
       "isVisible": true,
       "rotation": 0.0,
@@ -486,5 +486,6 @@
     "quality": "HIGH",
     "showPageNumbers": false
   },
-  "isShortNumbersEnabled": false
+  "credentialMode": "NORMAL",
+  "isFree": false
 }

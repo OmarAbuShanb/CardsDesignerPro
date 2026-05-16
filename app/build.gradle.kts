@@ -1,27 +1,54 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.google.services)
 }
 
+val keystorePropertiesFile: File = rootProject.file("key.properties")
+val keystoreProperties = Properties()
+keystoreProperties.load(keystorePropertiesFile.inputStream())
+
 android {
-    namespace = "dev.anonymous.cardsdesignerpro"
+    namespace = "dev.anonymous.cardsdesignerpro.app"
     compileSdk = 36
     compileSdkExtension = 19
 
     defaultConfig {
-        applicationId = "dev.anonymous.cardsdesignerpro"
+        applicationId = "dev.anonymous.cardsdesignerpro.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 4
+        versionName = "1.0.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file(keystoreProperties["STORE_FILE"] as String)
+            storePassword = keystoreProperties["STORE_PASSWORD"] as String
+            keyAlias = keystoreProperties["KEY_ALIAS"] as String
+            keyPassword = keystoreProperties["KEY_PASSWORD"] as String
+        }
+    }
+
+    /*splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a")
+            isUniversalApk = false
+        }
+    }*/
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
+
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -60,7 +87,10 @@ dependencies {
 
     // CSV / Excel / PDF
     implementation(libs.opencsv)
-    implementation(libs.poi.ooxml)
+    implementation(libs.fastexcel.reader)
+    implementation(libs.aalto.xml)       // StAX XML parser (fastexcel transitive dep, explicit for Android)
+    implementation(libs.stax2.api)       // StAX2 API (not in Android runtime)
+    implementation(libs.stax.api)        // javax.xml.stream (not in Android runtime unlike JDK)
     implementation(libs.pdfbox.android)
 
     // QR Code generation — custom-qr-generator (powered by ZXing internally, adds shape/logo/color support)

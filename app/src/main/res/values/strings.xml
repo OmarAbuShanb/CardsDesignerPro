@@ -111,6 +111,7 @@
     <string name="error_directory_create_file">Failed to create file in the selected folder.</string>
     <string name="label_not_selected">Not selected yet</string>
     <string name="error_file_invalid_data">Invalid file format or empty data.</string>
+    <string name="error_columns_not_recognized">Columns not recognized — tap ✏️ to map</string>
     <string name="error_short_data_missing">Please select a short data file first.</string>
     <string name="error_invalid_file_selected">Please remove the invalid data file before exporting.</string>
     <string name="error_invalid_short_file_selected">Please remove the invalid short data file before exporting.</string>
@@ -285,7 +286,7 @@
     <string name="title_export_settings">Export Settings</string>
 
     <!-- Export quality -->
-    <string name="label_export_quality">Export Quality (applies to gallery images and QR)</string>
+    <string name="label_export_quality">Export Quality (applies to background, images and QR only)</string>
     <string name="quality_full">Full Quality — for professional printing</string>
     <string name="quality_high">High Quality (default)</string>
     <string name="quality_good">Good Quality</string>
@@ -301,6 +302,35 @@
     <string name="prop_qr_short_numbers">Link QR to short numbers</string>
     <string name="label_short_data_file">Short Data File(s)</string>
     <string name="short_numbers_warning_format">Original data count: %1$d — Short data count: %2$d</string>
+    <string name="short_numbers_info_title">What are Short Numbers?</string>
+    <string name="short_numbers_info_message">Some ISP providers offer a service to shorten the long original usernames and passwords through scripts integrated into their MikroTik systems.\n\nIf you have a file with shortened numbers, you can import it into the app so that the short numbers appear on the front of the card instead of the long ones.\n\nYou can also:\n• Place the original long numbers on the back side of the card.\n• Link the QR code to the original long number.\n\nIn the Export Cards screen, you can choose separate files for original data and short data.</string>
+    <string name="label_snap_switch">Element Snapping</string>
+    <string name="snap_info_title">What is Element Snapping?</string>
+    <string name="snap_info_message">Snapping helps you align elements precisely:\n\n• Move snap — elements snap to the center of the card or other elements when moved nearby.\n• Rotation snap — elements snap to exact angles (0°, 90°, 180°, 270°) during rotation.\n• Shape snap — shapes snap to a perfect square when width and height are nearly equal.\n\nGuide lines will still appear when snapping is off, but elements will move freely without the magnetic pull.\n\nThis setting is temporary and resets when you leave the editor.</string>
+
+    <!-- Credential Mode -->
+    <string name="credential_mode_normal">Normal</string>
+    <string name="credential_mode_short">Short</string>
+    <string name="credential_mode_username_only">User Only</string>
+    <string name="credential_mode_info_title">Credential Modes</string>
+    <string name="credential_mode_info_message">Choose how credentials appear on your cards:\n\n• Normal — Standard username and password.\n• Short — Shortened numbers from your ISP (requires a separate short data file during export).\n• User Only — Only the username appears on the card, no password field.\n\nSwitching modes may remove incompatible elements from the canvas.</string>
+
+    <!-- Column Mapping -->
+    <string name="dialog_column_mapping_title">Map Columns</string>
+    <string name="dialog_column_mapping_desc">Auto-detection could not identify the username and password columns. Please select them manually:</string>
+    <string name="label_username_column">Username Column</string>
+    <string name="label_password_column">Password Column</string>
+    <string name="label_column_none">(None)</string>
+
+    <!-- Export Validation — Missing Credentials -->
+    <string name="error_missing_credentials_title">Missing Credential Elements</string>
+    <string name="error_missing_credentials_message">The selected template does not have the required credential elements (username/password). Export cannot proceed without them.\n\nPlease add the missing elements in the editor first.</string>
+    <string name="error_missing_username_message">The selected template does not have a username element. Export cannot proceed without it.\n\nPlease add a username element in the editor first.</string>
+
+    <!-- Column Mapping — Snackbar Errors -->
+    <string name="error_columns_unmapped_snackbar">Some files have unrecognized columns. Please map them first.</string>
+    <string name="error_columns_missing_for_template">Data file is missing required username/password columns for this template.</string>
+    <string name="error_username_column_missing">Data file is missing the required username column for this template.</string>
 
     <string name="font_default">Default (no font)</string>
 
@@ -341,7 +371,7 @@
     <string name="license_activate_title">Activate App</string>
     <string name="license_activate_benefits">Activating the app unlocks:\n\n• Unlimited PDF exports\n• Ready-made elements\n• Premium templates\n• Template import/export\n• Receive the latest updates first\n• And more...</string>
     <string name="license_contact_whatsapp">Contact via WhatsApp</string>
-    <string name="license_whatsapp_message">Hello, I want to activate Cards Designer Pro.</string>
+    <string name="license_whatsapp_not_installed">WhatsApp is not installed on your device</string>
     <string name="license_copy_android_id">Copy Android ID</string>
     <string name="license_info_android_id">What is Android ID?</string>
     <string name="license_android_id_info_title">What is Android ID?</string>
@@ -367,6 +397,8 @@
     <string name="license_premium_template_snack">This template is available only in the activated version.</string>
     <string name="license_remaining_exports">Remaining free exports: %1$d of %2$d</string>
     <string name="license_export_sync_error">Please connect to the internet to export</string>
+    <string name="license_paste_code">Paste Code</string>
+    <string name="license_clipboard_empty">Clipboard is empty</string>
 
     <!-- Server Sync Dialog -->
     <string name="license_sync_title">Verifying App</string>
@@ -386,6 +418,14 @@
     <string name="font_delete_confirm_title">Remove Font</string>
     <string name="font_delete_confirm_message">This will remove the font and reset all elements using it to the default font.</string>
     <string name="action_delete">Delete</string>
+
+    <!-- Custom Card Layout Dialog -->
+    <string name="layout_custom_option">✦ Custom…</string>
+    <string name="dialog_custom_layout_title">Custom Card Layout</string>
+    <string name="label_columns_count">Columns</string>
+    <string name="label_rows_count">Rows</string>
+    <string name="label_cards_per_page_count">Cards per Page: %1$d</string>
+    <string name="layout_custom_active_format">✦ %1$d cards (%2$d columns × %3$d rows)</string>
 
 </resources>
 

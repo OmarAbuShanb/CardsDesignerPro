@@ -17,7 +17,7 @@
       "id": "brand_name",
       "x": 141.30975,
       "y": 7.3333344,
-      "width": 357.3805,
+      "width": 361.52866,
       "height": 80.14815,
       "isVisible": true,
       "rotation": 0.0,
@@ -36,7 +36,7 @@
       "id": "brand_subtitle",
       "x": 236.72554,
       "y": 69.81481,
-      "width": 166.54892,
+      "width": 168.32669,
       "height": 55.25926,
       "isVisible": true,
       "rotation": 0.0,
@@ -289,6 +289,6 @@
     "quality": "HIGH",
     "showPageNumbers": false
   },
-  "isShortNumbersEnabled": false,
+  "credentialMode": "NORMAL",
   "isFree": true
 }

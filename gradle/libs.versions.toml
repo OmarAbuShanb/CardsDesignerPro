@@ -1,5 +1,5 @@
 [versions]
-agp = "9.2.0"
+agp = "9.2.1"
 androidsvgAar = "1.4"
 kotlinSerialization = "2.3.20"
 kotlinxSerializationJson = "1.11.0"
@@ -18,7 +18,11 @@ recyclerview = "1.4.0"
 viewpager2 = "1.1.0"
 # CSV / Excel
 opencsv = "5.12.0"
-poi = "5.5.1"
+fastexcelReader = "0.20.0"
+# StAX (required on Android — not included in Android runtime unlike JDK)
+aaltoXml = "1.3.4"
+stax2Api = "4.3.0"
+staxApi = "1.0-2"
 # QR
 customQrGenerator = "1.6.2"
 # Color picker
@@ -63,7 +67,10 @@ afreakyelf-pdf-viewer = { module = "io.github.afreakyelf:Pdf-Viewer", version.re
 androidx-pdf-viewer = { group = "androidx.pdf", name = "pdf-viewer-fragment", version.ref = "androidxPdfViewer" }
 # CSV / Excel
 opencsv = { group = "com.opencsv", name = "opencsv", version.ref = "opencsv" }
-poi-ooxml = { group = "org.apache.poi", name = "poi-ooxml", version.ref = "poi" }
+fastexcel-reader = { group = "org.dhatim", name = "fastexcel-reader", version.ref = "fastexcelReader" }
+aalto-xml = { group = "com.fasterxml", name = "aalto-xml", version.ref = "aaltoXml" }
+stax2-api = { group = "org.codehaus.woodstox", name = "stax2-api", version.ref = "stax2Api" }
+stax-api = { group = "javax.xml.stream", name = "stax-api", version.ref = "staxApi" }
 # PDF text extraction
 pdfbox-android = { group = "com.tom-roush", name = "pdfbox-android", version.ref = "pdfboxAndroid" }
 # QR

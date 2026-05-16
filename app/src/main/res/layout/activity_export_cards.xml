@@ -155,7 +155,7 @@
                     android:visibility="gone" />
 
                 <!-- Front preview -->
-                <dev.anonymous.cardsdesignerpro.ui.export.preview.PagePreviewView
+                <dev.anonymous.cardsdesignerpro.app.ui.export.preview.PagePreviewView
                     android:id="@+id/page_preview"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -192,7 +192,7 @@
                             android:textColor="?attr/colorOnSurfaceVariant" />
                     </LinearLayout>
 
-                    <dev.anonymous.cardsdesignerpro.ui.export.preview.PagePreviewView
+                    <dev.anonymous.cardsdesignerpro.app.ui.export.preview.PagePreviewView
                         android:id="@+id/page_preview_back"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -456,12 +456,29 @@
                         android:text="@string/label_card_layout"
                         android:textAppearance="?attr/textAppearanceTitleSmall" />
 
-                    <Spinner
-                        android:id="@+id/spinner_card_layout"
+                    <FrameLayout
                         android:layout_width="match_parent"
-                        android:layout_height="52dp"
-                        android:layout_marginBottom="20dp"
-                        android:background="@drawable/bg_spinner_outline" />
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="20dp">
+
+                        <Spinner
+                            android:id="@+id/spinner_card_layout"
+                            android:layout_width="match_parent"
+                            android:layout_height="52dp"
+                            android:background="@drawable/bg_spinner_outline" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_edit_custom_layout"
+                            style="@style/Widget.Material3.Button.IconButton"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:layout_gravity="center_vertical|end"
+                            android:layout_marginEnd="4dp"
+                            android:visibility="gone"
+                            app:icon="@drawable/ic_edit_24"
+                            app:iconSize="18dp"
+                            app:iconTint="?attr/colorPrimary" />
+                    </FrameLayout>
 
                     <!-- H spacing -->
                     <TextView
@@ -472,7 +489,7 @@
                         android:text="@string/label_horizontal_spacing"
                         android:textAppearance="?attr/textAppearanceTitleSmall" />
 
-                    <dev.anonymous.cardsdesignerpro.common.widget.StepperView
+                    <dev.anonymous.cardsdesignerpro.app.common.widget.StepperView
                         android:id="@+id/stepper_h_spacing"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -487,7 +504,7 @@
                         android:text="@string/label_vertical_spacing"
                         android:textAppearance="?attr/textAppearanceTitleSmall" />
 
-                    <dev.anonymous.cardsdesignerpro.common.widget.StepperView
+                    <dev.anonymous.cardsdesignerpro.app.common.widget.StepperView
                         android:id="@+id/stepper_v_spacing"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"

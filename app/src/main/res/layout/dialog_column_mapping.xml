@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/tv_mapping_desc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        android:text="@string/dialog_column_mapping_desc"
+        android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+    <!-- Username column spinner -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="6dp"
+        android:text="@string/label_username_column"
+        android:textAppearance="?attr/textAppearanceLabelMedium" />
+
+    <Spinner
+        android:id="@+id/spinner_username_column"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/bg_spinner_outline" />
+
+    <!-- Password column spinner -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="6dp"
+        android:text="@string/label_password_column"
+        android:textAppearance="?attr/textAppearanceLabelMedium" />
+
+    <Spinner
+        android:id="@+id/spinner_password_column"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@drawable/bg_spinner_outline" />
+
+</LinearLayout>

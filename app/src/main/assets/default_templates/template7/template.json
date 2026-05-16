@@ -2,7 +2,6 @@
   "version": 3,
   "id": "template_7",
   "name": "قالب احترافي مميز",
-  "isFree": false,
   "card": {
     "widthDp": 600.0,
     "heightRatio": 0.4,
@@ -18,7 +17,7 @@
       "id": "title_text",
       "x": 211.17113,
       "y": -9.888889,
-      "width": 207.65775,
+      "width": 208.76886,
       "height": 79.77778,
       "isVisible": true,
       "rotation": 0.0,
@@ -295,7 +294,7 @@
       "height": 40.0,
       "isVisible": true,
       "rotation": 0.0,
-      "imagePath": "pack:packs/visual_shapes/dark_polygon.svg",
+      "imagePath": "pack:packs/misc/dark_polygon.svg",
       "tintColor": null
     },
     {
@@ -323,5 +322,6 @@
     "quality": "HIGH",
     "showPageNumbers": false
   },
-  "isShortNumbersEnabled": false
+  "credentialMode": "NORMAL",
+  "isFree": false
 }

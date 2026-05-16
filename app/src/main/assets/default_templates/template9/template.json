@@ -2,7 +2,6 @@
   "version": 2,
   "id": "template_9",
   "name": "قالب بريميوم ذهبي",
-  "isFree": false,
   "card": {
     "widthDp": 600.0,
     "heightRatio": 0.4,
@@ -132,8 +131,8 @@
       "id": "username_label",
       "x": 427.93237,
       "y": 66.323,
-      "width": 64.13525,
-      "height": 51.354,
+      "width": 65.80191,
+      "height": 51.444447,
       "isVisible": true,
       "rotation": 0.0,
       "text": "الاسم",
@@ -439,5 +438,6 @@
     "quality": "HIGH",
     "showPageNumbers": false
   },
-  "isShortNumbersEnabled": false
+  "credentialMode": "NORMAL",
+  "isFree": false
 }

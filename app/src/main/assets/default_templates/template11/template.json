@@ -2,7 +2,6 @@
   "version": 15,
   "id": "1777495841998",
   "name": "قالب شبكي متقدم",
-  "isFree": false,
   "card": {
     "widthDp": 600.0,
     "heightRatio": 0.48,
@@ -66,8 +65,8 @@
     {
       "type": "text",
       "id": "price_num",
-      "x": 83.1111,
-      "y": 48.444435,
+      "x": 88.88889,
+      "y": 45.66666,
       "width": 28.88889,
       "height": 74.22223,
       "isVisible": true,
@@ -125,7 +124,7 @@
       "id": "network_main",
       "x": 303.58887,
       "y": 26.833332,
-      "width": 172.82224,
+      "width": 175.6,
       "height": 90.333336,
       "isVisible": true,
       "rotation": 0.0,
@@ -142,9 +141,9 @@
     {
       "type": "text",
       "id": "username_label",
-      "x": 373.202,
-      "y": 100.66667,
-      "width": 152.48486,
+      "x": 369.86865,
+      "y": 100.111115,
+      "width": 159.15154,
       "height": 52.0,
       "isVisible": true,
       "rotation": 0.0,
@@ -182,8 +181,8 @@
       "id": "password_label",
       "x": 405.47116,
       "y": 177.65633,
-      "width": 117.390976,
-      "height": 51.354,
+      "width": 122.39098,
+      "height": 51.444447,
       "isVisible": true,
       "rotation": 0.0,
       "text": "كلمة المرور",
@@ -398,5 +397,6 @@
     "quality": "HIGH",
     "showPageNumbers": false
   },
-  "isShortNumbersEnabled": false
+  "credentialMode": "NORMAL",
+  "isFree": false
 }

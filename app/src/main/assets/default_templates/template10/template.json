@@ -86,7 +86,7 @@
       "id": "network_name_title",
       "x": 172.77777,
       "y": -5.5555573,
-      "width": 373.8889,
+      "width": 376.66666,
       "height": 72.0,
       "isVisible": true,
       "rotation": 0.0,
@@ -191,10 +191,10 @@
     {
       "type": "image",
       "id": "username_bg",
-      "x": 204.78166,
-      "y": -60.35098,
+      "x": 204.78165,
+      "y": 81.21393,
       "width": 330.99225,
-      "height": 330.99225,
+      "height": 47.862423,
       "isVisible": true,
       "rotation": 0.0,
       "imagePath": "pack:packs/fields/ic_credential_single_slant_field.svg",
@@ -204,9 +204,9 @@
       "type": "image",
       "id": "d265e273-bb76-4f6e-aee6-d445e497c159",
       "x": 204.78165,
-      "y": 7.5038757,
+      "y": 149.06879,
       "width": 330.99225,
-      "height": 330.99225,
+      "height": 47.862423,
       "isVisible": true,
       "rotation": 0.0,
       "imagePath": "pack:packs/fields/ic_credential_single_slant_field.svg",
@@ -249,6 +249,6 @@
     "quality": "HIGH",
     "showPageNumbers": false
   },
-  "isShortNumbersEnabled": false,
+  "credentialMode": "NORMAL",
   "isFree": false
 }

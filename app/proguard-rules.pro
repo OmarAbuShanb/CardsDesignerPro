@@ -19,3 +19,22 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Fix for Missing class errors in release build (PDFBox, etc.)
+-dontwarn aQute.bnd.annotation.**
+-dontwarn edu.umd.cs.findbugs.annotations.**
+-dontwarn java.awt.**
+-dontwarn org.apache.logging.log4j.**
+-dontwarn com.gemalto.jp2.JP2Decoder
+-dontwarn com.gemalto.jp2.JP2Encoder
+-dontwarn com.github.luben.zstd.ZstdInputStream
+-dontwarn org.tukaani.xz.MemoryLimitException
+-dontwarn org.tukaani.xz.SingleXZInputStream
+-dontwarn org.tukaani.xz.XZInputStream
+
+# PDFBox optional JPEG2000 support
+-dontwarn com.gemalto.jp2.**
+
+# Commons Compress optional compression formats
+-dontwarn com.github.luben.zstd.**
+-dontwarn org.tukaani.xz.**

@@ -91,10 +91,10 @@
     {
       "type": "text",
       "id": "text_30",
-      "x": 457.5,
-      "y": 32.166664,
-      "width": 200.0,
-      "height": 144.0,
+      "x": 508.6111,
+      "y": 31.870361,
+      "width": 129.62964,
+      "height": 144.59259,
       "isVisible": true,
       "rotation": 0.0,
       "text": "30",
@@ -131,7 +131,7 @@
       "id": "text_wi_net",
       "x": 197.49225,
       "y": 13.629627,
-      "width": 145.01549,
+      "width": 150.9414,
       "height": 76.44444,
       "isVisible": true,
       "rotation": 0.0,
@@ -196,9 +196,9 @@
     {
       "type": "image",
       "id": "scan_me_logo",
-      "x": 16.111113,
+      "x": 30.472818,
       "y": 318.87167,
-      "width": 90.0,
+      "width": 61.276592,
       "height": 90.0,
       "isVisible": true,
       "rotation": 0.0,
@@ -280,6 +280,6 @@
     "quality": "HIGH",
     "showPageNumbers": false
   },
-  "isShortNumbersEnabled": false,
+  "credentialMode": "NORMAL",
   "isFree": true
 }

@@ -111,7 +111,7 @@
                 </LinearLayout>
 
                 <!-- Card Canvas -->
-                <dev.anonymous.cardsdesignerpro.ui.editor.canvas.CardCanvasView
+                <dev.anonymous.cardsdesignerpro.app.ui.editor.canvas.CardCanvasView
                     android:id="@+id/card_canvas"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -122,29 +122,151 @@
                     app:layout_constraintWidth_max="600dp" />
 
 
-                <!-- Back-side toggle switch -->
-                <com.google.android.material.materialswitch.MaterialSwitch
-                    android:id="@+id/switch_back_side"
+                <!-- Back-side + Snap toggles side by side -->
+                <LinearLayout
+                    android:id="@+id/ll_switches_row"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text="@string/label_enable_back_side"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:layout_marginHorizontal="16dp"
+                    android:gravity="center"
+                    android:orientation="horizontal"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/card_canvas" />
+                    app:layout_constraintTop_toBottomOf="@id/card_canvas">
 
-                <!-- Short numbers toggle switch -->
-                <com.google.android.material.materialswitch.MaterialSwitch
-                    android:id="@+id/switch_short_numbers"
+                    <!-- Back-side switch group -->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="start"
+                        android:orientation="vertical">
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_back_side"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/label_enable_back_side"
+                            android:textAppearance="?attr/textAppearanceLabelSmall" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="24dp"
+                        android:layout_height="1dp" />
+
+                    <!-- Snap switch group -->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="start"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.materialswitch.MaterialSwitch
+                                android:id="@+id/switch_snap"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:checked="true" />
+
+                            <ImageButton
+                                android:id="@+id/btn_info_snap"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:background="?attr/selectableItemBackgroundBorderless"
+                                android:contentDescription="@string/snap_info_title"
+                                android:padding="6dp"
+                                android:src="@drawable/ic_info_outline_24" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/label_snap_switch"
+                            android:textAppearance="?attr/textAppearanceLabelSmall" />
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <!-- Credential mode: title row + segmented button -->
+                <LinearLayout
+                    android:id="@+id/ll_credential_mode"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="@string/label_short_numbers_switch"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/switch_back_side" />
+                    app:layout_constraintTop_toBottomOf="@id/ll_switches_row">
+
+                    <!-- Title row: info button + label (at the start) -->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageButton
+                            android:id="@+id/btn_info_credential_mode"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="2dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="@string/credential_mode_info_title"
+                            android:padding="6dp"
+                            android:src="@drawable/ic_info_outline_24" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/credential_mode_info_title"
+                            android:textAppearance="?attr/textAppearanceLabelMedium" />
+
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButtonToggleGroup
+                        android:id="@+id/toggle_credential_mode"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        app:singleSelection="true"
+                        app:selectionRequired="true">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_mode_normal"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="42dp"
+                            android:text="@string/credential_mode_normal"
+                            android:textSize="12sp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_mode_short"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="42dp"
+                            android:text="@string/credential_mode_short"
+                            android:textSize="12sp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_mode_username_only"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="42dp"
+                            android:text="@string/credential_mode_username_only"
+                            android:textSize="12sp" />
+                    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                </LinearLayout>
 
             </androidx.constraintlayout.widget.ConstraintLayout>
         </androidx.core.widget.NestedScrollView>

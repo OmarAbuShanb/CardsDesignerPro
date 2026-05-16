@@ -25,7 +25,7 @@
             android:name=".ui.main.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.CardsDesignerPro.Splash"
-            android:windowSoftInputMode="adjustResize">
+            android:windowSoftInputMode="adjustPan">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -35,12 +35,11 @@
         <activity
             android:name=".ui.editor.EditorActivity"
             android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
+            android:windowSoftInputMode="adjustPan" />
 
         <activity
             android:name=".ui.export.ExportCardsActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
+            android:exported="false" />
 
         <activity-alias
             android:name=".ExportCardsAlias"
@@ -53,7 +52,6 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="content" android:mimeType="text/csv" />
                 <data android:scheme="content" android:mimeType="text/comma-separated-values" />
-                <data android:scheme="content" android:mimeType="application/vnd.ms-excel" />
                 <data android:scheme="content"
                     android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
                 <data android:scheme="content" android:mimeType="application/pdf" />
@@ -66,7 +64,6 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/csv" />
                 <data android:mimeType="text/comma-separated-values" />
-                <data android:mimeType="application/vnd.ms-excel" />
                 <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
                 <data android:mimeType="application/pdf" />
             </intent-filter>

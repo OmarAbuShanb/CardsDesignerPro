@@ -49,7 +49,7 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintWidth_max="600dp">
 
-            <dev.anonymous.cardsdesignerpro.ui.editor.canvas.CardCanvasView
+            <dev.anonymous.cardsdesignerpro.app.ui.editor.canvas.CardCanvasView
                 android:id="@+id/card_canvas"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />

@@ -106,6 +106,7 @@
     <string name="error_directory_create_file">فشل إنشاء الملف في المجلد المحدد.</string>
     <string name="label_not_selected">لم يتم التحديد بعد</string>
     <string name="error_file_invalid_data">تنسيق الملف غير صالح أو لا يحتوي على بيانات.</string>
+    <string name="error_columns_not_recognized">لم يتم التعرف على الأعمدة — اضغط ✏️ للتحديد</string>
     <string name="error_short_data_missing">يرجى اختيار ملف بيانات مختصرة أولاً.</string>
     <string name="error_invalid_file_selected">يرجى إزالة ملف البيانات غير الصالح قبل التصدير.</string>
     <string name="error_invalid_short_file_selected">يرجى إزالة ملف البيانات المختصرة غير الصالح قبل التصدير.</string>
@@ -278,7 +279,7 @@
     <string name="title_export_settings">إعدادات التصدير</string>
 
     <!-- Export quality -->
-    <string name="label_export_quality">جودة التصدير (خاص بجودة صور المعرض والQr)</string>
+    <string name="label_export_quality">جودة التصدير (خاص بالخلفية والصور ورمز QR فقط)</string>
     <string name="quality_full">الجودة الكاملة — للطباعة الاحترافية</string>
     <string name="quality_high">جودة عالية (افتراضي)</string>
     <string name="quality_good">جودة جيدة</string>
@@ -294,6 +295,36 @@
     <string name="prop_qr_short_numbers">ربط القارئ بالأرقام المختصرة</string>
     <string name="label_short_data_file">ملف أو ملفات البيانات المختصرة</string>
     <string name="short_numbers_warning_format">عدد البيانات الأصلية %1$d بينما عدد البيانات المختصرة %2$d</string>
+    <string name="short_numbers_info_title">ما هي الأرقام المختصرة؟</string>
+    <string name="short_numbers_info_message">بعض مزودي خدمة الإنترنت يقدمون خدمة تقصير أرقام اليوزرنيم والباسورد الطويلة عبر سكريبتات مدمجة في أنظمة الميكروتك.\n\nإذا كان لديك ملف بالأرقام المختصرة، يمكنك استيراده في التطبيق بحيث تظهر الأرقام المختصرة على وجه البطاقة بدلاً من الأرقام الطويلة.\n\nيمكنك أيضاً:\n• وضع الأرقام الأصلية الطويلة على ظهر البطاقة.\n• ربط رمز QR بالرقم الأصلي الطويل.\n\nفي شاشة تصدير البطاقات، يمكنك اختيار ملفات منفصلة للبيانات الأصلية والبيانات المختصرة.</string>
+    <string name="label_snap_switch">شد العناصر (Snapping)</string>
+    <string name="snap_info_title">ما هو شد العناصر؟</string>
+    <string name="snap_info_message">خاصية الشد تساعدك على محاذاة العناصر بدقة:\n\n• شد التحريك — العناصر تنجذب لمنتصف البطاقة أو منتصف العناصر الأخرى عند الاقتراب منها.\n• شد التدوير — العناصر تنجذب للزوايا المحددة (0°، 90°، 180°، 270°) أثناء التدوير.\n• شد الأشكال — الأشكال الهندسية تنجذب لتصبح مربعة عندما يكون العرض والارتفاع متقاربين.\n\nعند تعطيل الشد، ستظل خطوط المحاذاة ظاهرة لكن العناصر ستتحرك بحرية بدون الانجذاب.\n\nهذا الإعداد مؤقت ويُعاد تفعيله عند الخروج من المحرر.</string>
+
+    <!-- Credential Mode -->
+    <string name="credential_mode_normal">عادي</string>
+    <string name="credential_mode_short">مختصر</string>
+    <string name="credential_mode_username_only">يوزر فقط</string>
+    <string name="credential_mode_info_title">أوضاع البيانات</string>
+    <string name="credential_mode_info_message">اختر كيف تظهر بيانات الدخول على بطاقاتك:\n\n• عادي — اسم مستخدم وكلمة مرور بالشكل الطبيعي.\n• مختصر — أرقام مختصرة من مزود الخدمة (يتطلب ملف بيانات مختصرة منفصل عند التصدير).\n• يوزر فقط — يظهر اسم المستخدم فقط على البطاقة بدون كلمة مرور.\n\nتغيير الوضع قد يزيل العناصر غير المتوافقة من اللوحة.</string>
+
+    <!-- Column Mapping -->
+    <string name="dialog_column_mapping_title">تحديد الأعمدة</string>
+    <string name="dialog_column_mapping_desc">لم يتم التعرف على أعمدة اسم المستخدم وكلمة المرور تلقائياً. يرجى تحديدها يدوياً:</string>
+    <string name="label_username_column">عمود اسم المستخدم</string>
+    <string name="label_password_column">عمود كلمة المرور</string>
+    <string name="label_column_none">(بدون)</string>
+
+    <!-- Export Validation — Missing Credentials -->
+    <string name="error_missing_credentials_title">عناصر البيانات مفقودة</string>
+    <string name="error_missing_credentials_message">القالب المحدد لا يحتوي على عناصر بيانات الدخول المطلوبة (اسم المستخدم/كلمة المرور). لا يمكن المتابعة بالتصدير بدونها.\n\nيرجى إضافة العناصر المفقودة في المحرر أولاً.</string>
+    <string name="error_missing_username_message">القالب المحدد لا يحتوي على عنصر اسم المستخدم. لا يمكن المتابعة بالتصدير بدونه.\n\nيرجى إضافة عنصر اسم المستخدم في المحرر أولاً.</string>
+
+
+    <!-- Column Mapping — Snackbar Errors -->
+    <string name="error_columns_unmapped_snackbar">بعض الملفات تحتوي على أعمدة غير معروفة. يرجى تحديدها أولاً.</string>
+    <string name="error_columns_missing_for_template">الملف لا يحتوي على أعمدة اليوزرنيم/الباسورد المطلوبة لهذا القالب.</string>
+    <string name="error_username_column_missing">الملف لا يحتوي على عمود اليوزرنيم المطلوب لهذا القالب.</string>
 
     <string name="font_default">افتراضي (بدون خط)</string>
 
@@ -334,7 +365,7 @@
     <string name="license_activate_title">تفعيل التطبيق</string>
     <string name="license_activate_benefits">تفعيل التطبيق يفتح لك:\n\n• تصدير PDF بدون حدود\n• العناصر الجاهزة\n• القوالب المميزة\n• استيراد وتصدير القوالب\n• تلقي آخر التحديثات أولاً بأول\n• وغيرها المزيد...</string>
     <string name="license_contact_whatsapp">تواصل عبر الواتساب</string>
-    <string name="license_whatsapp_message">مرحباً، أريد تفعيل تطبيق مصمم البطاقات برو.</string>
+    <string name="license_whatsapp_not_installed">تطبيق الواتساب غير مثبت على جهازك</string>
     <string name="license_copy_android_id">نسخ Android ID</string>
     <string name="license_info_android_id">ما هو Android ID؟</string>
     <string name="license_android_id_info_title">ما هو Android ID؟</string>
@@ -360,6 +391,8 @@
     <string name="license_premium_template_snack">هذا القالب متاح فقط في النسخة المفعّلة من التطبيق.</string>
     <string name="license_remaining_exports">التصديرات المتبقية: %1$d من %2$d</string>
     <string name="license_export_sync_error">يرجى الاتصال بالإنترنت للتصدير</string>
+    <string name="license_paste_code">لصق الكود</string>
+    <string name="license_clipboard_empty">الحافظة فارغة</string>
 
     <!-- Server Sync Dialog -->
     <string name="license_sync_title">التحقق من التطبيق</string>
@@ -388,6 +421,12 @@
     <string name="font_delete_confirm_message">سيتم إزالة الخط وإعادة تعيين جميع العناصر التي تستخدمه إلى الخط الافتراضي.</string>
     <string name="action_delete">حذف</string>
 
+    <!-- Custom Card Layout Dialog -->
+    <string name="layout_custom_option">✦ تخصيص…</string>
+    <string name="dialog_custom_layout_title">تخطيط مخصص للبطاقات</string>
+    <string name="label_columns_count">عدد الأعمدة</string>
+    <string name="label_rows_count">عدد الصفوف</string>
+    <string name="label_cards_per_page_count">عدد البطاقات في الصفحة: %1$d</string>
+    <string name="layout_custom_active_format">✦ %1$d بطاقة (%2$d أعمدة × %3$d صف)</string>
+
 </resources>
-
-

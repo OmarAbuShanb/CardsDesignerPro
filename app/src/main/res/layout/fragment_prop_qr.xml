@@ -53,13 +53,13 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <dev.anonymous.cardsdesignerpro.common.widget.ColorPreviewView
+            <dev.anonymous.cardsdesignerpro.app.common.widget.ColorPreviewView
                 android:id="@+id/cpv_qr_color"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:layout_marginEnd="12dp" />
 
-            <dev.anonymous.cardsdesignerpro.common.widget.ColorHexFieldView
+            <dev.anonymous.cardsdesignerpro.app.common.widget.ColorHexFieldView
                 android:id="@+id/field_qr_color_hex"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content" />
@@ -80,13 +80,13 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <dev.anonymous.cardsdesignerpro.common.widget.ColorPreviewView
+            <dev.anonymous.cardsdesignerpro.app.common.widget.ColorPreviewView
                 android:id="@+id/cpv_qr_bg_color"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:layout_marginEnd="12dp" />
 
-            <dev.anonymous.cardsdesignerpro.common.widget.ColorHexFieldView
+            <dev.anonymous.cardsdesignerpro.app.common.widget.ColorHexFieldView
                 android:id="@+id/field_qr_bg_color_hex"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content" />

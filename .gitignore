@@ -15,3 +15,6 @@
 .cxx
 local.properties
 /app/google-services.json
+/key.properties
+/app/cardsdesignerpro-release-key.jks
+/app/replace_imports.bat

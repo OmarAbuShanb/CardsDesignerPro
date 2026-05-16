@@ -16,9 +16,9 @@
     {
       "type": "text",
       "id": "brand_title",
-      "x": 110.32216,
-      "y": 34.833336,
-      "width": 199.35568,
+      "x": 108.7666,
+      "y": 36.055557,
+      "width": 202.4668,
       "height": 67.22222,
       "isVisible": true,
       "rotation": 0.0,
@@ -94,7 +94,7 @@
       "id": "duration_label",
       "x": 216.81415,
       "y": 322.91666,
-      "width": 166.1211,
+      "width": 168.45442,
       "height": 76.166664,
       "isVisible": true,
       "rotation": 0.0,
@@ -111,9 +111,9 @@
     {
       "type": "text",
       "id": "login_host",
-      "x": 120.25024,
-      "y": 437.2777,
-      "width": 179.49953,
+      "x": 117.528015,
+      "y": 433.38882,
+      "width": 184.94397,
       "height": 78.111115,
       "isVisible": true,
       "rotation": 0.0,
@@ -266,5 +266,5 @@
     "quality": "HIGH",
     "showPageNumbers": false
   },
-  "isShortNumbersEnabled": false
+  "credentialMode": "NORMAL"
 }

@@ -235,6 +235,6 @@
     "quality": "HIGH",
     "showPageNumbers": false
   },
-  "isShortNumbersEnabled": false,
+  "credentialMode": "NORMAL",
   "isFree": true
 }
