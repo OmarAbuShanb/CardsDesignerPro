@@ -55,11 +55,9 @@ object CsvParser {
                 val passwordCol = columnMapping?.passwordColumn
                     ?: headers.firstOrNull { it.lowercase() in PASSWORD_KEYS }
 
-                // True when both columns are unresolved — regardless of whether
-                // manual mapping was attempted (user may have picked None for both)
+                // Username is always required; flag if it's still unresolved
                 val needsMapping = headers.isNotEmpty()
                         && usernameCol == null
-                        && passwordCol == null
 
                 ParseResult(records, headers, usernameCol, passwordCol, needsColumnMapping = needsMapping)
             } ?: ParseResult.empty()

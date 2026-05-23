@@ -110,7 +110,6 @@ object ExcelParser {
 
         val needsMapping = headers.isNotEmpty()
                 && usernameCol == null
-                && passwordCol == null
 
         return ParseResult(records, headers, usernameCol, passwordCol, needsColumnMapping = needsMapping)
     }

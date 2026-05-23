@@ -91,7 +91,7 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
     private val prefs = application.getSharedPreferences("export_prefs", Context.MODE_PRIVATE)
 
     /** Event to request column mapping dialog from the Activity. */
-    data class ColumnMappingRequest(val uri: Uri, val headers: List<String>, val isShort: Boolean)
+    data class ColumnMappingRequest(val uri: Uri, val headers: List<String>, val isShort: Boolean, val fileName: String)
     private val _columnMappingEvent = MutableSharedFlow<ColumnMappingRequest>(extraBufferCapacity = 1)
     val columnMappingEvent: SharedFlow<ColumnMappingRequest> = _columnMappingEvent.asSharedFlow()
 
@@ -246,7 +246,7 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
                     } else {
                         // No saved mapping — ask user via dialog
                         _columnMappingEvent.tryEmit(
-                            ColumnMappingRequest(uri, result.headers, isShort)
+                            ColumnMappingRequest(uri, result.headers, isShort, name)
                         )
                     }
                 }
@@ -381,7 +381,36 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
         if (valid.isEmpty()) return null
         val first = valid.first().parseResult!!
         if (valid.size == 1) return first
-        val combined = valid.flatMap { it.parseResult!!.records }
+
+        // The combined result uses the first file's column names as canonical keys.
+        // Records from other files must be remapped so their username/password values
+        // are accessible under the same keys in the final merged list.
+        val canonicalUser = first.usernameColumn
+        val canonicalPass = first.passwordColumn
+
+        val combined = valid.flatMap { sf ->
+            val pr = sf.parseResult!!
+            val fileUser = pr.usernameColumn
+            val filePass = pr.passwordColumn
+
+            // If this file already uses the same column names, no remapping needed
+            if (fileUser == canonicalUser && filePass == canonicalPass) {
+                pr.records
+            } else {
+                // Remap records: copy values from file-specific keys to canonical keys
+                pr.records.map { record ->
+                    val remapped = record.toMutableMap()
+                    if (fileUser != null && canonicalUser != null && fileUser != canonicalUser) {
+                        record[fileUser]?.let { remapped[canonicalUser] = it }
+                    }
+                    if (filePass != null && canonicalPass != null && filePass != canonicalPass) {
+                        record[filePass]?.let { remapped[canonicalPass] = it }
+                    }
+                    remapped
+                }
+            }
+        }
+
         return first.copy(records = combined)
     }
 

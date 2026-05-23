@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Resource shrinking keep rules.
+
+  Fonts are loaded dynamically via Resources.getIdentifier() at runtime,
+  so the resource shrinker cannot detect their usage statically.
+  Without this file, all font resources are stripped from the release APK,
+  causing fonts to silently fall back to the system default.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@font/*" />

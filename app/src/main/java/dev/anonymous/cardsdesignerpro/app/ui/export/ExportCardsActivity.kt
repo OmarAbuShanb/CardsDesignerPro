@@ -308,12 +308,15 @@ class ExportCardsActivity : AppCompatActivity() {
         val parseResult = file.parseResult ?: return
         val headers = parseResult.headers
         if (headers.isEmpty()) return
+        val mode = viewModel.uiState.value.credentialMode
         val dialog = ColumnMappingDialogFragment.newInstance(
             uri = file.uri,
             headers = headers,
             isShortFile = isShort,
             currentUsernameCol = parseResult.usernameColumn,
-            currentPasswordCol = parseResult.passwordColumn
+            currentPasswordCol = parseResult.passwordColumn,
+            fileName = file.displayName,
+            isUsernameOnly = mode == dev.anonymous.cardsdesignerpro.app.data.model.CredentialMode.USERNAME_ONLY
         )
         dialog.show(supportFragmentManager, ColumnMappingDialogFragment.TAG)
     }
@@ -884,10 +887,13 @@ class ExportCardsActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.columnMappingEvent.collect { request ->
+                    val mode = viewModel.uiState.value.credentialMode
                     val dialog = ColumnMappingDialogFragment.newInstance(
                         uri = request.uri,
                         headers = request.headers,
-                        isShortFile = request.isShort
+                        isShortFile = request.isShort,
+                        fileName = request.fileName,
+                        isUsernameOnly = mode == dev.anonymous.cardsdesignerpro.app.data.model.CredentialMode.USERNAME_ONLY
                     )
                     dialog.show(supportFragmentManager, ColumnMappingDialogFragment.TAG)
                 }

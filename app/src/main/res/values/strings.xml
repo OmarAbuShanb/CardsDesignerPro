@@ -200,6 +200,7 @@
 
     <!-- Shape element properties -->
     <string name="prop_shape_fill_color">Fill Color</string>
+    <string name="prop_shape_enable_stroke">Enable Stroke</string>
     <string name="prop_shape_stroke_color">Stroke Color</string>
     <string name="prop_shape_stroke_width">Stroke Width</string>
     <string name="prop_shape_corner_radius">Corner Radius</string>
@@ -331,6 +332,8 @@
     <string name="error_columns_unmapped_snackbar">Some files have unrecognized columns. Please map them first.</string>
     <string name="error_columns_missing_for_template">Data file is missing required username/password columns for this template.</string>
     <string name="error_username_column_missing">Data file is missing the required username column for this template.</string>
+    <string name="error_select_username_column">Please select a username column.</string>
+    <string name="error_select_password_column">Please select a password column.</string>
 
     <string name="font_default">Default (no font)</string>
 

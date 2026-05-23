@@ -28,7 +28,7 @@ class ShapePropertiesFragment : Fragment(), PropertyFragment {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        b.stepperStrokeWidth.minValue = 0
+        b.stepperStrokeWidth.minValue = 1
         b.stepperStrokeWidth.maxValue = 20
 
         ColorHexDialogSupport.registerResultListener(
@@ -57,10 +57,14 @@ class ShapePropertiesFragment : Fragment(), PropertyFragment {
         if (b.cpvFillColor.colorHex != el.fillColor) b.cpvFillColor.colorHex = el.fillColor
         b.fieldFillColorHex.text = el.fillColor
 
+        val strokeEnabled = el.strokeWidthDp > 0f
+        if (b.cbEnableStroke.isChecked != strokeEnabled) b.cbEnableStroke.isChecked = strokeEnabled
+        b.layoutStrokeOptions.visibility = if (strokeEnabled) View.VISIBLE else View.GONE
+
         if (b.cpvStrokeColor.colorHex != el.strokeColor) b.cpvStrokeColor.colorHex = el.strokeColor
         b.fieldStrokeColorHex.text = el.strokeColor
 
-        val swVal = el.strokeWidthDp.toInt().coerceIn(0, 20)
+        val swVal = el.strokeWidthDp.toInt().coerceIn(1, 20)
         if (b.stepperStrokeWidth.value != swVal) b.stepperStrokeWidth.value = swVal
 
         val crVal = normalizeCornerRadius(el.cornerRadiusDp)
@@ -90,6 +94,23 @@ class ShapePropertiesFragment : Fragment(), PropertyFragment {
     private fun setupListeners() {
         b.cpvFillColor.onColorSelected = { hex -> applyFillColor(hex) }
         b.fieldFillColorHex.setOnClickListener { openFillColorHexDialog() }
+
+        b.cbEnableStroke.setOnCheckedChangeListener { _, checked ->
+            if (!updating) {
+                b.layoutStrokeOptions.visibility = if (checked) View.VISIBLE else View.GONE
+                if (checked) {
+                    // Enable stroke: set width to 1 (minimum) if currently 0
+                    val el = viewModel.selectedElement as? TemplateElement.ShapeElement ?: return@setOnCheckedChangeListener
+                    if (el.strokeWidthDp < 1f) {
+                        b.stepperStrokeWidth.value = 1
+                        update { it.copy(strokeWidthDp = 1f) }
+                    }
+                } else {
+                    // Disable stroke: set width to 0
+                    update { it.copy(strokeWidthDp = 0f) }
+                }
+            }
+        }
 
         b.cpvStrokeColor.onColorSelected = { hex -> applyStrokeColor(hex) }
         b.fieldStrokeColorHex.setOnClickListener { openStrokeColorHexDialog() }

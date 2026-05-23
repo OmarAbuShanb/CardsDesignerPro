@@ -38,47 +38,6 @@
                 android:layout_height="wrap_content" />
         </LinearLayout>
 
-        <!-- Stroke color -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="6dp"
-            android:text="@string/prop_shape_stroke_color"
-            android:textAppearance="?attr/textAppearanceLabelMedium" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="14dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <dev.anonymous.cardsdesignerpro.app.common.widget.ColorPreviewView
-                android:id="@+id/cpv_stroke_color"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginEnd="12dp" />
-
-            <dev.anonymous.cardsdesignerpro.app.common.widget.ColorHexFieldView
-                android:id="@+id/field_stroke_color_hex"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-        </LinearLayout>
-
-        <!-- Stroke width (StepperView — like Frame thickness) -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="6dp"
-            android:text="@string/prop_shape_stroke_width"
-            android:textAppearance="?attr/textAppearanceLabelMedium" />
-
-        <dev.anonymous.cardsdesignerpro.app.common.widget.StepperView
-            android:id="@+id/stepper_stroke_width"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="14dp" />
-
         <!-- Corner radius -->
         <TextView
             android:id="@+id/tv_corner_radius_label"
@@ -97,61 +56,120 @@
             android:valueTo="200"
             app:labelBehavior="floating" />
 
-        <!-- Dashed border toggle -->
+        <!-- Enable Stroke toggle -->
         <com.google.android.material.checkbox.MaterialCheckBox
-            android:id="@+id/cb_dashed"
+            android:id="@+id/cb_enable_stroke"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            android:text="@string/prop_shape_dashed" />
+            android:text="@string/prop_shape_enable_stroke" />
 
-        <!-- Dashed options (shown only when isDashed = true) -->
+        <!-- Stroke options (shown only when stroke is enabled) -->
         <LinearLayout
-            android:id="@+id/layout_dash_options"
+            android:id="@+id/layout_stroke_options"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:visibility="gone">
 
+            <!-- Stroke color -->
             <TextView
-                android:id="@+id/tv_dash_length_label"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/prop_frame_dash_length"
+                android:layout_marginBottom="6dp"
+                android:text="@string/prop_shape_stroke_color"
                 android:textAppearance="?attr/textAppearanceLabelMedium" />
 
-            <com.google.android.material.slider.Slider
-                android:id="@+id/slider_dash_length"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginVertical="8dp"
-                android:stepSize="1"
-                android:valueFrom="2"
-                android:valueTo="60"
-                app:labelBehavior="floating" />
+                android:layout_marginBottom="14dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
+                <dev.anonymous.cardsdesignerpro.app.common.widget.ColorPreviewView
+                    android:id="@+id/cpv_stroke_color"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="12dp" />
+
+                <dev.anonymous.cardsdesignerpro.app.common.widget.ColorHexFieldView
+                    android:id="@+id/field_stroke_color_hex"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <!-- Stroke width (StepperView — like Frame thickness) -->
             <TextView
-                android:id="@+id/tv_dash_gap_label"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/prop_frame_dash_gap"
+                android:layout_marginBottom="6dp"
+                android:text="@string/prop_shape_stroke_width"
                 android:textAppearance="?attr/textAppearanceLabelMedium" />
 
-            <com.google.android.material.slider.Slider
-                android:id="@+id/slider_dash_gap"
-                android:layout_width="match_parent"
+            <dev.anonymous.cardsdesignerpro.app.common.widget.StepperView
+                android:id="@+id/stepper_stroke_width"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginVertical="8dp"
-                android:stepSize="1"
-                android:valueFrom="0"
-                android:valueTo="40"
-                app:labelBehavior="floating" />
+                android:layout_marginBottom="14dp" />
 
+            <!-- Dashed border toggle -->
             <com.google.android.material.checkbox.MaterialCheckBox
-                android:id="@+id/cb_dash_rounded"
+                android:id="@+id/cb_dashed"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/prop_frame_dash_rounded" />
+                android:layout_marginBottom="8dp"
+                android:text="@string/prop_shape_dashed" />
+
+            <!-- Dashed options (shown only when isDashed = true) -->
+            <LinearLayout
+                android:id="@+id/layout_dash_options"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tv_dash_length_label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/prop_frame_dash_length"
+                    android:textAppearance="?attr/textAppearanceLabelMedium" />
+
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/slider_dash_length"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginVertical="8dp"
+                    android:stepSize="1"
+                    android:valueFrom="2"
+                    android:valueTo="60"
+                    app:labelBehavior="floating" />
+
+                <TextView
+                    android:id="@+id/tv_dash_gap_label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/prop_frame_dash_gap"
+                    android:textAppearance="?attr/textAppearanceLabelMedium" />
+
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/slider_dash_gap"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginVertical="8dp"
+                    android:stepSize="1"
+                    android:valueFrom="0"
+                    android:valueTo="40"
+                    app:labelBehavior="floating" />
+
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/cb_dash_rounded"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/prop_frame_dash_rounded" />
+
+            </LinearLayout>
 
         </LinearLayout>
 

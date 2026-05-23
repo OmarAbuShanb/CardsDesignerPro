@@ -193,6 +193,7 @@
 
     <!-- Shape element properties -->
     <string name="prop_shape_fill_color">لون التعبئة</string>
+    <string name="prop_shape_enable_stroke">تفعيل الحدود</string>
     <string name="prop_shape_stroke_color">لون الحدود</string>
     <string name="prop_shape_stroke_width">سُمك الحدود</string>
     <string name="prop_shape_corner_radius">استدارة الزوايا</string>
@@ -325,6 +326,8 @@
     <string name="error_columns_unmapped_snackbar">بعض الملفات تحتوي على أعمدة غير معروفة. يرجى تحديدها أولاً.</string>
     <string name="error_columns_missing_for_template">الملف لا يحتوي على أعمدة اليوزرنيم/الباسورد المطلوبة لهذا القالب.</string>
     <string name="error_username_column_missing">الملف لا يحتوي على عمود اليوزرنيم المطلوب لهذا القالب.</string>
+    <string name="error_select_username_column">يرجى تحديد عمود اليوزرنيم.</string>
+    <string name="error_select_password_column">يرجى تحديد عمود الباسورد.</string>
 
     <string name="font_default">افتراضي (بدون خط)</string>
 

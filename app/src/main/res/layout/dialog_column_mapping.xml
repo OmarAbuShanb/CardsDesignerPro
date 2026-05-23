@@ -5,6 +5,17 @@
     android:orientation="vertical"
     android:padding="24dp">
 
+    <!-- Filename subtitle -->
+    <TextView
+        android:id="@+id/tv_mapping_filename"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:maxLines="1"
+        android:ellipsize="middle"
+        android:textAppearance="?attr/textAppearanceLabelMedium"
+        android:textColor="?attr/colorPrimary" />
+
     <TextView
         android:id="@+id/tv_mapping_desc"
         android:layout_width="match_parent"
@@ -28,18 +39,25 @@
         android:layout_marginBottom="16dp"
         android:background="@drawable/bg_spinner_outline" />
 
-    <!-- Password column spinner -->
-    <TextView
+    <!-- Password column spinner (hidden in USERNAME_ONLY mode) -->
+    <LinearLayout
+        android:id="@+id/layout_password_column"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="6dp"
-        android:text="@string/label_password_column"
-        android:textAppearance="?attr/textAppearanceLabelMedium" />
+        android:orientation="vertical">
 
-    <Spinner
-        android:id="@+id/spinner_password_column"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:background="@drawable/bg_spinner_outline" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="6dp"
+            android:text="@string/label_password_column"
+            android:textAppearance="?attr/textAppearanceLabelMedium" />
+
+        <Spinner
+            android:id="@+id/spinner_password_column"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_spinner_outline" />
+    </LinearLayout>
 
 </LinearLayout>
