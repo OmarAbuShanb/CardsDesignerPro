@@ -21,8 +21,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
                 app:layout_scrollFlags="scroll|enterAlways|snap"
-                app:navigationContentDescription="@string/btn_close"
-                app:navigationIcon="@drawable/ic_close_24"
+                app:navigationContentDescription="@string/btn_back"
+                app:navigationIcon="@drawable/ic_arrow_back_24"
                 app:navigationIconTint="?attr/colorOnSurface"
                 app:title=" "
                 app:titleTextColor="?attr/colorOnSurface">

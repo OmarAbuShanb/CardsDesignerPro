@@ -7,6 +7,7 @@ import com.opencsv.CSVReaderBuilder
 import dev.anonymous.cardsdesignerpro.app.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.Locale
 
 /**
  * Parses CSV files selected via SAF.
@@ -19,6 +20,33 @@ object CsvParser {
     private val USERNAME_KEYS = setOf("username", "user", "اسم المستخدم", "المستخدم", "يوزر", "الرقم", "رقم")
     /** Common column names considered "password". */
     private val PASSWORD_KEYS = setOf("password", "pass", "كلمة المرور", "الباسورد", "باس", "كلمة السر", "السر")
+
+    private fun String.stripWrappingQuotes(): String {
+        var value = trim()
+        while (value.length >= 2) {
+            val first = value.first()
+            val last = value.last()
+            val isWrapped = (first == '"' && last == '"') || (first == '\'' && last == '\'')
+            if (!isWrapped) break
+            value = value.substring(1, value.length - 1).trim()
+        }
+        return value
+    }
+
+    private fun String.cleanCsvValue(): String {
+        var value = trim()
+            .replace("\uFEFF", "")
+            .trim()
+        if (value.startsWith("=")) {
+            value = value.removePrefix("=").trim()
+        }
+        return value.stripWrappingQuotes()
+    }
+
+    private fun String.cleanHeader(): String = cleanCsvValue()
+
+    private fun String.headerKey(): String =
+        cleanHeader().lowercase(Locale.ROOT)
 
     suspend fun parse(
         context: Context,
@@ -41,19 +69,17 @@ object CsvParser {
                 val allRows = reader.readAll()
                 if (allRows.isEmpty()) return@use ParseResult.empty()
 
-                val headers = allRows.first().map { it.trim() }
+                val headers = allRows.first().map { it.cleanHeader() }
                 val records = allRows.drop(1).mapNotNull { row ->
                     if (row.all { it.isBlank() }) null
-                    else headers.zip(row.map { 
-                        it.trim().replace(Regex("^[\"'‘“]+|[\"'’”]+$"), "")
-                    }).toMap()
+                    else headers.zip(row.map { it.cleanCsvValue() }).toMap()
                 }
 
                 // Use manual mapping if provided, otherwise auto-detect
                 val usernameCol = columnMapping?.usernameColumn
-                    ?: headers.firstOrNull { it.lowercase() in USERNAME_KEYS }
+                    ?: headers.firstOrNull { it.headerKey() in USERNAME_KEYS }
                 val passwordCol = columnMapping?.passwordColumn
-                    ?: headers.firstOrNull { it.lowercase() in PASSWORD_KEYS }
+                    ?: headers.firstOrNull { it.headerKey() in PASSWORD_KEYS }
 
                 // Username is always required; flag if it's still unresolved
                 val needsMapping = headers.isNotEmpty()

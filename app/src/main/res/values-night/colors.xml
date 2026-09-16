@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Guide Banner Colors - Dark -->
+    <color name="guide_banner_bg">#FF22213F</color> <!-- Soft dark purple/lavender background -->
+    <color name="guide_banner_stroke">#FFBDB8FF</color> <!-- Dark theme primary color -->
+    <color name="guide_banner_text">#FFE8E5FF</color> <!-- Light lavender text -->
+</resources>

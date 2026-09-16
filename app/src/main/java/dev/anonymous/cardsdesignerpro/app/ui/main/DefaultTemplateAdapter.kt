@@ -18,8 +18,7 @@ class DefaultTemplateAdapter(
             val (dirName, template) = item
             binding.tvTemplateName.text = template.name
             
-            val starRes = if (!template.isFree) dev.anonymous.cardsdesignerpro.app.R.drawable.ic_premium_star else 0
-            binding.tvTemplateName.setCompoundDrawablesRelativeWithIntrinsicBounds(starRes, 0, 0, 0)
+            binding.tvTemplateName.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, 0, 0)
             
             binding.cardCanvas.isInteractive = false
             binding.cardCanvas.bind(template, selectedId = null)

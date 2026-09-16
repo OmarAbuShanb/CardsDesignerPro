@@ -45,7 +45,8 @@ class MismatchedRecordAdapter(
             holder.tvUsername.text = ctx.getString(
                 R.string.item_mismatch_username,
                 item.username,
-                item.username.length
+                item.username.length,
+                digitUnit(ctx, item.username.length)
             )
             holder.tvUsername.visibility = View.VISIBLE
         } else {
@@ -60,11 +61,22 @@ class MismatchedRecordAdapter(
             holder.tvPassword.text = ctx.getString(
                 R.string.item_mismatch_password,
                 item.password,
-                item.password.length
+                item.password.length,
+                digitUnit(ctx, item.password.length)
             )
             holder.tvPassword.visibility = View.VISIBLE
         } else {
             holder.tvPassword.visibility = View.GONE
         }
+    }
+
+    private fun digitUnit(context: android.content.Context, count: Int): String {
+        @Suppress("DEPRECATION")
+        val language = context.resources.configuration.locale.language
+        val usePlural = if (language == "ar") count in 3..10 else count != 1
+        return context.getString(
+            if (usePlural) R.string.mismatch_digit_unit_plural
+            else R.string.mismatch_digit_unit_singular
+        )
     }
 }

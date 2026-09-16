@@ -25,4 +25,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "CardsDesignerPro"
 include(":app")
-include(":keygen")

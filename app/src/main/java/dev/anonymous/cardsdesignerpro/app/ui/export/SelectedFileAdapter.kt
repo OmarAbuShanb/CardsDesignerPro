@@ -69,7 +69,9 @@ class SelectedFileAdapter(
             }
 
             // Show edit mapping button when columns need mapping
-            b.btnEditMapping.visibility = if (needsMapping || (item.parseResult?.headers?.isNotEmpty() == true && item.isSupported && !item.isParsing)) {
+            val canEditMapping = needsMapping ||
+                (!item.isTemporary && item.parseResult?.headers?.isNotEmpty() == true && item.isSupported && !item.isParsing)
+            b.btnEditMapping.visibility = if (canEditMapping) {
                 View.VISIBLE
             } else {
                 View.GONE

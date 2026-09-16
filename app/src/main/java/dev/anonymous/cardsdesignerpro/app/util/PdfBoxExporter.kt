@@ -30,6 +30,7 @@ import java.io.OutputStream
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import kotlin.math.ceil
+import androidx.core.graphics.createBitmap
 
 /**
  * PDFBox-based PDF exporter with optimised resource reuse.
@@ -211,7 +212,7 @@ object PdfBoxExporter {
     ): PDImageXObject {
         val w = (layout.cardWidthPt * scale).toInt().coerceAtLeast(1)
         val h = (layout.cardHeightPt * scale).toInt().coerceAtLeast(1)
-        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val bmp = createBitmap(w, h)
         renderer.draw(Canvas(bmp), template, 0f, 0f, w.toFloat(), h.toFloat(),
             renderScale = scale, renderLayer = RenderLayer.STATIC)
         val xObj = LosslessFactory.createFromImage(doc, bmp)
@@ -354,7 +355,7 @@ object PdfBoxExporter {
     ) {
         val dW = (cW * dynScale).toInt().coerceAtLeast(1)
         val dH = (cH * dynScale).toInt().coerceAtLeast(1)
-        val dynBuf = Bitmap.createBitmap(dW, dH, Bitmap.Config.ARGB_8888)
+        val dynBuf = createBitmap(dW, dH)
         dynBuf.eraseColor(Color.TRANSPARENT)
         renderer.draw(Canvas(dynBuf), template, 0f, 0f, dW.toFloat(), dH.toFloat(),
             username = username, password = password,

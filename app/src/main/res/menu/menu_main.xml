@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_exported_files"
+        android:title="@string/menu_exported_files"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_unused_cards_extractor"
+        android:title="@string/menu_unused_cards_extractor"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_contact_dev"
+        android:title="@string/menu_contact_developer"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_my_apps_on_google_play"
+        android:title="@string/menu_my_apps_on_google_play"
+        app:showAsAction="never" />
+
+</menu>

@@ -20,6 +20,7 @@ import dev.anonymous.cardsdesignerpro.app.data.model.TemplateElement
 import dev.anonymous.cardsdesignerpro.app.data.model.TextAlign
 import dev.anonymous.cardsdesignerpro.app.ui.editor.canvas.RenderLayer
 import dev.anonymous.cardsdesignerpro.app.ui.editor.canvas.TemplateRenderer
+import androidx.core.graphics.createBitmap
 
 /**
  * Builds a [PDFormXObject] representing the static (non-dynamic) content of a template face.
@@ -71,7 +72,7 @@ object PdfStaticFormBuilder {
             writeOp.invoke(cs, "n")
         } catch (_: Exception) {
             // If reflection fails, fill with white as safe fallback
-            cs.setNonStrokingColor(255f, 255f, 255f)
+            cs.setNonStrokingColor(1f, 1f, 1f)
             cs.fill()
         }
 
@@ -88,9 +89,10 @@ object PdfStaticFormBuilder {
 
             // Wrap each element in save/restore to guarantee graphics state isolation.
             // If any element throws after applying a transform (rotation, etc.),
-            // the restore ensures the transform never leaks to subsequent elements.
+            // the restore ensures the transform never leaks to subsequent elements or fallback.
+            var drawnNatively = false
             cs.saveGraphicsState()
-            runCatching {
+            try {
                 when (el) {
                     is TemplateElement.CardBackground ->
                         drawCardBackground(cs, doc, template, cardWidthPt, cardHeightPt, cache, renderScale, maxImageDim)
@@ -110,16 +112,26 @@ object PdfStaticFormBuilder {
                         drawImage(cs, doc, el, scaleX, scaleY, cardHeightPt, cache, renderScale, maxImageDim)
                     else -> { /* UsernameElement, PasswordElement, QrElement already filtered */ }
                 }
-            }.onFailure {
+                drawnNatively = true
+            } catch (e: Exception) {
                 // Element-level fallback: if any single element fails to draw natively,
                 // rasterize just this element at its bounds.
-                android.util.Log.w("PdfStaticFormBuilder", "Element ${el.id} error, using bitmap fallback: ${it.message}")
+                android.util.Log.w("PdfStaticFormBuilder", "Element ${el.id} error, using bitmap fallback: ${e.message}")
+            } finally {
+                cs.restoreGraphicsState()
+            }
+
+            if (!drawnNatively) {
                 runCatching {
-                    rasterizeElementFallback(cs, doc, el, template, renderer,
-                        scaleX, scaleY, cardWidthPt, cardHeightPt, renderScale)
+                    cs.saveGraphicsState()
+                    try {
+                        rasterizeElementFallback(cs, doc, el, template, renderer,
+                            scaleX, scaleY, cardWidthPt, cardHeightPt, renderScale)
+                    } finally {
+                        cs.restoreGraphicsState()
+                    }
                 }
             }
-            cs.restoreGraphicsState()
         }
 
         cs.restoreGraphicsState() // close the clip rect state
@@ -193,34 +205,36 @@ object PdfStaticFormBuilder {
         val cr = el.cornerRadiusDp * sX
 
         cs.saveGraphicsState()
-        if (el.rotation != 0f) {
-            applyRotation(cs, el.rotation, cx, cy)
-        }
-
-        // Fill (only if alpha > 0)
-        if (el.fillColor.isNotEmpty() && colorAlpha(el.fillColor) > 0) {
-            val (r, g, b) = colorRGB(el.fillColor)
-            cs.setNonStrokingColor(r, g, b)
-            addRoundRect(cs, l, pdfY, w, h, cr)
-            cs.fill()
-        }
-
-        // Stroke
-        if (el.strokeWidthDp > 0f) {
-            val (sr, sg, sb) = colorRGB(el.strokeColor)
-            cs.setStrokingColor(sr, sg, sb)
-            cs.setLineWidth(el.strokeWidthDp * sX)
-            if (el.isDashed) {
-                cs.setLineDashPattern(
-                    floatArrayOf(el.dashLengthDp * sX, el.dashGapDp * sX), 0f
-                )
-                if (el.isDashRounded) cs.setLineCapStyle(1) // Round cap
+        try {
+            if (el.rotation != 0f) {
+                applyRotation(cs, el.rotation, cx, cy)
             }
-            addRoundRect(cs, l, pdfY, w, h, cr)
-            cs.stroke()
-        }
 
-        cs.restoreGraphicsState()
+            // Fill (only if alpha > 0)
+            if (el.fillColor.isNotEmpty() && colorAlpha(el.fillColor) > 0) {
+                val (r, g, b) = colorRGB(el.fillColor)
+                cs.setNonStrokingColor(r, g, b)
+                addRoundRect(cs, l, pdfY, w, h, cr)
+                cs.fill()
+            }
+
+            // Stroke
+            if (el.strokeWidthDp > 0f) {
+                val (sr, sg, sb) = colorRGB(el.strokeColor)
+                cs.setStrokingColor(sr, sg, sb)
+                cs.setLineWidth(el.strokeWidthDp * sX)
+                if (el.isDashed) {
+                    cs.setLineDashPattern(
+                        floatArrayOf(el.dashLengthDp * sX, el.dashGapDp * sX), 0f
+                    )
+                    if (el.isDashRounded) cs.setLineCapStyle(1) // Round cap
+                }
+                addRoundRect(cs, l, pdfY, w, h, cr)
+                cs.stroke()
+            }
+        } finally {
+            cs.restoreGraphicsState()
+        }
     }
 
     // ── Line ──────────────────────────────────────────────────────────────────
@@ -240,22 +254,24 @@ object PdfStaticFormBuilder {
         val cy = pdfY + h / 2f
 
         cs.saveGraphicsState()
-        if (el.rotation != 0f) {
-            applyRotation(cs, el.rotation, cx, cy)
+        try {
+            if (el.rotation != 0f) {
+                applyRotation(cs, el.rotation, cx, cy)
+            }
+
+            val (r, g, b) = colorRGB(el.color)
+            cs.setNonStrokingColor(r, g, b)
+
+            if (el.roundedCaps) {
+                val cr = h / 2f
+                addRoundRect(cs, l, pdfY, w, h, cr)
+            } else {
+                cs.addRect(l, pdfY, w, h)
+            }
+            cs.fill()
+        } finally {
+            cs.restoreGraphicsState()
         }
-
-        val (r, g, b) = colorRGB(el.color)
-        cs.setNonStrokingColor(r, g, b)
-
-        if (el.roundedCaps) {
-            val cr = h / 2f
-            addRoundRect(cs, l, pdfY, w, h, cr)
-        } else {
-            cs.addRect(l, pdfY, w, h)
-        }
-        cs.fill()
-
-        cs.restoreGraphicsState()
     }
 
     // ── Frame ─────────────────────────────────────────────────────────────────
@@ -275,22 +291,23 @@ object PdfStaticFormBuilder {
         val cr = el.cornerRadiusDp * sX
 
         cs.saveGraphicsState()
+        try {
+            val (r, g, b) = colorRGB(el.color)
+            cs.setStrokingColor(r, g, b)
+            cs.setLineWidth(el.strokeWidthDp * sX)
 
-        val (r, g, b) = colorRGB(el.color)
-        cs.setStrokingColor(r, g, b)
-        cs.setLineWidth(el.strokeWidthDp * sX)
+            if (el.isDashed) {
+                cs.setLineDashPattern(
+                    floatArrayOf(el.dashLengthDp * sX, el.dashGapDp * sX), 0f
+                )
+                if (el.isDashRounded) cs.setLineCapStyle(1)
+            }
 
-        if (el.isDashed) {
-            cs.setLineDashPattern(
-                floatArrayOf(el.dashLengthDp * sX, el.dashGapDp * sX), 0f
-            )
-            if (el.isDashRounded) cs.setLineCapStyle(1)
+            addRoundRect(cs, l, pdfY, w, h, cr)
+            cs.stroke()
+        } finally {
+            cs.restoreGraphicsState()
         }
-
-        addRoundRect(cs, l, pdfY, w, h, cr)
-        cs.stroke()
-
-        cs.restoreGraphicsState()
     }
 
     // ── Static Text ──────────────────────────────────────────────────────────
@@ -374,7 +391,7 @@ object PdfStaticFormBuilder {
         val bmpW = (cardW * bmpScale).toInt().coerceAtLeast(1)
         val bmpH = (cardH * bmpScale).toInt().coerceAtLeast(1)
 
-        val bmp = Bitmap.createBitmap(bmpW, bmpH, Bitmap.Config.ARGB_8888)
+        val bmp = createBitmap(bmpW, bmpH)
         bmp.eraseColor(Color.TRANSPARENT)
         val canvas = Canvas(bmp)
 
@@ -419,28 +436,30 @@ object PdfStaticFormBuilder {
         val cy = pdfY + h / 2f
 
         cs.saveGraphicsState()
-        if (el.rotation != 0f) {
-            applyRotation(cs, el.rotation, cx, cy)
+        try {
+            if (el.rotation != 0f) {
+                applyRotation(cs, el.rotation, cx, cy)
+            }
+
+            val path = el.imagePath
+            val isSvg = path.lowercase().endsWith(".svg")
+            val reqDim = (maxOf(w, h) * renderScale * 2f).toInt().coerceIn(64, maxImageDim)
+
+            val imgXObj = if (isSvg) {
+                // SVG always rasterized at max quality — not affected by quality spinner
+                val svgScale = ExportQuality.FULL.renderScale
+                cache.getSvgImage(path, (w * svgScale).toInt().coerceAtLeast(1),
+                    (h * svgScale).toInt().coerceAtLeast(1), el.tintColor)
+            } else {
+                cache.getImage(path, reqDim, el.tintColor)
+            }
+
+            imgXObj?.let {
+                cs.drawImage(it, l, pdfY, w, h)
+            }
+        } finally {
+            cs.restoreGraphicsState()
         }
-
-        val path = el.imagePath
-        val isSvg = path.lowercase().endsWith(".svg")
-        val reqDim = (maxOf(w, h) * renderScale * 2f).toInt().coerceIn(64, maxImageDim)
-
-        val imgXObj = if (isSvg) {
-            // SVG always rasterized at max quality — not affected by quality spinner
-            val svgScale = ExportQuality.FULL.renderScale
-            cache.getSvgImage(path, (w * svgScale).toInt().coerceAtLeast(1),
-                (h * svgScale).toInt().coerceAtLeast(1), el.tintColor)
-        } else {
-            cache.getImage(path, reqDim, el.tintColor)
-        }
-
-        imgXObj?.let {
-            cs.drawImage(it, l, pdfY, w, h)
-        }
-
-        cs.restoreGraphicsState()
     }
 
     // ── Helper: Rotation ─────────────────────────────────────────────────────
@@ -507,9 +526,9 @@ object PdfStaticFormBuilder {
     private fun colorRGB(hex: String): Triple<Float, Float, Float> {
         val color = runCatching { hex.toColorInt() }.getOrElse { Color.BLACK }
         return Triple(
-            ((color shr 16) and 0xFF).toFloat(),
-            ((color shr 8) and 0xFF).toFloat(),
-            (color and 0xFF).toFloat()
+            ((color shr 16) and 0xFF) / 255f,
+            ((color shr 8) and 0xFF) / 255f,
+            (color and 0xFF) / 255f
         )
     }
 

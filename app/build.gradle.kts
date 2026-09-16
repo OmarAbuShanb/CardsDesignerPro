@@ -19,8 +19,8 @@ android {
         applicationId = "dev.anonymous.cardsdesignerpro.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 5
-        versionName = "1.0.5"
+        versionCode = 7
+        versionName = "2.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -34,14 +34,14 @@ android {
         }
     }
 
-    /*splits {
-        abi {
-            isEnable = true
-            reset()
-            include("arm64-v8a")
-            isUniversalApk = false
-        }
-    }*/
+//    splits {
+//        abi {
+//            isEnable = true
+//            reset()
+//            include("arm64-v8a")
+//            isUniversalApk = false
+//        }
+//    }
 
     buildTypes {
         release {
@@ -115,9 +115,9 @@ dependencies {
 
     // Splash Screen API (backport to API 26+)
     implementation(libs.androidx.core.splashscreen)
-
-    // Firebase Cloud Functions (trial registration)
-    implementation(libs.firebase.functions)
+    implementation("androidx.documentfile:documentfile:1.0.1")
+    // NanoHTTPD (local PDF sharing over WiFi)
+    implementation(libs.nanohttpd)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

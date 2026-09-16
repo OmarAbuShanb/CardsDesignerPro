@@ -38,3 +38,7 @@
 # Commons Compress optional compression formats
 -dontwarn com.github.luben.zstd.**
 -dontwarn org.tukaani.xz.**
+
+# NanoHTTPD (local file sharing server)
+-keep class fi.iki.elonen.** { *; }
+-dontwarn fi.iki.elonen.**

@@ -2,7 +2,11 @@ package dev.anonymous.cardsdesignerpro.app.ui.main
 
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
+import android.widget.Toast
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContracts
@@ -18,18 +22,17 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import dev.anonymous.cardsdesignerpro.app.R
-import dev.anonymous.cardsdesignerpro.app.data.license.LicenseManager
-import dev.anonymous.cardsdesignerpro.app.data.license.LicenseStatus
-import dev.anonymous.cardsdesignerpro.app.data.license.PremiumFeature
 import dev.anonymous.cardsdesignerpro.app.data.model.Template
 import dev.anonymous.cardsdesignerpro.app.databinding.ActivityMainBinding
 import dev.anonymous.cardsdesignerpro.app.ui.common.TemplateNameDialogFragment
 import dev.anonymous.cardsdesignerpro.app.ui.editor.EditorActivity
 import dev.anonymous.cardsdesignerpro.app.ui.export.ExportCardsActivity
-import dev.anonymous.cardsdesignerpro.app.ui.license.LicenseDialogs
 import kotlinx.coroutines.launch
-import android.widget.ProgressBar
-import android.widget.TextView
+import androidx.core.net.toUri
+
+private const val PLAY_STORE_PACKAGE_NAME = "com.android.vending"
+private const val PLAY_STORE_DEVELOPER_URL =
+    "https://play.google.com/store/apps/dev?id=8883891498272507244&hl=ar"
 
 class MainActivity : AppCompatActivity() {
 
@@ -77,8 +80,6 @@ class MainActivity : AppCompatActivity() {
         pendingExportTemplateIds = null
     }
 
-    private lateinit var licenseManager: LicenseManager
-
     override fun onCreate(savedInstanceState: Bundle?) {
         // Must be called BEFORE super.onCreate() to properly intercept the splash
         installSplashScreen()
@@ -87,41 +88,10 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
 
-        licenseManager = LicenseManager.getInstance(this)
-
         setupDialogResults()
         setupRecyclerView()
         setupButtons()
-        setupActivationButton()
         observeViewModel()
-        observeLicenseState()
-        setupBackPressBlock()
-
-        // Mandatory server sync — blocks the app until server confirms trial
-        if (!licenseManager.hasCompletedServerSync && !licenseManager.isActivated) {
-            showServerSyncDialog()
-        } else {
-            // Already synced — do a background refresh (non-blocking)
-            licenseManager.syncTrialWithServer(onSuccess = {}, onFailure = {})
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        // Re-show blocking dialog if sync was never completed and Activity was recreated
-        // (e.g., user pressed Home then returned, or dialog was lost due to edge case)
-        if (!licenseManager.hasCompletedServerSync && !licenseManager.isActivated) {
-            if (serverSyncDialog == null || !serverSyncDialog!!.isShowing) {
-                showServerSyncDialog()
-            }
-        }
-    }
-
-    override fun onDestroy() {
-        // Dismiss dialog to prevent window leak on config change
-        serverSyncDialog?.dismiss()
-        serverSyncDialog = null
-        super.onDestroy()
     }
 
     private fun setupDialogResults() {
@@ -150,7 +120,7 @@ class MainActivity : AppCompatActivity() {
                     ?.toSet()
                     .orEmpty()
             if (selectedIds.isEmpty()) return@setFragmentResultListener
-            viewModel.confirmImport(Uri.parse(uriString), selectedIds)
+            viewModel.confirmImport(uriString.toUri(), selectedIds)
         }
     }
 
@@ -176,17 +146,9 @@ class MainActivity : AppCompatActivity() {
             showNewDefaultTemplateDialog()
         }
         binding.btnExportAllTemplates.setOnClickListener {
-            if (!licenseManager.canAccess(PremiumFeature.EXPORT_TEMPLATES_BACKUP)) {
-                LicenseDialogs.showPremiumFeatureDialog(this, R.string.license_premium_export_message) { showActivationDialog() }
-                return@setOnClickListener
-            }
             showExportDialog()
         }
         binding.btnImportTemplate.setOnClickListener {
-            if (!licenseManager.canAccess(PremiumFeature.IMPORT_TEMPLATES_BACKUP)) {
-                LicenseDialogs.showPremiumFeatureDialog(this, R.string.license_premium_import_message) { showActivationDialog() }
-                return@setOnClickListener
-            }
             // Need */* or application/octet-stream since we use a custom extension
             importLauncher.launch(arrayOf("*/*"))
         }
@@ -374,110 +336,75 @@ class MainActivity : AppCompatActivity() {
         progressDialog?.dismiss()
     }
 
-    // ── License ────────────────────────────────────────────────────────────────
+    // ── Menu ──────────────────────────────────────────────────────────────────
 
-    private var serverSyncDialog: AlertDialog? = null
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_main, menu)
+        return true
+    }
 
-    /**
-     * Blocks the system back button while the mandatory sync dialog is showing.
-     * This prevents users from dismissing the dialog via the back gesture.
-     */
-    private fun setupBackPressBlock() {
-        onBackPressedDispatcher.addCallback(this) {
-            if (serverSyncDialog?.isShowing == true) {
-                // Block — do nothing, don't let them escape the sync dialog
-                return@addCallback
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_exported_files -> {
+                startActivity(
+                    Intent(this, dev.anonymous.cardsdesignerpro.app.ui.exportedfiles.ExportedFilesActivity::class.java)
+                )
+                true
             }
-            // Normal back behavior
-            isEnabled = false
-            onBackPressedDispatcher.onBackPressed()
+            R.id.action_unused_cards_extractor -> {
+                startActivity(
+                    Intent(this, dev.anonymous.cardsdesignerpro.app.ui.unusedcards.UnusedCardsActivity::class.java)
+                )
+                true
+            }
+            R.id.action_contact_dev -> {
+                contactDeveloper()
+                true
+            }
+            R.id.action_my_apps_on_google_play -> {
+                openMyAppsOnGooglePlay()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
         }
     }
 
-    private fun setupActivationButton() {
-        binding.btnActivate.setOnClickListener { showActivationDialog() }
-    }
-
-    /**
-     * Shows a non-dismissable dialog that blocks the app until the server
-     * confirms the trial registration. Prevents clear-data + offline exploit.
-     */
-    private fun showServerSyncDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_server_sync, null)
-        val progressBar = dialogView.findViewById<ProgressBar>(R.id.progress_sync)
-        val tvStatus = dialogView.findViewById<TextView>(R.id.tv_sync_status)
-        val tvError = dialogView.findViewById<TextView>(R.id.tv_sync_error)
-        val btnRetry = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_retry)
-        val btnHaveCode = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_have_code)
-
-        serverSyncDialog = MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.license_sync_title)
-            .setView(dialogView)
-            .setCancelable(false)
-            .create()
-            .also { it.setCanceledOnTouchOutside(false) }
-
-        fun doSync() {
-            progressBar.visibility = View.VISIBLE
-            tvStatus.text = getString(R.string.license_sync_loading)
-            tvError.visibility = View.GONE
-            btnRetry.visibility = View.GONE
-            btnHaveCode.visibility = View.GONE
-
-            licenseManager.syncTrialWithServer(
-                onSuccess = {
-                    serverSyncDialog?.dismiss()
-                    serverSyncDialog = null
-                },
-                onFailure = { errorMsg ->
-                    progressBar.visibility = View.GONE
-                    tvStatus.text = getString(R.string.license_sync_error, errorMsg)
-                    tvError.visibility = View.GONE
-                    btnRetry.visibility = View.VISIBLE
-                    btnHaveCode.visibility = View.VISIBLE
+    private fun openMyAppsOnGooglePlay() {
+        val developerPageUri = PLAY_STORE_DEVELOPER_URL.toUri()
+        try {
+            startActivity(
+                Intent(
+                    Intent.ACTION_VIEW,
+                    developerPageUri
+                ).apply {
+                    setPackage(PLAY_STORE_PACKAGE_NAME)
                 }
             )
-        }
-
-        btnRetry.setOnClickListener { doSync() }
-
-        btnHaveCode.setOnClickListener {
-            LicenseDialogs.showActivationDialog(this) {
-                // Activation succeeded — dismiss the sync blocker
-                serverSyncDialog?.dismiss()
-                serverSyncDialog = null
-            }
-        }
-
-        serverSyncDialog?.show()
-        doSync()
-    }
-
-    private fun observeLicenseState() {
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                licenseManager.licenseState.collect { state ->
-                    if (state.isActivated) {
-                        binding.btnActivate.visibility = View.GONE
-                    } else {
-                        binding.btnActivate.visibility = View.VISIBLE
-                        binding.btnActivate.text = when (state.status) {
-                            LicenseStatus.TRIAL_EXPIRED ->
-                                getString(R.string.license_trial_expired_btn)
-                            LicenseStatus.EXPORT_LIMIT_REACHED ->
-                                getString(R.string.license_export_limit_btn)
-                            else ->
-                                getString(R.string.license_trial_active_btn)
-                        }
-                    }
-                }
-            }
+        } catch (_: Exception) {
+            startActivity(
+                Intent(
+                    Intent.ACTION_VIEW,
+                    developerPageUri
+                )
+            )
         }
     }
 
-    private fun showActivationDialog() {
-        LicenseDialogs.showActivationDialog(this) {
-            // Activation succeeded — UI will auto-update via StateFlow
+    private fun contactDeveloper() {
+        val phoneNumber = "+970597152714"
+        try {
+            val intent = Intent(Intent.ACTION_VIEW)
+            val uri = "whatsapp://send?phone=+970597152714".toUri()
+            intent.data = uri
+            if (intent.resolveActivity(packageManager) != null) {
+                startActivity(intent)
+            } else {
+                val webUri = "https://wa.me/$phoneNumber".toUri()
+                startActivity(Intent(Intent.ACTION_VIEW, webUri))
+            }
+        } catch (e: Exception) {
+            Log.e("Contact", "Error opening WhatsApp: ${e.message}")
+            Toast.makeText(this, getString(R.string.whatsApp_failed_to_open), Toast.LENGTH_SHORT).show()
         }
     }
 

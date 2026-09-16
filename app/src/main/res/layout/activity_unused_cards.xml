@@ -1,0 +1,759 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurface">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:navigationContentDescription="@string/btn_back"
+            app:navigationIcon="@drawable/ic_arrow_back_24"
+            app:navigationIconTint="?attr/colorOnSurface"
+            app:title="@string/unused_cards_title"
+            app:titleTextColor="?attr/colorOnSurface" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_guide_banner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeColor="?attr/colorOutline"
+                app:strokeWidth="1dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="16dp">
+
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@drawable/ic_info_outline_24"
+                        app:tint="?attr/colorPrimary"
+                        android:layout_marginEnd="16dp"
+                        android:contentDescription="@string/label_guide_title" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_weight="1">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/label_guide_title"
+                            android:textAppearance="?attr/textAppearanceTitleSmall"
+                            android:textStyle="bold"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_chevron_right"
+                        app:tint="?attr/colorPrimary"
+                        android:contentDescription="@string/label_guide_title" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ── Section 1: Sold Cards Files Card ── -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:strokeColor="?attr/colorOutline"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/label_sold_files"
+                        android:textAppearance="?attr/textAppearanceTitleSmall"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_choose_sold"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/btn_choose_sold_files"
+                        android:layout_marginBottom="8dp"
+                        app:icon="@drawable/ic_folder_open" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_choose_sold_folder"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/btn_choose_sold_folder"
+                        android:layout_marginBottom="12dp"
+                        app:icon="@drawable/ic_folder_open" />
+
+                    <!-- Sold files container with empty placeholder -->
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="150dp">
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/rv_sold_files"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:scrollbars="vertical"
+                            android:visibility="gone"
+                            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+                        <TextView
+                            android:id="@+id/tv_sold_files_placeholder"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:text="@string/placeholder_no_sold_files_selected"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:padding="16dp"
+                            android:visibility="visible" />
+
+                    </FrameLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ── Section 2: Active Cards File Card ── -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:strokeColor="?attr/colorOutline"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/label_active_file"
+                        android:textAppearance="?attr/textAppearanceTitleSmall"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_choose_active"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/btn_choose_active_file"
+                        android:layout_marginBottom="12dp"
+                        app:icon="@drawable/ic_folder_open" />
+
+                    <!-- Active file container with empty placeholder -->
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <FrameLayout
+                            android:id="@+id/layout_active_file_container"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/tv_active_file_placeholder"
+                            android:layout_width="match_parent"
+                            android:layout_height="72dp"
+                            android:gravity="center"
+                            android:text="@string/placeholder_no_active_file_selected"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:padding="16dp"
+                            android:visibility="visible" />
+
+                    </FrameLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ── Section 3: Package Filter + Oldest Connected Cards ── -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_package_connected"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:strokeColor="?attr/colorOutline"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Title for connected cards section -->
+                    <TextView
+                        android:id="@+id/tv_label_connected_cards"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/label_stats_connected_cards_used"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="16dp" />
+
+                    <!-- Package Filter Label -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/label_package_filter"
+                        android:textAppearance="?attr/textAppearanceTitleSmall"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <Spinner
+                        android:id="@+id/spinner_package_filter"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginBottom="16dp"
+                        android:background="@drawable/bg_spinner_outline" />
+
+                    <!-- HorizontalScrollView for connected cards table -->
+                    <HorizontalScrollView
+                        android:id="@+id/scroll_connected_cards"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:scrollbars="horizontal"
+                        android:fillViewport="true">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:minWidth="380dp"
+                            android:orientation="vertical">
+
+                            <!-- Header with fixed weights matching item_connected_card.xml -->
+                            <LinearLayout
+                                android:id="@+id/layout_connected_cards_header"
+                                android:layout_width="match_parent"
+                                android:layout_height="40dp"
+                                android:orientation="horizontal"
+                                android:paddingVertical="4dp"
+                                android:paddingHorizontal="4dp"
+                                android:background="?attr/colorSurfaceVariant"
+                                android:gravity="center_vertical"
+                                android:weightSum="2.9">
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1.0"
+                                    android:text="@string/label_header_username"
+                                    android:textAppearance="?attr/textAppearanceLabelMedium"
+                                    android:textStyle="bold"
+                                    android:textColor="?attr/colorOnSurfaceVariant"
+                                    android:gravity="start" />
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="0.7"
+                                    android:text="@string/label_header_created"
+                                    android:textAppearance="?attr/textAppearanceLabelMedium"
+                                    android:textStyle="bold"
+                                    android:textColor="?attr/colorOnSurfaceVariant"
+                                    android:gravity="center" />
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="0.7"
+                                    android:text="@string/label_header_connected"
+                                    android:textAppearance="?attr/textAppearanceLabelMedium"
+                                    android:textStyle="bold"
+                                    android:textColor="?attr/colorOnSurfaceVariant"
+                                    android:gravity="center" />
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="0.5"
+                                    android:text="@string/label_header_waiting"
+                                    android:textAppearance="?attr/textAppearanceLabelMedium"
+                                    android:textStyle="bold"
+                                    android:textColor="?attr/colorOnSurfaceVariant"
+                                    android:gravity="end" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:id="@+id/layout_connected_cards_container"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical" />
+                                
+                            <!-- No connected cards msg (shown inside table) -->
+                            <TextView
+                                android:id="@+id/tv_no_connected_cards_placeholder"
+                                android:layout_width="match_parent"
+                                android:layout_height="72dp"
+                                android:gravity="center"
+                                android:padding="12dp"
+                                android:text="@string/msg_no_data_available"
+                                android:textAppearance="?attr/textAppearanceBodyMedium"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        </LinearLayout>
+                    </HorizontalScrollView>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ── Section 4: Filter Settings and Statistics Card ── -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_filters_and_stats"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:strokeColor="?attr/colorOutline"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/label_stats_and_filters"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="16dp"/>
+
+                    <!-- Filter Mode Selection -->
+                    <RadioGroup
+                        android:id="@+id/rg_filter_mode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <!-- Mode A: Oldest -->
+                        <com.google.android.material.radiobutton.MaterialRadioButton
+                            android:id="@+id/rb_filter_oldest"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true"
+                            android:text="@string/label_filter_oldest"
+                            android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                        <LinearLayout
+                            android:id="@+id/layout_oldest_params"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:layout_marginBottom="12dp"
+                            android:orientation="vertical">
+
+                            <Spinner
+                                android:id="@+id/spinner_oldest_filter"
+                                android:layout_width="match_parent"
+                                android:layout_height="48dp"
+                                android:background="@drawable/bg_spinner_outline" />
+                        </LinearLayout>
+
+                        <!-- OR separator -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:layout_marginVertical="8dp"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.divider.MaterialDivider
+                                android:layout_width="0dp"
+                                android:layout_height="1dp"
+                                android:layout_weight="1" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginHorizontal="12dp"
+                                android:text="@string/label_divider_or"
+                                android:textAppearance="?attr/textAppearanceLabelSmall"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+
+                            <com.google.android.material.divider.MaterialDivider
+                                android:layout_width="0dp"
+                                android:layout_height="1dp"
+                                android:layout_weight="1" />
+                        </LinearLayout>
+
+                        <!-- Mode B: Date Range -->
+                        <com.google.android.material.radiobutton.MaterialRadioButton
+                            android:id="@+id/rb_filter_period"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/label_filter_period"
+                            android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                        <LinearLayout
+                            android:id="@+id/layout_period_params"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginBottom="12dp"
+                            android:orientation="vertical"
+                            android:visibility="gone">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:baselineAligned="false"
+                                android:orientation="horizontal"
+                                android:weightSum="2.0">
+
+                                <!-- Start Date Column -->
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1.0"
+                                    android:layout_marginEnd="4dp"
+                                    android:gravity="center"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/label_since_date"
+                                        android:textAppearance="?attr/textAppearanceLabelMedium"
+                                        android:textColor="?attr/colorOnSurfaceVariant"
+                                        android:layout_marginBottom="4dp" />
+
+                                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btn_start_date"
+                                        style="@style/Widget.Material3.Button.OutlinedButton"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/btn_start_date" />
+                                </LinearLayout>
+
+                                <!-- End Date Column -->
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1.0"
+                                    android:layout_marginStart="4dp"
+                                    android:gravity="center"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/label_until_date"
+                                        android:textAppearance="?attr/textAppearanceLabelMedium"
+                                        android:textColor="?attr/colorOnSurfaceVariant"
+                                        android:layout_marginBottom="4dp" />
+
+                                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btn_end_date"
+                                        style="@style/Widget.Material3.Button.OutlinedButton"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/btn_end_date" />
+                                </LinearLayout>
+                            </LinearLayout>
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btn_clear_period"
+                                style="@style/Widget.Material3.Button.TextButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:layout_gravity="center_horizontal"
+                                android:textColor="?attr/colorError"
+                                android:text="@string/btn_clear"
+                                android:visibility="gone" />
+
+                        </LinearLayout>
+                    </RadioGroup>
+
+                    <com.google.android.material.divider.MaterialDivider
+                        android:id="@+id/divider_stats_top"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginVertical="16dp" />
+
+                    <!-- Stats grid -->
+                    <GridLayout
+                        android:id="@+id/layout_stats_grid"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:columnCount="2"
+                        android:rowCount="2"
+                        android:useDefaultMargins="true"
+                        android:visibility="visible">
+
+                        <!-- Stat 2: Filtered Unused -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_columnWeight="1"
+                            android:orientation="vertical"
+                            android:padding="8dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/label_stats_total_cards"
+                                android:textAppearance="?attr/textAppearanceLabelSmall"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+
+                            <TextView
+                                android:id="@+id/tv_stat_filtered"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/dash"
+                                android:textAppearance="?attr/textAppearanceTitleLarge"
+                                android:textColor="?attr/colorPrimary"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <!-- Stat 3: Filtered Unused without Password (Clickable dialog launcher) -->
+                        <LinearLayout
+                            android:id="@+id/layout_stat_filtered_no_pass"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_columnWeight="1"
+                            android:orientation="vertical"
+                            android:padding="8dp"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?attr/selectableItemBackground">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/label_stats_total_cards_no_pass"
+                                android:textAppearance="?attr/textAppearanceLabelSmall"
+                                android:textColor="?attr/colorError" />
+
+                            <TextView
+                                android:id="@+id/tv_stat_filtered_no_pass"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/dash"
+                                android:textAppearance="?attr/textAppearanceTitleLarge"
+                                android:textColor="?attr/colorError"
+                                android:textStyle="bold"
+                                android:layout_marginTop="4dp" />
+                        </LinearLayout>
+
+                    </GridLayout>
+
+                    <!-- Discovered Packages Section -->
+                    <com.google.android.material.divider.MaterialDivider
+                        android:id="@+id/divider_discovered_packages"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginVertical="16dp"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/tv_label_discovered_packages"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/label_discovered_packages"
+                        android:textAppearance="?attr/textAppearanceTitleSmall"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="12dp"
+                        android:visibility="gone" />
+
+                    <HorizontalScrollView
+                        android:id="@+id/scroll_discovered_packages"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:scrollbars="horizontal"
+                        android:fillViewport="true"
+                        android:visibility="gone">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:minWidth="770dp"
+                            android:orientation="vertical">
+
+                            <!-- Discovered Packages Header (Reduced padding, Swapped columns, Exact weights) -->
+                            <LinearLayout
+                                android:id="@+id/layout_discovered_packages_header"
+                                android:layout_width="match_parent"
+                                android:layout_height="40dp"
+                                android:orientation="horizontal"
+                                android:paddingVertical="4dp"
+                                android:paddingHorizontal="4dp"
+                                android:background="?attr/colorSurfaceVariant"
+                                android:gravity="center_vertical"
+                                android:weightSum="5.75">
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1.35"
+                                    android:text="@string/label_header_package_name"
+                                    android:textAppearance="?attr/textAppearanceLabelMedium"
+                                    android:textStyle="bold"
+                                    android:textColor="?attr/colorOnSurfaceVariant"
+                                    android:gravity="start"
+                                    android:ellipsize="end"
+                                    android:maxLines="1" />
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="0.6"
+                                    android:text="@string/label_header_unused"
+                                    android:textAppearance="?attr/textAppearanceLabelMedium"
+                                    android:textStyle="bold"
+                                    android:textColor="?attr/colorOnSurfaceVariant"
+                                    android:gravity="center"
+                                    android:ellipsize="end"
+                                    android:maxLines="1" />
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="0.6"
+                                    android:text="@string/label_header_no_password"
+                                    android:textAppearance="?attr/textAppearanceLabelMedium"
+                                    android:textStyle="bold"
+                                    android:textColor="?attr/colorOnSurfaceVariant"
+                                    android:gravity="center"
+                                    android:ellipsize="end"
+                                    android:maxLines="1" />
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="0.6"
+                                    android:text="@string/label_header_with_password"
+                                    android:textAppearance="?attr/textAppearanceLabelMedium"
+                                    android:textStyle="bold"
+                                    android:textColor="?attr/colorOnSurfaceVariant"
+                                    android:gravity="center"
+                                    android:ellipsize="end"
+                                    android:maxLines="1" />
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="0.65"
+                                    android:text="@string/label_header_oldest_date"
+                                    android:textAppearance="?attr/textAppearanceLabelMedium"
+                                    android:textStyle="bold"
+                                    android:textColor="?attr/colorOnSurfaceVariant"
+                                    android:gravity="center"
+                                    android:ellipsize="end"
+                                    android:maxLines="1" />
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="0.65"
+                                    android:text="@string/label_header_newest_date"
+                                    android:textAppearance="?attr/textAppearanceLabelMedium"
+                                    android:textStyle="bold"
+                                    android:textColor="?attr/colorOnSurfaceVariant"
+                                    android:gravity="center"
+                                    android:ellipsize="end"
+                                    android:maxLines="1" />
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1.3"
+                                    android:text="@string/label_header_actions"
+                                    android:textAppearance="?attr/textAppearanceLabelMedium"
+                                    android:textStyle="bold"
+                                    android:textColor="?attr/colorOnSurfaceVariant"
+                                    android:gravity="center"
+                                    android:ellipsize="end"
+                                    android:maxLines="1" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:id="@+id/layout_discovered_packages_container"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical" />
+                                
+                            <!-- No Discovered Packages Placeholder -->
+                            <TextView
+                                android:id="@+id/tv_no_discovered_packages_placeholder"
+                                android:layout_width="match_parent"
+                                android:layout_height="72dp"
+                                android:gravity="center"
+                                android:padding="12dp"
+                                android:text="@string/msg_no_data_available"
+                                android:textAppearance="?attr/textAppearanceBodyMedium"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        </LinearLayout>
+                    </HorizontalScrollView>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</LinearLayout>

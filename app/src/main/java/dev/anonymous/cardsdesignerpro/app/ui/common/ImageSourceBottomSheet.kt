@@ -2,7 +2,6 @@ package dev.anonymous.cardsdesignerpro.app.ui.common
 
 import android.app.Dialog
 import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -11,6 +10,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.graphics.drawable.toDrawable
 import androidx.fragment.app.setFragmentResult
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -90,7 +90,7 @@ class ImageSourceBottomSheet : BottomSheetDialogFragment() {
             ) ?: return@setOnShowListener
 
             // Make the sheet container transparent so the MaterialCardView margins are visible
-            bottomSheet.background = ColorDrawable(Color.TRANSPARENT)
+            bottomSheet.background = Color.TRANSPARENT.toDrawable()
 
             // Expand immediately
             BottomSheetBehavior.from(bottomSheet).state = BottomSheetBehavior.STATE_EXPANDED

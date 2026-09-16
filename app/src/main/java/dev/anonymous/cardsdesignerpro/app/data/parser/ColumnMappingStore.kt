@@ -3,6 +3,7 @@ package dev.anonymous.cardsdesignerpro.app.data.parser
 import android.content.Context
 import android.content.SharedPreferences
 import java.security.MessageDigest
+import androidx.core.content.edit
 
 /**
  * Persists [ColumnMapping] choices in [SharedPreferences], keyed by a
@@ -25,10 +26,10 @@ object ColumnMappingStore {
      */
     fun save(context: Context, headers: List<String>, mapping: ColumnMapping) {
         val key = headerKey(headers)
-        prefs(context).edit()
-            .putString(PREFIX_USER + key, mapping.usernameColumn)
-            .putString(PREFIX_PASS + key, mapping.passwordColumn)
-            .apply()
+        prefs(context).edit {
+            putString(PREFIX_USER + key, mapping.usernameColumn)
+                .putString(PREFIX_PASS + key, mapping.passwordColumn)
+        }
     }
 
     /**

@@ -1,0 +1,452 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- AppBar & Toolbar -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurface">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:navigationContentDescription="@string/btn_back"
+            app:navigationIcon="@drawable/ic_arrow_back_24"
+            app:navigationIconTint="?attr/colorOnSurface"
+            app:title="@string/guide_toolbar_title"
+            app:titleTextColor="?attr/colorOnSurface" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- ── Section 1: Active Cards File ── -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:strokeColor="?attr/colorOutline"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/guide_section_active_title"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorPrimary"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Annotated Image 1 -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        app:cardCornerRadius="12dp"
+                        app:strokeColor="?attr/colorOutline"
+                        app:strokeWidth="1dp"
+                        app:cardElevation="0dp">
+
+                        <ImageView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:adjustViewBounds="true"
+                            android:src="@drawable/guide_step_1"
+                            android:contentDescription="@string/guide_section_active_title" />
+
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Steps Explanations -->
+                    <!-- Step 1 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="top"
+                        android:layout_marginBottom="12dp">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_marginEnd="12dp"
+                            app:cardCornerRadius="12dp"
+                            app:cardBackgroundColor="?attr/colorPrimary"
+                            app:strokeWidth="0dp"
+                            app:cardElevation="0dp">
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:gravity="center"
+                                android:text="١"
+                                android:textAppearance="?attr/textAppearanceLabelLarge"
+                                android:textColor="?attr/colorOnPrimary"
+                                android:textStyle="bold" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/guide_active_step1"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
+                            android:textColor="?attr/colorOnSurface" />
+                    </LinearLayout>
+
+                    <!-- Step 2 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="top"
+                        android:layout_marginBottom="12dp">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_marginEnd="12dp"
+                            app:cardCornerRadius="12dp"
+                            app:cardBackgroundColor="?attr/colorPrimary"
+                            app:strokeWidth="0dp"
+                            app:cardElevation="0dp">
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:gravity="center"
+                                android:text="٢"
+                                android:textAppearance="?attr/textAppearanceLabelLarge"
+                                android:textColor="?attr/colorOnPrimary"
+                                android:textStyle="bold" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/guide_active_step2"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
+                            android:textColor="?attr/colorOnSurface" />
+                    </LinearLayout>
+
+                    <!-- Step 3 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="top"
+                        android:layout_marginBottom="12dp">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_marginEnd="12dp"
+                            app:cardCornerRadius="12dp"
+                            app:cardBackgroundColor="?attr/colorPrimary"
+                            app:strokeWidth="0dp"
+                            app:cardElevation="0dp">
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:gravity="center"
+                                android:text="٣"
+                                android:textAppearance="?attr/textAppearanceLabelLarge"
+                                android:textColor="?attr/colorOnPrimary"
+                                android:textStyle="bold" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/guide_active_step3"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
+                            android:textColor="?attr/colorOnSurface" />
+                    </LinearLayout>
+
+                    <!-- Step 4 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="top"
+                        android:layout_marginBottom="12dp">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_marginEnd="12dp"
+                            app:cardCornerRadius="12dp"
+                            app:cardBackgroundColor="?attr/colorPrimary"
+                            app:strokeWidth="0dp"
+                            app:cardElevation="0dp">
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:gravity="center"
+                                android:text="٤"
+                                android:textAppearance="?attr/textAppearanceLabelLarge"
+                                android:textColor="?attr/colorOnPrimary"
+                                android:textStyle="bold" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/guide_active_step4"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
+                            android:textColor="?attr/colorOnSurface" />
+                    </LinearLayout>
+
+                    <!-- Step 5 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="top">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_marginEnd="12dp"
+                            app:cardCornerRadius="12dp"
+                            app:cardBackgroundColor="?attr/colorPrimary"
+                            app:strokeWidth="0dp"
+                            app:cardElevation="0dp">
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:gravity="center"
+                                android:text="٥"
+                                android:textAppearance="?attr/textAppearanceLabelLarge"
+                                android:textColor="?attr/colorOnPrimary"
+                                android:textStyle="bold" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/guide_active_step5"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
+                            android:textColor="?attr/colorOnSurface" />
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ── Section 2: Sold/Exported Files ── -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:strokeColor="?attr/colorOutline"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/guide_section_sold_title"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorPrimary"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Annotated Image 2 -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        app:cardCornerRadius="12dp"
+                        app:strokeColor="?attr/colorOutline"
+                        app:strokeWidth="1dp"
+                        app:cardElevation="0dp">
+
+                        <ImageView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:adjustViewBounds="true"
+                            android:src="@drawable/guide_step_2"
+                            android:contentDescription="@string/guide_section_sold_title" />
+
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Steps Explanations -->
+                    <!-- Step 1 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="top"
+                        android:layout_marginBottom="12dp">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_marginEnd="12dp"
+                            app:cardCornerRadius="12dp"
+                            app:cardBackgroundColor="?attr/colorPrimary"
+                            app:strokeWidth="0dp"
+                            app:cardElevation="0dp">
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:gravity="center"
+                                android:text="١"
+                                android:textAppearance="?attr/textAppearanceLabelLarge"
+                                android:textColor="?attr/colorOnPrimary"
+                                android:textStyle="bold" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/guide_sold_step1"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
+                            android:textColor="?attr/colorOnSurface" />
+                    </LinearLayout>
+
+                    <!-- Step 2 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="top"
+                        android:layout_marginBottom="12dp">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_marginEnd="12dp"
+                            app:cardCornerRadius="12dp"
+                            app:cardBackgroundColor="?attr/colorPrimary"
+                            app:strokeWidth="0dp"
+                            app:cardElevation="0dp">
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:gravity="center"
+                                android:text="٢"
+                                android:textAppearance="?attr/textAppearanceLabelLarge"
+                                android:textColor="?attr/colorOnPrimary"
+                                android:textStyle="bold" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/guide_sold_step2"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
+                            android:textColor="?attr/colorOnSurface" />
+                    </LinearLayout>
+
+                    <!-- Step 3 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="top"
+                        android:layout_marginBottom="12dp">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_marginEnd="12dp"
+                            app:cardCornerRadius="12dp"
+                            app:cardBackgroundColor="?attr/colorPrimary"
+                            app:strokeWidth="0dp"
+                            app:cardElevation="0dp">
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:gravity="center"
+                                android:text="٣"
+                                android:textAppearance="?attr/textAppearanceLabelLarge"
+                                android:textColor="?attr/colorOnPrimary"
+                                android:textStyle="bold" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/guide_sold_step3"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
+                            android:textColor="?attr/colorOnSurface" />
+                    </LinearLayout>
+
+                    <!-- Step 4 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="top">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_marginEnd="12dp"
+                            app:cardCornerRadius="12dp"
+                            app:cardBackgroundColor="?attr/colorPrimary"
+                            app:strokeWidth="0dp"
+                            app:cardElevation="0dp">
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:gravity="center"
+                                android:text="٤"
+                                android:textAppearance="?attr/textAppearanceLabelLarge"
+                                android:textColor="?attr/colorOnPrimary"
+                                android:textStyle="bold" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/guide_sold_step4"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
+                            android:textColor="?attr/colorOnSurface" />
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</LinearLayout>

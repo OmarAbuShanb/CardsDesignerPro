@@ -11,12 +11,9 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
 import dev.anonymous.cardsdesignerpro.app.R
 import dev.anonymous.cardsdesignerpro.app.ui.editor.addelem.PackBrowserBottomSheet
-import dev.anonymous.cardsdesignerpro.app.data.license.LicenseManager
-import dev.anonymous.cardsdesignerpro.app.data.license.PremiumFeature
 import dev.anonymous.cardsdesignerpro.app.databinding.FragmentAddElementBinding
 import dev.anonymous.cardsdesignerpro.app.ui.common.ImageSourceBottomSheet
 import dev.anonymous.cardsdesignerpro.app.ui.editor.EditorViewModel
-import dev.anonymous.cardsdesignerpro.app.ui.license.LicenseDialogs
 import dev.anonymous.cardsdesignerpro.app.util.ImageUtils
 
 class AddElementFragment : Fragment() {

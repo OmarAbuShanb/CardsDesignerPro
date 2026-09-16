@@ -33,4 +33,9 @@
     <color name="md_theme_dark_error">#FFCF6679</color>
     <color name="md_theme_dark_onError">#FF680714</color>
 
+    <!-- Guide Banner Colors - Light -->
+    <color name="guide_banner_bg">#FFE8E5FF</color>
+    <color name="guide_banner_stroke">#FF5B4FF2</color>
+    <color name="guide_banner_text">#FF1A006E</color>
+
 </resources>

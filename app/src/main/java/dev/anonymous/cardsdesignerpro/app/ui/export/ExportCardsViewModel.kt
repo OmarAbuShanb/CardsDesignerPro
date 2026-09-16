@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import androidx.core.net.toUri
 import dev.anonymous.cardsdesignerpro.app.R
+import java.io.File
 
 /** A single file chosen by the user for export data. */
 data class SelectedFile(
@@ -40,6 +41,7 @@ data class SelectedFile(
     val isSupported: Boolean,
     val parseResult: ParseResult? = null,  // null while parsing
     val isParsing: Boolean = false,
+    val isTemporary: Boolean = false,
 )
 
 /**
@@ -73,6 +75,7 @@ data class ExportUiState(
     val credentialMode: CredentialMode = CredentialMode.NORMAL,
     val selectedDirectoryUri: Uri? = null,
     val selectedDirectoryName: String? = null,
+    val isUnusedCardsExport: Boolean = false,
 ) {
     /** Convenience: true when at least one file is still being parsed. */
     val isParsingFile: Boolean get() = selectedFiles.any { it.isParsing }
@@ -166,7 +169,14 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
         recalcLayout()
     }
 
-    fun addFiles(uris: List<Uri>, displayNames: List<String>, isShort: Boolean = false) {
+    fun addFiles(
+        uris: List<Uri>,
+        displayNames: List<String>,
+        isShort: Boolean = false,
+        isTemporary: Boolean = false
+    ) {
+        if (_uiState.value.isUnusedCardsExport && !isTemporary) return
+
         val current =
             if (isShort) _uiState.value.selectedShortFiles.toMutableList() else _uiState.value.selectedFiles.toMutableList()
         val supported = setOf("csv", "xlsx", "pdf")
@@ -174,7 +184,7 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
             val name = displayNames.getOrElse(i) { uri.lastPathSegment ?: "file" }
             val ext = name.substringAfterLast('.', "").lowercase()
             val isSupported = ext in supported
-            val entry = SelectedFile(uri, name, isSupported, isParsing = isSupported)
+            val entry = SelectedFile(uri, name, isSupported, isParsing = isSupported, isTemporary = isTemporary)
             current.add(entry)
         }
         _uiState.value =
@@ -186,7 +196,12 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
             name.substringAfterLast('.', "").lowercase() in supported
         }, displayNames.filterIndexed { _, name ->
             name.substringAfterLast('.', "").lowercase() in supported
-        }, isShort)
+        }, isShort, isTemporary)
+    }
+
+    fun setUnusedCardsExport(enabled: Boolean) {
+        if (_uiState.value.isUnusedCardsExport == enabled) return
+        _uiState.value = _uiState.value.copy(isUnusedCardsExport = enabled)
     }
 
     fun removeFile(uri: Uri, isShort: Boolean = false) {
@@ -221,7 +236,12 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
         recalcLayout()
     }
 
-    private fun parseNewFiles(uris: List<Uri>, names: List<String>, isShort: Boolean = false) {
+    private fun parseNewFiles(
+        uris: List<Uri>,
+        names: List<String>,
+        isShort: Boolean = false,
+        isTemporary: Boolean = false
+    ) {
         uris.forEachIndexed { i, uri ->
             val name = names.getOrElse(i) { "" }
             viewModelScope.launch {
@@ -269,6 +289,9 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
                     )
                 }
                 recalcLayout()
+                if (isTemporary && result?.isSuccess == true && result?.needsColumnMapping != true) {
+                    deleteTemporaryExportFile(uri)
+                }
             }
         }
     }
@@ -314,6 +337,21 @@ class ExportCardsViewModel(application: Application) : AndroidViewModel(applicat
                 )
             }
             recalcLayout()
+            if (file.isTemporary && result.isSuccess && !result.needsColumnMapping) {
+                deleteTemporaryExportFile(uri)
+            }
+        }
+    }
+
+    private fun deleteTemporaryExportFile(uri: Uri) {
+        if (uri.scheme != "file") return
+
+        runCatching {
+            val target = File(uri.path ?: return).canonicalFile
+            val tempDir = File(getApplication<Application>().cacheDir, "temp_exports").canonicalFile
+            if (target.parentFile == tempDir && target.exists()) {
+                target.delete()
+            }
         }
     }
 

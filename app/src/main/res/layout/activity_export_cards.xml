@@ -21,7 +21,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
                 app:layout_scrollFlags="scroll|enterAlways|snap"
-                app:navigationIcon="@drawable/ic_close_24"
+                app:navigationContentDescription="@string/btn_back"
+                app:navigationIcon="@drawable/ic_arrow_back_24"
                 app:navigationIconTint="?attr/colorOnSurface"
                 app:title="@string/export_cards_title"
                 app:titleTextColor="?attr/colorOnSurface" />
@@ -386,7 +387,7 @@
                                 android:text="@string/label_not_selected"
                                 android:textAlignment="viewStart"
                                 android:textAppearance="?attr/textAppearanceBodyMedium"
-                                android:textDirection="locale" />
+                                android:textDirection="firstStrong"  />
 
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btn_choose_directory"

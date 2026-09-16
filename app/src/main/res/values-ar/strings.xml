@@ -113,8 +113,8 @@
     <string name="error_no_templates">لا توجد قوالب متاحة</string>
 
     <!-- Editor Screen -->
-    <string name="editor_back_confirm_title">تجاهل التغييرات؟</string>
-    <string name="editor_back_confirm_message">ستضيع التغييرات غير المحفوظة. هل تريد المتابعة؟</string>
+    <string name="editor_back_confirm_title">الرجوع بدون حفظ؟</string>
+    <string name="editor_back_confirm_message">لديك تغييرات غير محفوظة. احفظها قبل الرجوع، أو تجاهلها للخروج من المحرر.</string>
     <string name="btn_discard">تجاهل</string>
     <string name="editor_undo_title">تراجع</string>
     <string name="editor_restore_title">إعادة ضبط</string>
@@ -230,6 +230,7 @@
 
 
     <!-- General -->
+    <string name="btn_back">رجوع</string>
     <string name="btn_close">إغلاق</string>
     <string name="loading">جار التحميل…</string>
 
@@ -335,12 +336,14 @@
     <string name="error_file_still_parsing">جاري معالجة الملف، يرجى الانتظار…</string>
     <string name="label_file_parsing">جاري المعالجة…</string>
     <string name="dialog_mismatch_title">بيانات غير متطابقة مع القالب</string>
-    <string name="dialog_mismatch_desc">عدد أرقام بعض البيانات لا يتطابق مع القالب المحدد.\nاليوزرنيم المطلوب: %1$d رقم — الباسورد المطلوب: %2$d رقم.</string>
-    <string name="dialog_mismatch_desc_user_only">عدد أرقام بعض اليوزرات لا يتطابق مع القالب (المطلوب: %1$d رقم).</string>
-    <string name="dialog_mismatch_desc_pass_only">عدد أرقام بعض كلمات المرور لا يتطابق مع القالب (المطلوب: %1$d رقم).</string>
+    <string name="dialog_mismatch_desc">عدد أرقام بعض البيانات لا يتطابق مع القالب المحدد.\nعدد أرقام اسم المستخدم المطلوبة (%1$d) — عدد أرقام كلمة السر المطلوبة (%2$d).</string>
+    <string name="dialog_mismatch_desc_user_only">عدد أرقام بعض أسماء المستخدمين لا يتطابق مع القالب المحدد.\nعدد أرقام اسم المستخدم المطلوبة (%1$d).</string>
+    <string name="dialog_mismatch_desc_pass_only">عدد أرقام بعض كلمات السر لا يتطابق مع القالب المحدد.\nعدد أرقام كلمة السر المطلوبة (%1$d).</string>
     <string name="item_mismatch_record_index">المستخدم رقم %1$d</string>
-    <string name="item_mismatch_username">اليوزر: %1$s (%2$d رقم)</string>
-    <string name="item_mismatch_password">الباسورد: %1$s (%2$d رقم)</string>
+    <string name="item_mismatch_username">اسم المستخدم: %1$s (%2$d %3$s)</string>
+    <string name="item_mismatch_password">كلمة السر: %1$s (%2$d %3$s)</string>
+    <string name="mismatch_digit_unit_singular">رقم</string>
+    <string name="mismatch_digit_unit_plural">أرقام</string>
     <string name="action_continue_export">متابعة التصدير</string>
     <string name="action_fix_data">تعديل البيانات</string>
     <string name="error_unknown_parse">خطأ غير معروف أثناء قراءة الملف</string>
@@ -366,43 +369,87 @@
     <string name="license_trial_expired_btn">انتهت الفترة المجانية — انقر للتفعيل</string>
     <string name="license_export_limit_btn">انتهت التصديرات — انقر للتفعيل</string>
     <string name="license_activate_title">تفعيل التطبيق</string>
-    <string name="license_activate_benefits">تفعيل التطبيق يفتح لك:\n\n• تصدير PDF بدون حدود\n• العناصر الجاهزة\n• القوالب المميزة\n• استيراد وتصدير القوالب\n• تلقي آخر التحديثات أولاً بأول\n• وغيرها المزيد...</string>
+    <string name="license_activate_benefits">تفعيل التطبيق يفتح لك:\n\n• تصدير PDF بدون حدود\n• العناصر الجاهزة\n• القوالب المميزة\n• استيراد وتصدير القوالب\n• استخراج غير محدود للبطاقات غير المستخدمة\n• تلقي آخر التحديثات أولاً بأول\n• وغيرها المزيد…</string>
     <string name="license_contact_whatsapp">تواصل عبر الواتساب</string>
     <string name="license_whatsapp_not_installed">تطبيق الواتساب غير مثبت على جهازك</string>
     <string name="license_copy_android_id">نسخ Android ID</string>
     <string name="license_info_android_id">ما هو Android ID؟</string>
     <string name="license_android_id_info_title">ما هو Android ID؟</string>
-    <string name="license_android_id_info_message">Android ID هو معرف فريد يقوم النظام بإنشائه لكل هاتف ولكل تطبيق، ونحن نستخدمه لربط مفتاح التفعيل بجهازك فقط للحد من تسريب المفتاح. وهو خاص بالتطبيق ولا يتغير حتى لو قمت بحذف التطبيق.</string>
-    <string name="license_android_id_copied">تم نسخ Android ID بنجاح</string>
-    <string name="license_hint_activation_code">كود التفعيل</string>
-    <string name="license_btn_activate">تفعيل</string>
-    <string name="license_btn_activate_now">تفعيل الآن</string>
-    <string name="license_btn_later">لاحقاً</string>
-    <string name="license_activate_success">تم تفعيل التطبيق بنجاح! 🎉</string>
-    <string name="license_error_empty_code">أدخل كود التفعيل أولاً</string>
-    <string name="license_error_invalid_code">كود التفعيل غير صحيح</string>
-    <string name="license_premium_feature_title">ميزة مدفوعة</string>
-    <string name="license_premium_feature_message">هذه الميزة متاحة فقط في النسخة المفعّلة من التطبيق.\n\nفعّل الآن لفتح جميع الميزات.</string>
-    <string name="license_premium_export_message">تصدير نسخ القوالب متاح فقط في النسخة المفعّلة.\n\nفعّل الآن لتصدير قوالبك.</string>
-    <string name="license_premium_import_message">استيراد نسخ القوالب متاح فقط في النسخة المفعّلة.\n\nفعّل الآن لاستيراد القوالب.</string>
-    <string name="license_premium_template_message">هذا القالب المميز متاح فقط في النسخة المفعّلة.\n\nفعّل التطبيق لاستخدام جميع القوالب.</string>
-    <string name="license_premium_readymade_message">هذا العنصر الجاهز متاح فقط في النسخة المفعّلة.\n\nفعّل الآن لاستخدام جميع العناصر.</string>
-    <string name="license_export_limit_title">انتهى عدد التصديرات المجانية</string>
-    <string name="license_export_limit_message">لقد استخدمت جميع التصديرات المجانية (%1$d تصدير).\n\nفعّل التطبيق للحصول على تصدير بدون حدود.</string>
-    <string name="license_trial_expired_title">انتهت الفترة التجريبية</string>
-    <string name="license_trial_expired_message">انتهت فترة التجربة المجانية (%1$d يوم).\n\nفعّل التطبيق للاستمرار في استخدام جميع الميزات.</string>
-    <string name="license_premium_template_snack">هذا القالب متاح فقط في النسخة المفعّلة من التطبيق.</string>
-    <string name="license_remaining_exports">التصديرات المتبقية: %1$d من %2$d</string>
-    <string name="license_export_sync_error">يرجى الاتصال بالإنترنت للتصدير</string>
-    <string name="license_paste_code">لصق الكود</string>
-    <string name="license_clipboard_empty">الحافظة فارغة</string>
+    <string name="license_android_id_info_message">Android ID هو معرف فريد يقوم النظام بإنشائه لكل هاتف ولكل تطبيق، ونحن نستخدمه لربط رمز التفعيل بجهازك لمنع تسريب الرمز. وهو خاص بالتطبيق ولا يتغير حتى إذا قمت بإلغاء تثبيت التطبيق.</string>
+    <string name="menu_unused_cards_extractor">استخراج البطاقات غير المستخدمة</string>
+    <string name="unused_cards_title">استخراج البطاقات غير المستخدمة</string>
+    <string name="btn_choose_sold_files">اختيار ملفات المبيعات</string>
+    <string name="btn_choose_sold_folder">اختيار مجلد للبطاقات المباعة</string>
+    <string name="label_sold_files">ملفات البطاقات المباعة (Excel / PDF / CSV)</string>
+    <string name="label_active_file">ملف البطاقات الفعالة (إكسل)</string>
+    <string name="btn_choose_active_file">اختيار ملف الفعالة</string>
+    <string name="label_filter_settings">إعدادات التصفية والفلترة</string>
+    <string name="label_filter_oldest">حسب الأقدم</string>
+    <string name="label_filter_period">خلال فترة محددة</string>
+    <string name="label_package_filter">تصنيف حسب اسم الحزمة</string>
+    <string name="label_divider_or">أو باستخدام</string>
+    <string name="btn_start_date">اختر تاريخاً</string>
+    <string name="btn_end_date">اختر تاريخاً</string>
+    <string name="label_since_date">منذ تاريخ</string>
+    <string name="label_until_date">وحتى تاريخ</string>
+    <string name="label_stats_unused_filtered">إحصائيات البطاقات الغير مستخدمة بحسب الفلترة</string>
+    <string name="label_stats_and_filters">احصائيات البطاقات الغير مستخدمة</string>
+    <string name="label_stats_unused">الإحصائيات للبطاقات الغير مستخدمة</string>
+    <string name="label_stats_total_cards">إجمالي عدد البطاقات</string>
+    <string name="label_stats_total_no_pass">إجمالي عدد البطاقات بدون كلمة سر</string>
+    <string name="label_stats_total">إجمالي البطاقات</string>
+    <string name="label_stats_filtered">عدد البطاقات بعد الفلتر</string>
+    <string name="label_stats_packages">عدد الحزم المكتشفة</string>
+    <string name="label_stats_oldest_date">تاريخ أقدم بطاقة</string>
+    <string name="label_stats_newest_date">أحدث تاريخ بطاقة بعد الفلتر</string>
+    <string name="label_stats_connected_cards">أقدم 10 بطاقات تم فتحها مؤخراً (مستخدمة)</string>
+    <string name="label_stats_connected_cards_used">أقدم 10 بطاقات تم فتحها مؤخراً (مستخدمة)</string>
+    <string name="msg_no_data_packages">لا يوجد بيانات</string>
+    <string name="msg_no_data_available">لا توجد بيانات متاحة</string>
+    <string name="msg_no_cards_to_display">لا يوجد بطاقات لعرضها</string>
+    <string name="label_header_username">اسم المستخدم</string>
+    <string name="label_header_created">تاريخ الإنشاء</string>
+    <string name="label_header_connected">أول اتصال</string>
+    <string name="label_header_waiting">مدة الانتظار</string>
+    <string name="label_days_format">%1$d يوم</string>
+    <string name="msg_no_connected_cards">لا توجد بطاقات تم فتحها بعد.</string>
 
-    <!-- Server Sync Dialog -->
-    <string name="license_sync_title">التحقق من التطبيق</string>
-    <string name="license_sync_loading">جاري الاتصال بالسيرفر…</string>
-    <string name="license_sync_error">فشل الاتصال: %s</string>
-    <string name="license_btn_retry">إعادة المحاولة</string>
-    <string name="license_btn_have_code">لديك كود تفعيل؟</string>
+    <string name="btn_export_excel">تصدير كـ CSV</string>
+    <string name="btn_go_to_export">الانتقال للتصدير</string>
+    <string name="error_no_password_cards">لا توجد بطاقات بدون كلمة مرور!</string>
+
+    <string name="error_missing_sold_files">الرجاء اختيار ملفات البطاقات المباعة لحساب الإحصائيات بدقة.</string>
+    <string name="dash">—</string>
+    <string name="error_no_active_file">يرجى اختيار ملف البطاقات الفعالة أولاً</string>
+    <string name="error_multiple_packages_in_file">تنبيه: يحتوي التصدير على بطاقات من أكثر من حزمة! يرجى اختيار حزمة محددة أولاً.</string>
+    <string name="error_no_unused_cards_matching">لا توجد بطاقات غير مستخدمة تنطبق عليها شروط التصفية!</string>
+
+    <!-- Date picker validation errors -->
+    <string name="error_date_range_missing_start">يرجى تعيين تاريخ البدء أولاً!</string>
+    <string name="error_date_range_invalid_end">تاريخ النهاية يجب أن يكون أكبر من تاريخ البدء بيوم واحد على الأقل!</string>
+    <string name="error_date_invalid_range">التاريخ يجب أن يكون قديماً على الأقل بشهر واحد، ولا يزيد عن سنتين!</string>
+
+    <string name="msg_generating_file">جاري معالجة ومطابقة البطاقات، يرجى الانتظار…</string>
+    <string name="success_export_excel">تم تصدير ملف CSV بنجاح</string>
+    <string name="filter_older_3_months">الأقدم من ٣ أشهر</string>
+    <string name="filter_older_4_months">الأقدم من ٤ أشهر</string>
+    <string name="filter_older_5_months">الأقدم من ٥ أشهر</string>
+    <string name="filter_older_6_months">الأقدم من ٦ أشهر</string>
+    <string name="filter_older_1_year">الأقدم من سنة</string>
+
+    <string name="label_discovered_packages">الحزم المكتشفة</string>
+    <string name="label_header_package_name">اسم الحزمة</string>
+    <string name="label_header_total_cards">إجمالي البطاقات</string>
+    <string name="label_header_unused_filtered">غير المستخدمة (المفلترة)</string>
+    <string name="label_header_unused">الغير مستخدمة</string>
+    <string name="label_header_oldest_date">أقدم تاريخ</string>
+    <string name="label_header_newest_date">أحدث تاريخ</string>
+    <string name="label_header_actions">الإجراءات</string>
+    <string name="label_header_action">تحميل</string>
+    <string name="label_download_csv_btn">CSV</string>
+    <string name="msg_no_discovered_packages">لا توجد حزم مكتشفة بعد.</string>
+    <string name="placeholder_no_sold_files_selected">ستظهر الملفات المختارة هنا</string>
+    <string name="placeholder_no_active_file_selected">لم يتم اختيار ملف فعال بعد</string>
 
     <string name="notification_permission_dialog_title">السماح بإشعارات التصدير؟</string>
     <string name="notification_permission_dialog_message">لكي يستمر التصدير بشكل موثوق في الخلفية، يتوقع نظام أندرويد وجود إشعار للخدمة الأمامية. عند السماح بالإشعارات ستتمكن من متابعة نسبة التقدم حتى خارج هذه الشاشة.\n\nيمكنك أيضا متابعة التصدير بدون تفعيل الإشعارات.</string>
@@ -432,4 +479,92 @@
     <string name="label_cards_per_page_count">عدد البطاقات في الصفحة: %1$d</string>
     <string name="layout_custom_active_format">✦ %1$d بطاقة (%2$d أعمدة × %3$d صف)</string>
 
+    <!-- Exported Files Screen -->
+    <string name="menu_exported_files">الملفات التي تم تصديرها</string>
+    <string name="exported_files_title">الملفات المصدّرة</string>
+    <string name="exported_files_section_title">الملفات المصدّرة</string>
+    <string name="label_export_folder">مجلد التصدير</string>
+    <string name="empty_exported_files">لم يتم تصدير أي ملفات بعد</string>
+    <string name="label_local_share">مشاركة عبر الكمبيوتر</string>
+    <string name="label_local_share_desc">شارك ملفات PDF عبر الشبكة المحلية بدون كابل</string>
+    <string name="label_server_address">افتح من الكمبيوتر</string>
+    <string name="btn_copy_address">نسخ العنوان</string>
+    <string name="server_started">تم تشغيل المشاركة</string>
+    <string name="server_stopped">تم إيقاف المشاركة</string>
+    <string name="no_wifi_connection">يرجى الاتصال بشبكة WiFi أولاً</string>
+    <string name="no_folder_selected_share">يرجى اختيار مجلد التصدير أولاً</string>
+    <string name="copied_to_clipboard">تم النسخ إلى الحافظة</string>
+    <string name="warning_private_network">⚠ قم بتفعيل المشاركة فقط على شبكة خاصة وموثوقة. لا تستخدم هذه الميزة على شبكات WiFi العامة.</string>
+    <string name="note_keep_screen_on">أبق هذه الشاشة مفتوحة أثناء المشاركة. قم بتعطيل المشاركة عند الانتهاء.</string>
+    <string name="file_size_bytes">%1$d بايت</string>
+    <string name="file_size_kb">%1$d ك.ب</string>
+    <string name="file_size_mb">%1$.1f م.ب</string>
+
+    <string name="label_stats_filtered_no_pass">عدد البطاقات بدون كلمة سر بعد الفلتر</string>
+    <string name="dialog_no_pass_title">البطاقات التي ليست لها كلمة سر (مرتبة حسب التاريخ)</string>
+    <string name="label_header_no_password">بدون كلمة سر</string>
+    <string name="label_header_with_password">بكلمة سر</string>
+    <string name="label_header_no_password_dialog_username">اسم المستخدم</string>
+    <string name="label_header_no_password_dialog_package">اسم الحزمة</string>
+    <string name="label_header_no_password_dialog_created">تاريخ الإنشاء</string>
+    <string name="error_sold_files_missing">يرجى إرفاق ملفات البطاقات المباعة. البيانات غير مكتملة.</string>
+
+    <!-- Guide Screen Strings -->
+    <string name="label_guide_title">كيفية استخراج ملفات البطاقات الفعالة والمباعة؟</string>
+    <string name="guide_toolbar_title">دليل استخراج البطاقات</string>
+    <string name="guide_section_active_title">١. استخراج ملف البطاقات الفعالة</string>
+    <string name="guide_active_step1">توجه إلى شاشة "المستخدمين" في لوحة التحكم الخاصة بك.</string>
+    <string name="guide_active_step2">تغيير خيار الحالة ليكون <b>فعال</b> (البطاقات غير المستخدمة أو التي تم استخدامها ولم تنتهِ بعد).</string>
+    <string name="guide_active_step3">تحديد خيار تم بيعه ليكون <b>نعم</b> (البطاقات التي تم المصادقة عليها).</string>
+    <string name="guide_active_step4">الضغط على زر <b>ابحث</b> الأزرق لتصفية النتائج.</string>
+    <string name="guide_active_step5">الضغط على زر <b>التنزيل الأخضر</b> الموجود على اليمين لتحميل ملف الإكسل.</string>
+    <string name="guide_section_sold_title">٢. استخراج ملفات البطاقات المباعة</string>
+    <string name="guide_sold_step1">توجه إلى شاشة "الملفات التي تم تصديرها" في لوحة التحكم الخاصة بك.</string>
+    <string name="guide_sold_step2">تنزيل كافة الملفات المطلوبة بالضغط على <b>أيقونة التنزيل</b> الموجودة على يمين كل ملف حسب الفترة الزمنية المستهدفة.</string>
+    <string name="guide_sold_step3">استخدم أزرار التنقل (1، 2، 3، 4، 5) أسفل الجدول للانتقال بين الصفحات المختلفة.</string>
+    <string name="guide_sold_step4">لتجربة أفضل، قم بتغيير خيار عدد الملفات المعروضة في الصفحة الواحدة الافتراضي 10 إلى أكبر رقم ممكن لعرض وتنزيل كافة الملفات بشكل أسهل في حال كانت الملفات كثيرة.</string>
+
+    <string name="error_no_sold_files">يرجى اختيار ملفات البطاقات المباعة أولاً</string>
+
+    <string name="license_android_id_copied">تم نسخ معرف الجهاز (Android ID)</string>
+    <string name="license_hint_activation_code">كود التفعيل</string>
+    <string name="license_btn_activate">تفعيل</string>
+    <string name="license_btn_activate_now">فعّل الآن</string>
+    <string name="license_btn_later">لاحقاً</string>
+    <string name="license_activate_success">تم تفعيل التطبيق بنجاح! 🎉</string>
+    <string name="license_error_empty_code">أدخل كود التفعيل أولاً</string>
+    <string name="license_error_invalid_code">كود التفعيل غير صالح</string>
+    <string name="license_premium_feature_title">ميزة مدفوعة</string>
+    <string name="license_premium_feature_message">هذه الميزة متاحة فقط في النسخة المفعلة من التطبيق.\n\nقم بالتفعيل الآن لفتح جميع الميزات.</string>
+    <string name="license_premium_export_message">تصدير النسخ الاحتياطية للقوالب متاح فقط في النسخة المفعلة.\n\nقم بالتفعيل الآن لتصدير قوالبك.</string>
+    <string name="license_premium_import_message">استيراد النسخ الاحتياطية للقوالب متاح فقط في النسخة المفعلة.\n\nقم بالتفعيل الآن لاستيراد القوالب.</string>
+    <string name="license_premium_template_message">هذا القالب المميز متاح فقط في النسخة المفعلة.\n\nفعّل التطبيق لاستخدام جميع القوالب.</string>
+    <string name="license_premium_readymade_message">هذا العنصر الجاهز متاح فقط في النسخة المفعلة.\n\nقم بالتفعيل الآن لاستخدام جميع العناصر.</string>
+    <string name="license_export_limit_title">تم الوصول للحد المجاني للتصدير</string>
+    <string name="license_export_limit_message">لقد استنفدت جميع عمليات التصدير المجانية وعددها %1$d.\n\nفعّل التطبيق للحصول على عدد غير محدود من عمليات التصدير.</string>
+    <string name="license_trial_expired_title">انتهت الفترة التجريبية</string>
+    <string name="license_trial_expired_message">انتهت الفترة التجريبية المجانية الخاصة بك والبالغة %1$d يوماً.\n\nفعّل التطبيق للاستمرار في استخدام جميع الميزات.</string>
+    <string name="license_premium_template_snack">هذا القالب متاح فقط في النسخة المفعلة.</string>
+    <string name="license_remaining_exports">عمليات التصدير المجانية المتبقية: %1$d من %2$d</string>
+    <string name="license_export_sync_error">يرجى الاتصال بالإنترنت للتصدير</string>
+    <string name="license_paste_code">لصق الكود</string>
+    <string name="license_clipboard_empty">الحافظة فارغة</string>
+
+    <!-- Server Sync Dialog -->
+    <string name="license_sync_title">جاري التحقق من التطبيق</string>
+    <string name="license_sync_loading">جاري الاتصال بالخادم…</string>
+    <string name="license_sync_error">فشل الاتصال: %s</string>
+    <string name="license_btn_retry">إعادة المحاولة</string>
+    <string name="license_btn_have_code">هل لديك كود تفعيل بالفعل؟</string>
+
+    <string name="label_stats_total_cards_no_pass">إجمالي عدد البطاقات بدون كلمة سر</string>
+    <string name="unused_export_limit_title">تم استخدام التصدير المجاني</string>
+    <string name="unused_export_limit_message">لقد استخدمت التصدير المجاني للبطاقات الغير مستخدمة.\n\nفعّل التطبيق للحصول على تصدير غير محدود.</string>
+    <string name="unused_export_limited_snack">الإصدار المجاني: تصدير حتى %1$d بطاقة فقط</string>
+    <string name="unused_export_sync_error">يرجى الاتصال بالإنترنت للتصدير</string>
+    <string name="unused_export_files_locked">تم تجهيز هذا التصدير من البطاقات غير المستخدمة، لذلك تم تعطيل إرفاق ملفات أخرى.</string>
+    <string name="footer_created_by">تم إنشاء التطبيق بواسطة عمر مصطفى أبو شنب</string>
+    <string name="menu_contact_developer">التواصل مع المطور</string>
+    <string name="menu_my_apps_on_google_play">تطبيقاتي على Google Play</string>
+    <string name="whatsApp_failed_to_open">فشل في فتح واتساب</string>
 </resources>

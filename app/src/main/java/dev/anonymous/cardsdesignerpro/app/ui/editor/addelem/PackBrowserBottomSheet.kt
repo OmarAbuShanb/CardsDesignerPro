@@ -63,14 +63,7 @@ class PackBrowserBottomSheet : BottomSheetDialogFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         adapter = PackAssetAdapter { packPath ->
-            // Premium gate — show dialog on top of bottom sheet
-            val lm = dev.anonymous.cardsdesignerpro.app.data.license.LicenseManager.getInstance(requireContext())
-            if (!lm.canAccess(dev.anonymous.cardsdesignerpro.app.data.license.PremiumFeature.READY_MADE_ELEMENTS)) {
-                dev.anonymous.cardsdesignerpro.app.ui.license.LicenseDialogs.showPremiumReadyMadeDialog(requireActivity()) {
-                    dev.anonymous.cardsdesignerpro.app.ui.license.LicenseDialogs.showActivationDialog(requireActivity()) {}
-                }
-                return@PackAssetAdapter
-            }
+            
 
             val bundle = Bundle().apply {
                 putString(KEY_PACK_PATH, packPath)

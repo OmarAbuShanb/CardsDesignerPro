@@ -24,6 +24,7 @@ import kotlin.math.hypot
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.withRotation
 import androidx.core.graphics.toColorInt
+import androidx.core.graphics.withClip
 
 /**
  * Interactive canvas for the Template Editor.
@@ -365,21 +366,19 @@ class CardCanvasView @JvmOverloads constructor(
 
         // Clip elements + overlay to the card bounds; height handle is drawn
         // AFTER restore so it can sit half-inside / half-outside the card edge.
-        canvas.save()
-        canvas.clipRect(0f, 0f, cardWidthPx, cardHeightPx)
+        canvas.withClip(0f, 0f, cardWidthPx, cardHeightPx) {
+            // Build a render-proxy: same card style, but active side's elements
+            val activeCard = if (activeSide == CardSide.BACK && t.isBackSideEnabled)
+                t.backCard ?: t.card else t.card
+            val renderTemplate = if (activeSide == CardSide.BACK && t.isBackSideEnabled)
+                t.copy(elements = t.backElements ?: emptyList(), card = activeCard)
+            else t
 
-        // Build a render-proxy: same card style, but active side's elements
-        val activeCard = if (activeSide == CardSide.BACK && t.isBackSideEnabled)
-            t.backCard ?: t.card else t.card
-        val renderTemplate = if (activeSide == CardSide.BACK && t.isBackSideEnabled)
-            t.copy(elements = t.backElements ?: emptyList(), card = activeCard)
-        else t
+            renderer.draw(this, renderTemplate, 0f, 0f, cardWidthPx, cardHeightPx)
+            drawSnapLines(this)
+            drawElementOverlay(this, renderTemplate)
 
-        renderer.draw(canvas, renderTemplate, 0f, 0f, cardWidthPx, cardHeightPx)
-        drawSnapLines(canvas)
-        drawElementOverlay(canvas, renderTemplate)
-
-        canvas.restore()
+        }
         drawHeightHandleIcon(canvas)
     }
 

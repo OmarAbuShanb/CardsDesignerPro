@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurface">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:navigationContentDescription="@string/btn_back"
+            app:navigationIcon="@drawable/ic_arrow_back_24"
+            app:navigationIconTint="?attr/colorOnSurface"
+            app:title="@string/exported_files_title"
+            app:titleTextColor="?attr/colorOnSurface" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- ══════════════════════════════════════════════════════ -->
+            <!-- Section 1: Export Folder Selector                     -->
+            <!-- ══════════════════════════════════════════════════════ -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="?attr/colorSurface"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutline">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <!-- Header row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="12dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_folder_open"
+                            app:tint="?attr/colorPrimary" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="12dp"
+                            android:layout_marginEnd="12dp"
+                            android:text="@string/label_export_folder"
+                            android:textAppearance="?attr/textAppearanceTitleSmall"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Folder name + button -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/tv_folder_name"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:maxLines="2"
+                            android:text="@string/label_not_selected"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
+                            android:textDirection="firstStrong"
+                            android:textAlignment="viewStart" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_choose_folder"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"
+                            android:padding="12dp"
+                            android:textSize="12sp"
+                            android:text="@string/btn_choose_directory" />
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ══════════════════════════════════════════════════════ -->
+            <!-- Section 2: Local Share via NanoHTTPD                  -->
+            <!-- ══════════════════════════════════════════════════════ -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="?attr/colorSurface"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutline">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp"
+                    android:animateLayoutChanges="true">
+
+                    <!-- Header with switch -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_wifi_share"
+                            app:tint="?attr/colorPrimary" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:layout_marginStart="12dp"
+                            android:layout_marginEnd="12dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/label_local_share"
+                                android:textAppearance="?attr/textAppearanceTitleSmall"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/label_local_share_desc"
+                                android:textAppearance="?attr/textAppearanceLabelSmall"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                android:layout_marginTop="2dp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_local_share"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+                    </LinearLayout>
+
+                    <!-- Security warning (always visible) -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="@string/warning_private_network"
+                        android:textAppearance="?attr/textAppearanceLabelSmall"
+                        android:textColor="#E6A117"
+                        android:drawablePadding="6dp"
+                        android:lineSpacingExtra="2dp" />
+
+                    <!-- Server info (hidden by default) -->
+                    <LinearLayout
+                        android:id="@+id/layout_server_info"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone"
+                        android:layout_marginTop="16dp">
+
+                        <com.google.android.material.divider.MaterialDivider
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="16dp" />
+
+                        <!-- Keep screen on note -->
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="16dp"
+                            android:text="@string/note_keep_screen_on"
+                            android:textAppearance="?attr/textAppearanceLabelSmall"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:lineSpacingExtra="2dp" />
+
+                        <!-- Server address -->
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/label_server_address"
+                            android:textAppearance="?attr/textAppearanceLabelSmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:layout_marginTop="4dp">
+
+                            <TextView
+                                android:id="@+id/tv_server_address"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:textAppearance="?attr/textAppearanceTitleLarge"
+                                android:textStyle="bold"
+                                android:fontFamily="monospace"
+                                android:textColor="?attr/colorPrimary"
+                                android:textDirection="ltr" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btn_copy_address"
+                                style="@style/Widget.Material3.Button.IconButton"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                app:icon="@drawable/ic_copy"
+                                app:iconSize="20dp"
+                                app:iconTint="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ══════════════════════════════════════════════════════ -->
+            <!-- Section 3: Exported PDF Files List                    -->
+            <!-- ══════════════════════════════════════════════════════ -->
+
+            <!-- Section title -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:layout_marginStart="4dp"
+                android:text="@string/exported_files_section_title"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textStyle="bold" />
+
+            <!-- Empty state -->
+            <LinearLayout
+                android:id="@+id/layout_empty_state"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="48dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:src="@drawable/ic_empty_files"
+                    android:layout_marginBottom="16dp"
+                    android:alpha="0.7" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/empty_exported_files"
+                    android:textAppearance="?attr/textAppearanceTitleSmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:gravity="center" />
+            </LinearLayout>
+
+            <!-- Loading -->
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/progress_loading"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:visibility="gone"
+                android:indeterminate="true"
+                app:trackCornerRadius="4dp" />
+
+            <!-- Files RecyclerView -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_exported_files"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                android:clipToPadding="false" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</LinearLayout>

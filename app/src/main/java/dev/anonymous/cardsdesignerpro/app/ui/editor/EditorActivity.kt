@@ -12,7 +12,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dev.anonymous.cardsdesignerpro.app.R
-import dev.anonymous.cardsdesignerpro.app.data.license.LicenseManager
 import dev.anonymous.cardsdesignerpro.app.data.model.CardSide
 import dev.anonymous.cardsdesignerpro.app.data.model.CredentialMode
 import dev.anonymous.cardsdesignerpro.app.databinding.ActivityEditorBinding
@@ -38,13 +37,7 @@ class EditorActivity : AppCompatActivity(), CardCanvasView.Listener {
         binding = ActivityEditorBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Block screenshots for non-activated users
-        if (!LicenseManager.getInstance(this).isActivated) {
-            window.setFlags(
-                WindowManager.LayoutParams.FLAG_SECURE,
-                WindowManager.LayoutParams.FLAG_SECURE
-            )
-        }
+        
 
         val templateId = intent.getStringExtra(EXTRA_TEMPLATE_ID) ?: run { finish(); return }
         viewModel.init(templateId)

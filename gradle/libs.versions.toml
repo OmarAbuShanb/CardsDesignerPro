@@ -40,6 +40,8 @@ splashscreen = "1.2.0"
 # Firebase
 googleServices = "4.4.4"
 firebaseFunctions = "22.1.1"
+# NanoHTTPD (local file sharing server)
+nanohttpd = "2.3.1"
 
 [libraries]
 androidsvg-aar = { module = "com.caverock:androidsvg-aar", version.ref = "androidsvgAar" }
@@ -83,6 +85,8 @@ coil = { group = "io.coil-kt", name = "coil", version.ref = "coil" }
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashscreen" }
 # Firebase
 firebase-functions = { group = "com.google.firebase", name = "firebase-functions", version.ref = "firebaseFunctions" }
+# NanoHTTPD (local file sharing)
+nanohttpd = { group = "org.nanohttpd", name = "nanohttpd", version.ref = "nanohttpd" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

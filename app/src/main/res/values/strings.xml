@@ -118,8 +118,8 @@
     <string name="error_no_templates">No templates available</string>
 
     <!-- Editor Screen -->
-    <string name="editor_back_confirm_title">Discard Changes?</string>
-    <string name="editor_back_confirm_message">Unsaved changes will be lost. Do you want to continue?</string>
+    <string name="editor_back_confirm_title">Go Back Without Saving?</string>
+    <string name="editor_back_confirm_message">You have unsaved changes. Save them before going back, or discard them to leave the editor.</string>
     <string name="btn_discard">Discard</string>
     <string name="editor_undo_title">Undo</string>
     <string name="editor_restore_title">Reset</string>
@@ -237,6 +237,7 @@
 
 
     <!-- General -->
+    <string name="btn_back">Back</string>
     <string name="btn_close">Close</string>
     <string name="loading">Loading…</string>
 
@@ -341,12 +342,14 @@
     <string name="error_file_still_parsing">File is still being processed, please wait…</string>
     <string name="label_file_parsing">Processing…</string>
     <string name="dialog_mismatch_title">Data Mismatch with Template</string>
-    <string name="dialog_mismatch_desc">Some records have data lengths that don\'t match the selected template.\nExpected username: %1$d digits — Expected password: %2$d digits.</string>
-    <string name="dialog_mismatch_desc_user_only">Some usernames have a length that doesn\'t match the template (expected: %1$d digits).</string>
-    <string name="dialog_mismatch_desc_pass_only">Some passwords have a length that doesn\'t match the template (expected: %1$d digits).</string>
+    <string name="dialog_mismatch_desc">Some records have data lengths that don\'t match the selected template.\nRequired username digit count (%1$d) — required password digit count (%2$d).</string>
+    <string name="dialog_mismatch_desc_user_only">Some usernames don\'t match the selected template.\nRequired username digit count (%1$d).</string>
+    <string name="dialog_mismatch_desc_pass_only">Some passwords don\'t match the selected template.\nRequired password digit count (%1$d).</string>
     <string name="item_mismatch_record_index">User #%1$d</string>
-    <string name="item_mismatch_username">Username: %1$s (%2$d digits)</string>
-    <string name="item_mismatch_password">Password: %1$s (%2$d digits)</string>
+    <string name="item_mismatch_username">Username: %1$s (%2$d %3$s)</string>
+    <string name="item_mismatch_password">Password: %1$s (%2$d %3$s)</string>
+    <string name="mismatch_digit_unit_singular">digit</string>
+    <string name="mismatch_digit_unit_plural">digits</string>
     <string name="action_continue_export">Continue Export</string>
     <string name="action_fix_data">Fix Data</string>
     <string name="error_unknown_parse">Unknown error while reading the file</string>
@@ -372,7 +375,7 @@
     <string name="license_trial_expired_btn">Trial Expired — Tap to Activate</string>
     <string name="license_export_limit_btn">Export Limit Reached — Activate</string>
     <string name="license_activate_title">Activate App</string>
-    <string name="license_activate_benefits">Activating the app unlocks:\n\n• Unlimited PDF exports\n• Ready-made elements\n• Premium templates\n• Template import/export\n• Receive the latest updates first\n• And more...</string>
+    <string name="license_activate_benefits">Activating the app unlocks:\n\n• Unlimited PDF exports\n• Ready-made elements\n• Premium templates\n• Template import/export\n• Unlimited unused cards extraction\n• Receive the latest updates first\n• And more…</string>
     <string name="license_contact_whatsapp">Contact via WhatsApp</string>
     <string name="license_whatsapp_not_installed">WhatsApp is not installed on your device</string>
     <string name="license_copy_android_id">Copy Android ID</string>
@@ -409,6 +412,11 @@
     <string name="license_sync_error">Connection failed: %s</string>
     <string name="license_btn_retry">Retry</string>
     <string name="license_btn_have_code">Already have an activation code?</string>
+    <string name="unused_export_limit_title">Free Export Used</string>
+    <string name="unused_export_limit_message">You have used your free export for unused cards.\n\nActivate the app to get unlimited exports.</string>
+    <string name="unused_export_limited_snack">Free trial: exporting up to %1$d cards only</string>
+    <string name="unused_export_sync_error">Please connect to the internet to export</string>
+    <string name="unused_export_files_locked">This export was prepared from unused cards. Adding other files is disabled.</string>
 
     <!-- Image Source Picker -->
     <string name="image_source_title">Choose Image From</string>
@@ -430,5 +438,132 @@
     <string name="label_cards_per_page_count">Cards per Page: %1$d</string>
     <string name="layout_custom_active_format">✦ %1$d cards (%2$d columns × %3$d rows)</string>
 
+    <!-- Exported Files Screen -->
+    <string name="menu_exported_files">Exported Files</string>
+    <string name="exported_files_title">Exported Files</string>
+    <string name="exported_files_section_title">Exported Files</string>
+    <string name="label_export_folder">Export Folder</string>
+    <string name="empty_exported_files">No files have been exported yet</string>
+    <string name="label_local_share">Share via Computer</string>
+    <string name="label_local_share_desc">Share PDF files over local network without cables</string>
+    <string name="label_server_address">Open on your computer</string>
+    <string name="btn_copy_address">Copy Address</string>
+    <string name="server_started">Sharing started</string>
+    <string name="server_stopped">Sharing stopped</string>
+    <string name="no_wifi_connection">Please connect to a WiFi network first</string>
+    <string name="no_folder_selected_share">Please select an export folder first</string>
+    <string name="copied_to_clipboard">Copied to clipboard</string>
+    <string name="warning_private_network">⚠ Only enable sharing on a private, trusted network. Do not use this feature on public WiFi.</string>
+    <string name="note_keep_screen_on">Keep this screen open while sharing. Disable sharing when you\'re done.</string>
+    <string name="file_size_bytes">%1$d B</string>
+    <string name="file_size_kb">%1$d KB</string>
+    <string name="file_size_mb">%1$.1f MB</string>
+
+    <!-- Unused Cards Extractor Screen -->
+    <string name="menu_unused_cards_extractor">Extract Unused Cards</string>
+    <string name="unused_cards_title">Extract Unused Cards</string>
+    <string name="btn_choose_sold_files">Choose Sold Files</string>
+    <string name="btn_choose_sold_folder">Choose Sold Cards Folder</string>
+    <string name="label_sold_files">Sold Cards File(s) (Excel / PDF / CSV)</string>
+    <string name="label_active_file">Active Cards File (Excel)</string>
+    <string name="btn_choose_active_file">Choose Active File</string>
+    <string name="label_filter_settings">Filtering Settings</string>
+    <string name="label_filter_oldest">Filter by oldest</string>
+    <string name="label_filter_period">Filter during specific period</string>
+    <string name="label_package_filter">Filter by package name</string>
+    <string name="label_divider_or">OR USING</string>
+    <string name="btn_start_date">Choose Date</string>
+    <string name="btn_end_date">Choose Date</string>
+    <string name="label_since_date">Since Date</string>
+    <string name="label_until_date">Until Date</string>
+    <string name="label_stats_unused_filtered">Filtered Unused Cards Statistics</string>
+    <string name="label_stats_and_filters">Unused Cards Statistics</string>
+    <string name="label_stats_unused">Statistics (Unused Cards)</string>
+    <string name="label_stats_total_cards">Total Cards</string>
+    <string name="label_stats_total_no_pass">Total Cards without Password</string>
+    <string name="label_stats_total">Total Cards</string>
+    <string name="label_stats_filtered">Cards Count after Filter</string>
+    <string name="label_stats_packages">Number of Packages</string>
+    <string name="label_stats_oldest_date">Oldest Card Date</string>
+    <string name="label_stats_newest_date">Newest Card Date after Filter</string>
+    <string name="label_stats_connected_cards">Oldest 10 Recently Connected Cards</string>
+    <string name="label_stats_connected_cards_used">Oldest 10 recently opened cards (used)</string>
+    <string name="msg_no_data_packages">No data</string>
+    <string name="msg_no_data_available">No data available</string>
+    <string name="msg_no_cards_to_display">No cards to display</string>
+    <string name="label_header_username">Username</string>
+    <string name="label_header_created">Created</string>
+    <string name="label_header_connected">Connected</string>
+    <string name="label_header_waiting">Waiting</string>
+    <string name="label_days_format">%1$d days</string>
+    <string name="msg_no_connected_cards">No connected cards found yet.</string>
+    
+    <string name="btn_export_excel">Export as CSV</string>
+    <string name="btn_go_to_export">Go to Export</string>
+    <string name="error_no_password_cards">No cards without password found.</string>
+    
+    <string name="error_missing_sold_files">Please select the sold cards files to calculate exact stats.</string>
+    <string name="dash">—</string>
+    <string name="error_no_sold_files">Please select sold card files first</string>
+    <string name="error_no_active_file">Please select active cards Excel file first</string>
+    <string name="error_multiple_packages_in_file">Warning: The export contains cards from more than one package! Please select a single package first.</string>
+    <string name="error_no_unused_cards_matching">No unused cards match the filter criteria!</string>
+    
+    <!-- Date picker validation errors -->
+    <string name="error_date_range_missing_start">Please choose a start date first!</string>
+    <string name="error_date_range_invalid_end">End date must be at least 1 day after the start date!</string>
+    <string name="error_date_invalid_range">Date must be older than 1 month, and not exceed 2 years from today!</string>
+
+    <string name="msg_generating_file">Processing and matching cards, please wait…</string>
+    <string name="success_export_excel">CSV file exported successfully</string>
+    <string name="filter_older_3_months">Older than 3 months</string>
+    <string name="filter_older_4_months">Older than 4 months</string>
+    <string name="filter_older_5_months">Older than 5 months</string>
+    <string name="filter_older_6_months">Older than 6 months</string>
+    <string name="filter_older_1_year">Older than 1 year</string>
+
+    <string name="label_discovered_packages">Discovered Packages</string>
+    <string name="label_header_package_name">Package Name</string>
+    <string name="label_header_total_cards">Total Cards</string>
+    <string name="label_header_unused_filtered">Unused (Filtered)</string>
+    <string name="label_header_unused">Unused</string>
+    <string name="label_header_oldest_date">Oldest Date</string>
+    <string name="label_header_newest_date">Latest Date</string>
+    <string name="label_header_actions">Actions</string>
+    <string name="label_header_action">Action</string>
+    <string name="label_download_csv_btn">CSV</string>
+    <string name="msg_no_discovered_packages">No packages discovered yet.</string>
+
+    <string name="placeholder_no_sold_files_selected">Selected sold files will appear here</string>
+    <string name="placeholder_no_active_file_selected">No active file selected yet</string>
+
+    <string name="label_stats_filtered_no_pass">Cards Count after Filter without Password</string>
+    <string name="dialog_no_pass_title">Cards without password (sorted by date)</string>
+    <string name="label_header_no_password">No Password</string>
+    <string name="label_header_with_password">With Pass.</string>
+    <string name="label_header_no_password_dialog_username">Username</string>
+    <string name="label_header_no_password_dialog_package">Package</string>
+    <string name="label_header_no_password_dialog_created">Creation Date</string>
+    <string name="error_sold_files_missing">Please attach sold card files. Data is incomplete.</string>
+
+    <!-- Guide Screen Strings -->
+    <string name="label_guide_title">How to extract active and sold card files?</string>
+    <string name="guide_toolbar_title">Cards Extraction Guide</string>
+    <string name="guide_section_active_title">1. Extracting Active Cards File</string>
+    <string name="guide_active_step1">Go to "Users" screen inside your control panel.</string>
+    <string name="guide_active_step2">Change "Status" to <b>Active</b> (unused cards or cards that are used but not expired yet).</string>
+    <string name="guide_active_step3">Select "Is Sold" to <b>Yes</b> (authenticated cards).</string>
+    <string name="guide_active_step4">Click on the blue <b>Search</b> button to filter results.</string>
+    <string name="guide_active_step5">Click on the <b>Green Download Button</b> on the right to export the Excel file.</string>
+    <string name="guide_section_sold_title">2. Extracting Sold/Exported Files</string>
+    <string name="guide_sold_step1">Go to "Exported Files" screen in your control panel.</string>
+    <string name="guide_sold_step2">Download all required files by clicking the <b>Download Icon</b> on the right of each file based on your target date range.</string>
+    <string name="guide_sold_step3">Use the pagination buttons (1, 2, 3, 4, 5…) at the bottom to navigate between pages.</string>
+    <string name="guide_sold_step4">For a better experience, change the items-per-page dropdown (default 10) to the largest number possible to view and download all files easily if there are many files.</string>
+    <string name="label_stats_total_cards_no_pass">Total Cards without Password</string>
+    <string name="footer_created_by">تم إنشاء التطبيق بواسطة عمر مصطفى أبو شنب</string>
+    <string name="menu_contact_developer">Contact Developer</string>
+    <string name="menu_my_apps_on_google_play">My Apps on Google Play</string>
+    <string name="whatsApp_failed_to_open">Failed to open WhatsApp</string>
 </resources>
 

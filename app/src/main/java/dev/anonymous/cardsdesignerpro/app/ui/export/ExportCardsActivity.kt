@@ -22,15 +22,11 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import dev.anonymous.cardsdesignerpro.app.R
-import dev.anonymous.cardsdesignerpro.app.data.license.LicenseManager
-import dev.anonymous.cardsdesignerpro.app.data.license.LicenseStatus
-import dev.anonymous.cardsdesignerpro.app.data.license.PremiumFeature
 import dev.anonymous.cardsdesignerpro.app.data.model.CardLayoutPreset
 import dev.anonymous.cardsdesignerpro.app.data.model.ExportQuality
 import dev.anonymous.cardsdesignerpro.app.data.model.FlipEdge
 import dev.anonymous.cardsdesignerpro.app.data.model.PageSize
 import dev.anonymous.cardsdesignerpro.app.databinding.ActivityExportCardsBinding
-import dev.anonymous.cardsdesignerpro.app.ui.license.LicenseDialogs
 import dev.anonymous.cardsdesignerpro.app.ui.viewer.PdfViewerActivity
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -45,6 +41,9 @@ class ExportCardsActivity : AppCompatActivity() {
     private lateinit var fileAdapter: SelectedFileAdapter
     private lateinit var shortFileAdapter: SelectedFileAdapter
     private val exportPrefs by lazy { getSharedPreferences("export_prefs", MODE_PRIVATE) }
+
+    private var lastRenderedLayoutColumns = -1
+    private var lastRenderedLayoutRows = -1
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -98,6 +97,8 @@ class ExportCardsActivity : AppCompatActivity() {
         val names = uris.map { queryFileName(it) ?: it.lastPathSegment ?: "file" }
         viewModel.addFiles(uris, names, isShort = true)
     }
+    private val isUnusedCardsExport: Boolean
+        get() = viewModel.uiState.value.isUnusedCardsExport
 
     /** Directory picker for saving files */
     private val directoryPicker = registerForActivityResult(
@@ -139,6 +140,7 @@ class ExportCardsActivity : AppCompatActivity() {
         observeViewModel()
 
         checkIntentForDualPreview(intent)
+        checkIntentForTempFile(intent)
         handleIncomingFileIntent(intent)
     }
 
@@ -146,6 +148,7 @@ class ExportCardsActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         checkIntentForDualPreview(intent)
+        checkIntentForTempFile(intent)
         handleIncomingFileIntent(intent)
     }
 
@@ -157,6 +160,22 @@ class ExportCardsActivity : AppCompatActivity() {
             if (frontStr != null && backStr != null) {
                 showSeparateSuccessDialog(frontStr.toUri(), backStr.toUri())
             }
+        }
+    }
+
+    private fun checkIntentForTempFile(intent: Intent) {
+        val tempFileUriStr = intent.getStringExtra("extra_temp_file_uri")
+        val isUnusedCardsExportIntent = intent.getBooleanExtra("extra_is_unused_cards_export", false)
+        if (tempFileUriStr != null) {
+            intent.removeExtra("extra_temp_file_uri")
+            intent.removeExtra("extra_is_unused_cards_export")
+            viewModel.setUnusedCardsExport(isUnusedCardsExportIntent)
+            val name = intent.getStringExtra("extra_temp_file_name")
+            intent.removeExtra("extra_temp_file_name")
+            if (name.isNullOrBlank()) return
+
+            val uri = tempFileUriStr.toUri()
+            viewModel.addFiles(listOf(uri), listOf(name), isTemporary = true)
         }
     }
 
@@ -323,6 +342,10 @@ class ExportCardsActivity : AppCompatActivity() {
 
     private fun setupFilePicker() {
         binding.btnChooseFile.setOnClickListener {
+            if (viewModel.uiState.value.isUnusedCardsExport) {
+                Snackbar.make(binding.root, R.string.unused_export_files_locked, Snackbar.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
             multiFilePicker.launch(
                 arrayOf(
                     "text/csv", "text/comma-separated-values",
@@ -334,6 +357,10 @@ class ExportCardsActivity : AppCompatActivity() {
             )
         }
         binding.btnChooseShortFile.setOnClickListener {
+            if (viewModel.uiState.value.isUnusedCardsExport) {
+                Snackbar.make(binding.root, R.string.unused_export_files_locked, Snackbar.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
             multiFilePickerShort.launch(
                 arrayOf(
                     "text/csv", "text/comma-separated-values",
@@ -347,23 +374,6 @@ class ExportCardsActivity : AppCompatActivity() {
     }
 
     private fun setupLayoutSpinner() {
-        rebuildLayoutSpinnerAdapter()
-
-        binding.spinnerCardLayout.onItemSelectedListener =
-            object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
-                    if (pos == 0) {
-                        // "Custom…" selected — open dialog
-                        showCustomLayoutDialog()
-                    } else {
-                        // Preset selected — offset by 1 for the custom item
-                        viewModel.updateCardLayout(pos - 1)
-                    }
-                }
-
-                override fun onNothingSelected(p: AdapterView<*>?) {}
-            }
-
         // Edit button for modifying an active custom layout
         binding.btnEditCustomLayout.setOnClickListener {
             showCustomLayoutDialog()
@@ -439,8 +449,6 @@ class ExportCardsActivity : AppCompatActivity() {
                     val cols = bundle.getInt(CustomLayoutDialogFragment.RESULT_COLUMNS)
                     val rows = bundle.getInt(CustomLayoutDialogFragment.RESULT_ROWS)
                     viewModel.updateCardLayoutCustom(cols, rows)
-                    rebuildLayoutSpinnerAdapter()
-                    binding.spinnerCardLayout.setSelection(0)
                 }
                 CustomLayoutDialogFragment.ACTION_DISMISS -> {
                     syncLayoutSpinnerSelection()
@@ -456,8 +464,9 @@ class ExportCardsActivity : AppCompatActivity() {
             state.settings.layoutColumns, state.settings.layoutRows
         )
         val spinnerPos = if (presetIdx >= 0) presetIdx + 1 else 0
-        rebuildLayoutSpinnerAdapter()
-        binding.spinnerCardLayout.setSelection(spinnerPos)
+        if (binding.spinnerCardLayout.selectedItemPosition != spinnerPos) {
+            binding.spinnerCardLayout.setSelection(spinnerPos)
+        }
     }
 
     private fun setupSpacingSliders() {
@@ -742,45 +751,6 @@ class ExportCardsActivity : AppCompatActivity() {
 
     private fun checkLicenseAndProceed(isSeparate: Boolean) {
         if (!validateExportPreconditions()) return
-
-        val lm = LicenseManager.getInstance(this)
-
-        if (!lm.canAccess(PremiumFeature.PDF_EXPORT)) {
-            val status = lm.licenseState.value.status
-            when (status) {
-                LicenseStatus.TRIAL_EXPIRED ->
-                    LicenseDialogs.showTrialExpiredDialog(this) {
-                        LicenseDialogs.showActivationDialog(this) {}
-                    }
-                LicenseStatus.EXPORT_LIMIT_REACHED ->
-                    LicenseDialogs.showExportLimitDialog(this) {
-                        LicenseDialogs.showActivationDialog(this) {}
-                    }
-                else ->
-                    LicenseDialogs.showPremiumFeatureDialog(this) {
-                        LicenseDialogs.showActivationDialog(this) {}
-                    }
-            }
-            return
-        }
-
-        // Scenario A — trial users must increment export count on server before exporting
-        if (!lm.isActivated) {
-            lm.incrementServerExportCount(
-                onSuccess = { _ -> launchExportWithNotificationPermissionGate(isSeparate) },
-                onFailure = { _ ->
-                    Snackbar.make(
-                        binding.root,
-                        R.string.license_export_sync_error,
-                        Snackbar.LENGTH_LONG
-                    ).setAction(R.string.license_btn_retry) {
-                        checkLicenseAndProceed(isSeparate)
-                    }.show()
-                }
-            )
-            return
-        }
-
         launchExportWithNotificationPermissionGate(isSeparate)
     }
 
@@ -918,6 +888,11 @@ class ExportCardsActivity : AppCompatActivity() {
         // File list
         fileAdapter.submitList(state.selectedFiles.toList())
         shortFileAdapter.submitList(state.selectedShortFiles.toList())
+        val canAttachDataFiles = !state.isUnusedCardsExport
+        binding.btnChooseFile.isEnabled = canAttachDataFiles
+        binding.btnChooseFile.alpha = if (canAttachDataFiles) 1f else 0.45f
+        binding.btnChooseShortFile.isEnabled = canAttachDataFiles
+        binding.btnChooseShortFile.alpha = if (canAttachDataFiles) 1f else 0.45f
 
         // Setup Short Numbers UI based on template flag
         if (state.credentialMode == dev.anonymous.cardsdesignerpro.app.data.model.CredentialMode.SHORT) {
@@ -970,13 +945,46 @@ class ExportCardsActivity : AppCompatActivity() {
             binding.spinnerTemplate.setSelection(state.selectedTemplateIndex)
 
         // Card layout spinner
-        val layoutIdx = CardLayoutPreset.indexFor(
-            state.settings.layoutColumns, state.settings.layoutRows
-        )
+        val cols = state.settings.layoutColumns
+        val rows = state.settings.layoutRows
+        val layoutIdx = CardLayoutPreset.indexFor(cols, rows)
         // layoutIdx == -1 means custom, spinner pos 0; otherwise offset +1 for the custom item
         val spinnerPos = if (layoutIdx >= 0) layoutIdx + 1 else 0
-        if (binding.spinnerCardLayout.selectedItemPosition != spinnerPos) {
+
+        val layoutChanged = cols != lastRenderedLayoutColumns || rows != lastRenderedLayoutRows
+        if (binding.spinnerCardLayout.adapter == null || layoutChanged) {
+            lastRenderedLayoutColumns = cols
+            lastRenderedLayoutRows = rows
+
             rebuildLayoutSpinnerAdapter()
+            binding.spinnerCardLayout.setSelection(spinnerPos)
+
+            if (binding.spinnerCardLayout.onItemSelectedListener == null) {
+                binding.spinnerCardLayout.onItemSelectedListener =
+                    object : AdapterView.OnItemSelectedListener {
+                        override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
+                            val currentPresetIdx = CardLayoutPreset.indexFor(
+                                viewModel.uiState.value.settings.layoutColumns,
+                                viewModel.uiState.value.settings.layoutRows
+                            )
+                            val currentPos = if (currentPresetIdx >= 0) currentPresetIdx + 1 else 0
+
+                            // If selection hasn't changed from ViewModel state, ignore (system callback / rotation)
+                            if (pos == currentPos) return
+
+                            if (pos == 0) {
+                                // User explicitly switched from a preset to "Custom…"
+                                showCustomLayoutDialog()
+                            } else {
+                                // Preset selected — offset by 1 for the custom item
+                                viewModel.updateCardLayout(pos - 1)
+                            }
+                        }
+
+                        override fun onNothingSelected(p: AdapterView<*>?) {}
+                    }
+            }
+        } else if (binding.spinnerCardLayout.selectedItemPosition != spinnerPos) {
             binding.spinnerCardLayout.setSelection(spinnerPos)
         }
 
@@ -1150,11 +1158,9 @@ class ExportCardsActivity : AppCompatActivity() {
         state.event?.let { ev ->
             when (ev) {
                 is ExportEvent.ExportSuccess -> {
-                    LicenseManager.getInstance(this).incrementExportCount()
                     showSingleSuccessDialog(ev.outputUri)
                 }
                 is ExportEvent.ExportSuccessDual -> {
-                    LicenseManager.getInstance(this).incrementExportCount()
                     showSeparateSuccessDialog(ev.frontUri, ev.backUri)
                 }
 
@@ -1213,12 +1219,17 @@ class ExportCardsActivity : AppCompatActivity() {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private fun queryFileName(uri: Uri): String? =
-        contentResolver.query(uri, null, null, null, null)?.use { c ->
-            if (!c.moveToFirst()) return null
-            val col = c.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-            if (col < 0) null else c.getString(col)
-        }
+    private fun queryFileName(uri: Uri): String? {
+        if (uri.scheme == "file") return uri.lastPathSegment
+
+        return runCatching {
+            contentResolver.query(uri, null, null, null, null)?.use { c ->
+                if (!c.moveToFirst()) return null
+                val col = c.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (col < 0) null else c.getString(col)
+            }
+        }.getOrNull()
+    }
 
     private fun timestamp() =
         SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
@@ -1234,6 +1245,11 @@ class ExportCardsActivity : AppCompatActivity() {
     private fun handleIncomingFileIntent(intent: Intent) {
         val action = intent.action ?: return
         if (viewModel.isIntentProcessed) return
+        if (viewModel.uiState.value.isUnusedCardsExport) {
+            viewModel.isIntentProcessed = true
+            intent.action = null
+            return
+        }
 
         val incomingType = intent.type
         val uris = when (action) {
